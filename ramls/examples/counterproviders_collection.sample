@@ -1,0 +1,13 @@
+{
+  "counter_providers": [
+    {
+      "id": "4c66b956-23a8-4418-aef6-1c35dcdabbb4",
+      "name": "Test Counter Sushi 5",
+      "harvesting_active": "true",
+      "provider_type": "Test Provider",
+      "api_type": "Counter Sushi 5",
+      "service_url": "https://jusp.jisc.ac.uk/api/sushi/counter/r5"
+    }
+  ],
+  "total_records": 1
+}

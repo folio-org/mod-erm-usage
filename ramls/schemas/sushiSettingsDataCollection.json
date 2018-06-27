@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "credentials": {
+      "type": "array",
+      "id": "sushiSettingsData",
+      "items": {
+        "type": "object",
+        "$ref": "sushiSettingsData.json"
+      }
+    },
+    "total_records": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "credentials",
+    "total_records"
+  ]
+}
