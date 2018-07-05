@@ -39,6 +39,11 @@ resourceTypes:
       schemaCollection: sushiSettingsDataCollection
       schemaItem: sushiSettingsData.json
   get:
+    is: [
+      searchable: {description: "", example: "active=true sortBy username"},
+      orderable: {fieldsList: "field A, field B"},
+      pageable
+    ]
     description: Get all Sushi settings
   post:
     is: [validate]

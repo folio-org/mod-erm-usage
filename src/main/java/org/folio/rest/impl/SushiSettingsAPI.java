@@ -7,6 +7,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -17,12 +18,17 @@ import org.folio.rest.jaxrs.model.SushiSettingsDataCollection;
 import org.folio.rest.jaxrs.resource.SushiSettingsResource;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.Criteria.Limit;
+import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
+import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
+import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 public class SushiSettingsAPI implements SushiSettingsResource {
 
@@ -36,20 +42,28 @@ public class SushiSettingsAPI implements SushiSettingsResource {
     PostgresClient.getInstance(vertx, tenantId).setIdField("id");
   }
 
-  @Override
+  private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
+    CQL2PgJSON cql2pgJson = new CQL2PgJSON(Arrays.asList(TABLE_NAME_SUSHI_SETTINGS + ".jsonb"));
+    return new CQLWrapper(cql2pgJson, query).setLimit(new Limit(limit))
+        .setOffset(new Offset(offset));
+  }
+
   @Validate
-  // TODO: Add CQL support
-  public void getSushisettings(String lang, Map<String, String> okapiHeaders,
+  @Override
+  public void getSushisettings(String query, String orderBy, Order order, int offset, int limit,
+      String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     logger.debug("Getting sushi settings");
     try {
+      CQLWrapper cql = getCQL(query, limit, offset);
       vertxContext.runOnContext(v -> {
         String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
         logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
         logger.debug("tenantId = " + tenantId);
+        String[] fieldList = {"*"};
         try {
           PostgresClient.getInstance(vertxContext.owner(), tenantId).get(TABLE_NAME_SUSHI_SETTINGS,
-              SushiSetting.class, "*", true, false, reply -> {
+              SushiSetting.class, fieldList, cql, true, false, reply -> {
                 try {
                   if (reply.succeeded()) {
                     SushiSettingsDataCollection sushiSettingsDataCollection = new SushiSettingsDataCollection();
@@ -83,7 +97,6 @@ public class SushiSettingsAPI implements SushiSettingsResource {
           asyncResultHandler
               .handle(Future.succeededFuture(GetSushisettingsResponse.withPlainBadRequest(
                   "CQL Illegal State Error for '" + "" + "': " + e.getLocalizedMessage())));
-
         } catch (Exception e) {
           Throwable cause = e;
           while (cause.getCause() != null) {
@@ -213,8 +226,6 @@ public class SushiSettingsAPI implements SushiSettingsResource {
                     }
                   }
                 });
-
-
           } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             asyncResultHandler.handle(Future.succeededFuture(
