@@ -1,10 +1,10 @@
 {
   "id": "4c66b956-23a8-4418-aef6-1c35dcdaccc4",
   "label": "ACM Digital Library",
-  "username": "",
-  "password": "",
-  "api_key": "",
-  "service_url", "",
+  "username": "user name",
+  "password": "XXXuserpasswordXXX",
+  "api_key": "XXX123ABCXXX",
+  "service_url": "www.myaggregator.com",
   "account_config": {
     "config_type": "Manual",
     "config_mail": "ab@counter-stats.com",

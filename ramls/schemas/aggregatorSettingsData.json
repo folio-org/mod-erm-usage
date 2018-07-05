@@ -47,6 +47,14 @@
         "config_type",
         "config_mail"
       ]
+    },
+    "createdDate": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedDate": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [
