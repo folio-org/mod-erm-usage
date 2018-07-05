@@ -33,8 +33,12 @@ import org.z3950.zing.cql.cql2pgjson.FieldException;
 public class SushiSettingsAPI implements SushiSettingsResource {
 
   public static final String RAML_PATH = "apidocs/raml";
+  public static final String ID_FIELD = "'id'";
+  public static final String LABEL_FIELD = "'label'";
+  public static final String SCHEMA_PATH = "/schemas/sushiSettingsData.json";
   private static final String OKAPI_HEADER_TENANT = "x-okapi-tenant";
   private static final String TABLE_NAME_SUSHI_SETTINGS = "sushi_settings";
+
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(SushiSettingsAPI.class);
 
@@ -144,12 +148,12 @@ public class SushiSettingsAPI implements SushiSettingsResource {
       vertxContext.runOnContext(v -> {
         String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
         try {
-          Criteria idCrit = new Criteria(RAML_PATH + "/schemas/sushiSettingsData.json");
-          idCrit.addField("'id'");
+          Criteria idCrit = new Criteria(RAML_PATH + SCHEMA_PATH);
+          idCrit.addField(ID_FIELD);
           idCrit.setOperation("=");
           idCrit.setValue(entity.getId());
-          Criteria labelCrit = new Criteria(RAML_PATH + "/schemas/sushiSettingsData.json");
-          labelCrit.addField("'label'");
+          Criteria labelCrit = new Criteria(RAML_PATH + SCHEMA_PATH);
+          labelCrit.addField(LABEL_FIELD);
           labelCrit.setOperation("=");
           labelCrit.setValue(entity.getLabel());
           Criterion crit = new Criterion();
@@ -157,11 +161,11 @@ public class SushiSettingsAPI implements SushiSettingsResource {
 
           try {
             PostgresClient.getInstance(vertxContext.owner(),
-                TenantTool.calculateTenantId(tenantId)).get("sushi_settings",
+                TenantTool.calculateTenantId(tenantId)).get(TABLE_NAME_SUSHI_SETTINGS,
                 SushiSetting.class, crit, true, getReply -> {
-                  logger.debug("Attempting to get existing sushisettings of same id and/or label");
+                  logger.debug("Attempting to get existing sushi settings of same id and/or label");
                   if (getReply.failed()) {
-                    logger.debug("Attempt to get users failed: " +
+                    logger.debug("Attempt to get sushi settings failed: " +
                         getReply.cause().getMessage());
                     asyncResultHandler.handle(Future.succeededFuture(
                         PostSushisettingsResponse.withPlainInternalServerError(
@@ -185,7 +189,7 @@ public class SushiSettingsAPI implements SushiSettingsResource {
                           Date now = new Date();
                           entity.setCreatedDate(now);
                           entity.setUpdatedDate(now);
-                          postgresClient.save(connection, "sushi_settings", entity,
+                          postgresClient.save(connection, TABLE_NAME_SUSHI_SETTINGS, entity,
                               reply -> {
                                 try {
                                   if (reply.succeeded()) {
@@ -255,28 +259,28 @@ public class SushiSettingsAPI implements SushiSettingsResource {
       vertxContext.runOnContext(v -> {
         String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
         try {
-          Criteria idCrit = new Criteria(RAML_PATH + "/schemas/sushiSettingsData.json");
-          idCrit.addField("'id'");
+          Criteria idCrit = new Criteria(RAML_PATH + SCHEMA_PATH);
+          idCrit.addField(ID_FIELD);
           idCrit.setOperation("=");
           idCrit.setValue(id);
           Criterion criterion = new Criterion(idCrit);
           logger.debug("Using criterion: " + criterion.toString());
           PostgresClient.getInstance(vertxContext.owner(), tenantId)
-              .get("sushi_settings", SushiSetting.class, criterion,
+              .get(TABLE_NAME_SUSHI_SETTINGS, SushiSetting.class, criterion,
                   true, false, getReply -> {
                     if (getReply.failed()) {
                       asyncResultHandler.handle(Future.succeededFuture(
                           GetSushisettingsByIdResponse.withPlainInternalServerError(
                               messages.getMessage(lang, MessageConsts.InternalServerError))));
                     } else {
-                      List<SushiSetting> userList = (List<SushiSetting>) getReply.result()
+                      List<SushiSetting> sushiSettingList = (List<SushiSetting>) getReply.result()
                           .getResults();
-                      if (userList.size() < 1) {
+                      if (sushiSettingList.size() < 1) {
                         asyncResultHandler.handle(Future.succeededFuture(
                             GetSushisettingsByIdResponse.withPlainNotFound("Sushi setting" +
                                 messages.getMessage(lang,
                                     MessageConsts.ObjectDoesNotExist))));
-                      } else if (userList.size() > 1) {
+                      } else if (sushiSettingList.size() > 1) {
                         logger.debug("Multiple sushi settings found with the same id");
                         asyncResultHandler.handle(Future.succeededFuture(
                             GetSushisettingsByIdResponse.withPlainInternalServerError(
@@ -284,7 +288,7 @@ public class SushiSettingsAPI implements SushiSettingsResource {
                                     MessageConsts.InternalServerError))));
                       } else {
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetSushisettingsByIdResponse.withJsonOK(userList.get(0))));
+                            GetSushisettingsByIdResponse.withJsonOK(sushiSettingList.get(0))));
                       }
                     }
                   });
@@ -313,13 +317,12 @@ public class SushiSettingsAPI implements SushiSettingsResource {
       vertxContext.runOnContext(v -> {
         String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
         Criteria idCrit = new Criteria();
-        idCrit.addField("'id'");
+        idCrit.addField(ID_FIELD);
         idCrit.setOperation("=");
         idCrit.setValue(id);
-
         try {
           PostgresClient.getInstance(vertxContext.owner(), tenantId).delete(
-              "sushi_settings", new Criterion(idCrit), deleteReply -> {
+              TABLE_NAME_SUSHI_SETTINGS, new Criterion(idCrit), deleteReply -> {
                 if (deleteReply.failed()) {
                   logger.debug("Delete failed: " + deleteReply.cause().getMessage());
                   asyncResultHandler.handle(Future.succeededFuture(
@@ -362,69 +365,71 @@ public class SushiSettingsAPI implements SushiSettingsResource {
         } else {
           String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
           Criteria nameCrit = new Criteria();
-          nameCrit.addField("'label'");
+          nameCrit.addField(LABEL_FIELD);
           nameCrit.setOperation("=");
           nameCrit.setValue(entity.getLabel());
           try {
-            PostgresClient.getInstance(vertxContext.owner(), tenantId).get("sushi_settings",
-                SushiSetting.class, new Criterion(nameCrit), true, false, getReply -> {
-                  if (getReply.failed()) {
-                    logger.debug("Error querying existing sushi settings: " + getReply.cause()
-                        .getLocalizedMessage());
-                    asyncResultHandler.handle(Future.succeededFuture(
-                        PutSushisettingsByIdResponse.withPlainInternalServerError(
-                            messages.getMessage(lang,
-                                MessageConsts.InternalServerError))));
-                  } else {
-                    List<SushiSetting> sushiSettingList = (List<SushiSetting>) getReply.result()
-                        .getResults();
-                    if (sushiSettingList.size() > 0 && (!sushiSettingList.get(0).getId()
-                        .equals(entity.getId()))) {
-                      asyncResultHandler.handle(Future.succeededFuture(
-                          PutSushisettingsByIdResponse.withPlainBadRequest(
-                              "Label " + entity.getLabel() + " is already in use")));
-                    } else {
-                      Date createdDate = null;
-                      Date now = new Date();
-                      if (sushiSettingList.size() > 0) {
-                        createdDate = sushiSettingList.get(0).getCreatedDate();
-                      } else {
-                        createdDate = now;
-                      }
-                      Criteria idCrit = new Criteria();
-                      idCrit.addField("'id'");
-                      idCrit.setOperation("=");
-                      idCrit.setValue(id);
-                      entity.setUpdatedDate(now);
-                      entity.setCreatedDate(createdDate);
-                      try {
-                        PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
-                            "sushi_settings", entity, new Criterion(idCrit), true, putReply -> {
-                              try {
-                                if (putReply.failed()) {
-                                  asyncResultHandler.handle(Future.succeededFuture(
-                                      PutSushisettingsByIdResponse.withPlainInternalServerError(
-                                          putReply.cause().getMessage())));
-                                } else {
-                                  asyncResultHandler.handle(Future.succeededFuture(
-                                      PutSushisettingsByIdResponse.withNoContent()));
-                                }
-                              } catch (Exception e) {
-                                asyncResultHandler.handle(Future.succeededFuture(
-                                    PutSushisettingsByIdResponse.withPlainInternalServerError(
-                                        messages.getMessage(lang,
-                                            MessageConsts.InternalServerError))));
-                              }
-                            });
-                      } catch (Exception e) {
+            PostgresClient.getInstance(vertxContext.owner(), tenantId)
+                .get(TABLE_NAME_SUSHI_SETTINGS,
+                    SushiSetting.class, new Criterion(nameCrit), true, false, getReply -> {
+                      if (getReply.failed()) {
+                        logger.debug("Error querying existing sushi settings: " + getReply.cause()
+                            .getLocalizedMessage());
                         asyncResultHandler.handle(Future.succeededFuture(
                             PutSushisettingsByIdResponse.withPlainInternalServerError(
                                 messages.getMessage(lang,
                                     MessageConsts.InternalServerError))));
+                      } else {
+                        List<SushiSetting> sushiSettingList = (List<SushiSetting>) getReply.result()
+                            .getResults();
+                        if (sushiSettingList.size() > 0 && (!sushiSettingList.get(0).getId()
+                            .equals(entity.getId()))) {
+                          asyncResultHandler.handle(Future.succeededFuture(
+                              PutSushisettingsByIdResponse.withPlainBadRequest(
+                                  "Label " + entity.getLabel() + " is already in use")));
+                        } else {
+                          Date createdDate = null;
+                          Date now = new Date();
+                          if (sushiSettingList.size() > 0) {
+                            createdDate = sushiSettingList.get(0).getCreatedDate();
+                          } else {
+                            createdDate = now;
+                          }
+                          Criteria idCrit = new Criteria();
+                          idCrit.addField(ID_FIELD);
+                          idCrit.setOperation("=");
+                          idCrit.setValue(id);
+                          entity.setUpdatedDate(now);
+                          entity.setCreatedDate(createdDate);
+                          try {
+                            PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
+                                TABLE_NAME_SUSHI_SETTINGS, entity, new Criterion(idCrit), true,
+                                putReply -> {
+                                  try {
+                                    if (putReply.failed()) {
+                                      asyncResultHandler.handle(Future.succeededFuture(
+                                          PutSushisettingsByIdResponse.withPlainInternalServerError(
+                                              putReply.cause().getMessage())));
+                                    } else {
+                                      asyncResultHandler.handle(Future.succeededFuture(
+                                          PutSushisettingsByIdResponse.withNoContent()));
+                                    }
+                                  } catch (Exception e) {
+                                    asyncResultHandler.handle(Future.succeededFuture(
+                                        PutSushisettingsByIdResponse.withPlainInternalServerError(
+                                            messages.getMessage(lang,
+                                                MessageConsts.InternalServerError))));
+                                  }
+                                });
+                          } catch (Exception e) {
+                            asyncResultHandler.handle(Future.succeededFuture(
+                                PutSushisettingsByIdResponse.withPlainInternalServerError(
+                                    messages.getMessage(lang,
+                                        MessageConsts.InternalServerError))));
+                          }
+                        }
                       }
-                    }
-                  }
-                });
+                    });
           } catch (Exception e) {
             logger.debug(e.getLocalizedMessage());
             asyncResultHandler.handle(Future.succeededFuture(
