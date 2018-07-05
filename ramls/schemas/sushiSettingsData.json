@@ -6,30 +6,85 @@
     "id": {
       "type": "string"
     },
-    "requestor_id": {
+    "label": {
       "type": "string"
+    },
+    "vendor_id": {
+      "type": "string"
+    },
+    "platform_id": {
+      "type": "string"
+    },
+    "harvesting_active": {
+      "type": "boolean"
+    },
+    "aggregator": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "vendor_code": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "api_type": {
+      "type": "string",
+      "enum": [
+        "Sushi Lite, Sushi"
+      ]
+    },
+    "vendor_service_url": {
+      "type": "string"
+    },
+    "report_release": {
+      "type": "integer"
+    },
+    "requested_reports": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "string"
+      }
     },
     "customer_id": {
       "type": "string"
     },
-    "api_key": {
-      "type": "integer"
+    "requestor_id": {
+      "type": "string"
     },
-    "counter_providers": {
-      "type": "array",
-      "minItems": 0,
-      "items": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          }
-        }
-      }
+    "api_key": {
+      "type": "string"
+    },
+    "requestor_name": {
+      "type": "string"
+    },
+    "requestor_mail": {
+      "type": "string"
+    },
+    "createdDate": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedDate": {
+      "type": "string",
+      "format": "date-time"
     }
   },
+  "required": [
+    "id",
+    "label",
+    "vendor_id",
+    "platform_id",
+    "harvesting_active",
+    "report_release",
+    "requested_reports",
+    "customer_id",
+    "requestor_id"
+  ],
   "additionalProperties": false
 }

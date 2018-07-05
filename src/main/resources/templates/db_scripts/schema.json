@@ -1,33 +1,33 @@
 {
-  "scripts" : [],
-  "tables" : [
+  "scripts": [],
+  "tables": [
     {
-      "tableName" : "sushi_credentials",
-      "generateId" : true,
-      "fromModuleVersion" : "1.0",
-      "populateJsonWithId" : false,
-      "withMetadata" : true,
-      "uniqueIndex" : [
+      "tableName": "sushi_settings",
+      "generateId": true,
+      "fromModuleVersion": "1.0",
+      "populateJsonWithId": false,
+      "withMetadata": true,
+      "uniqueIndex": [
         {
-          "fieldName" : "id",
-          "tOps" : "ADD"
+          "fieldName": "id",
+          "tOps": "ADD"
         }
       ]
     },
     {
-      "tableName" : "counter_provider",
-      "generateId" : true,
-      "fromModuleVersion" : "1.0",
-      "populateJsonWithId" : false,
-      "withMetadata" : true,
-      "uniqueIndex" : [
+      "tableName": "aggregator_settings",
+      "generateId": true,
+      "fromModuleVersion": "1.0",
+      "populateJsonWithId": false,
+      "withMetadata": true,
+      "uniqueIndex": [
         {
-          "fieldName" : "id",
-          "tOps" : "ADD"
+          "fieldName": "id",
+          "tOps": "ADD"
         }
       ]
     }
   ],
-  "views" : [
+  "views": [
   ]
 }

@@ -13,6 +13,7 @@ schemas:
   - errors: !include ./raml-util/schemas/errors.schema
   - error.schema: !include ./raml-util/schemas/error.schema
   - parameters.schema: !include ./raml-util/schemas/parameters.schema
+  - ../metadata.schema: !include ./raml-util/schemas/metadata.schema
 
 traits:
   - secured: !include ./raml-util/traits/auth.raml
@@ -29,8 +30,8 @@ resourceTypes:
   - get-only: !include ./raml-util/rtypes/get-only.raml
   - post-empty-body: !include ./raml-util/rtypes/post-empty-body.raml
 
-/sushicreds:
-  displayName: Sushi Credentials
+/sushisettings:
+  displayName: Sushi Settings
   type:
     collection:
       exampleCollection: !include ./examples/sushisettings_collection.sample
@@ -38,17 +39,18 @@ resourceTypes:
       schemaCollection: sushiSettingsDataCollection
       schemaItem: sushiSettingsData.json
   get:
-    description: Get all Sushi credentials
+    description: Get all Sushi settings
   post:
-    description: Post new Sushi credentials
+    is: [validate]
+    description: Post new Sushi settings
   /{id}:
     type:
       collection-item:
         exampleItem: !include ./examples/sushisettings.sample
         schema: sushiSettingsData.json
     get:
-      description: Get one Sushi credential identified by id
+      description: Get one Sushi setting identified by id
     delete:
-      description: Delete Sushi credential identified by id
+      description: Delete Sushi setting identified by id
     put:
-      description: Put Sushi credential identified by id
+      description: Put Sushi setting identified by id

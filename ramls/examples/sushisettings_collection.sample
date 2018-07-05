@@ -2,9 +2,26 @@
   "sushi_settings": [
     {
       "id": "4c66b956-23a8-4418-aef6-1c35dcdaccc4",
-      "requestor_id": "api.usage",
-      "customer_id": "ATR17985",
-      "api_key": "uC67I6UzAbCDEFGH"
+      "label": "ACM Digital Library",
+      "vendor_id": "uuid-123456789",
+      "platform_id": "uuid-123456789",
+      "harvesting_active": true,
+      "aggregator": [
+        {
+          "id": "uuid-123456789-agg",
+          "vendor_code": "ACMDL"
+        }
+      ],
+      "report_release": 4,
+      "requested_reports": [
+        "JR1",
+        "TR1"
+      ],
+      "customer_id": "12345def",
+      "requestor_id": "1234abcd",
+      "api_key": "678iuoi",
+      "requestor_name": "Karla Kolumna",
+      "requestor_mail": "kolumna@ub.uni-leipzig.de"
     }
   ],
   "total_records": 1

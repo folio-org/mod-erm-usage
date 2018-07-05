@@ -2,12 +2,12 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "credentials": {
+    "aggregator_settings": {
       "type": "array",
-      "id": "sushiSettingsData",
+      "id": "aggregatorSettingsData",
       "items": {
         "type": "object",
-        "$ref": "sushiSettingsData.json"
+        "$ref": "aggregatorSettingsData.json"
       }
     },
     "total_records": {
@@ -15,7 +15,7 @@
     }
   },
   "required": [
-    "credentials",
+    "aggregator_settings",
     "total_records"
   ]
 }

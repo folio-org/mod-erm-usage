@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Aggregator Settings Schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "password": {
+      "type": "string"
+    },
+    "api_key": {
+      "type": "string"
+    },
+    "service_url": {
+      "type": "string"
+    },
+    "account_config": {
+      "type": "object",
+      "properties": {
+        "config_type": {
+          "type": "string",
+          "enum": [
+            "Mail",
+            "API",
+            "Manual"
+          ]
+        },
+        "config_mail": {
+          "type": "string"
+        },
+        "display_contact": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "config_type",
+        "config_mail"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "label",
+    "username",
+    "password",
+    "service_url",
+    "account_config"
+  ],
+  "additionalProperties": false
+}
