@@ -2,27 +2,36 @@
   "scripts": [],
   "tables": [
     {
-      "tableName": "sushi_settings",
-      "generateId": true,
+      "tableName": "aggregator_settings",
+      "generateId": false,
       "fromModuleVersion": "1.0",
-      "populateJsonWithId": false,
+      "populateJsonWithId": true,
+      "pkColumnName": "_id",
       "withMetadata": true,
       "uniqueIndex": [
         {
-          "fieldName": "id",
+          "fieldName": "label",
           "tOps": "ADD"
         }
       ]
     },
     {
-      "tableName": "aggregator_settings",
-      "generateId": true,
+      "tableName": "sushi_settings",
+      "generateId": false,
       "fromModuleVersion": "1.0",
-      "populateJsonWithId": false,
+      "populateJsonWithId": true,
+      "pkColumnName": "_id",
       "withMetadata": true,
       "uniqueIndex": [
         {
-          "fieldName": "id",
+          "fieldName": "label",
+          "tOps": "ADD"
+        }
+      ],
+      "foreignKeys": [
+        {
+          "fieldName": "aggregator.id",
+          "targetTable": "aggregator_settings",
           "tOps": "ADD"
         }
       ]

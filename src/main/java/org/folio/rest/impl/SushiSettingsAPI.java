@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.ws.rs.core.Response;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.SushiSetting;
@@ -33,7 +34,7 @@ import org.z3950.zing.cql.cql2pgjson.FieldException;
 public class SushiSettingsAPI implements SushiSettingsResource {
 
   public static final String RAML_PATH = "apidocs/raml";
-  public static final String ID_FIELD = "'id'";
+  public static final String ID_FIELD = "_id";
   public static final String LABEL_FIELD = "'label'";
   public static final String SCHEMA_PATH = "/schemas/sushiSettingsData.json";
   private static final String OKAPI_HEADER_TENANT = "x-okapi-tenant";
@@ -43,7 +44,7 @@ public class SushiSettingsAPI implements SushiSettingsResource {
   private final Logger logger = LoggerFactory.getLogger(SushiSettingsAPI.class);
 
   public SushiSettingsAPI(Vertx vertx, String tenantId) {
-    PostgresClient.getInstance(vertx, tenantId).setIdField("id");
+    PostgresClient.getInstance(vertx, tenantId).setIdField(ID_FIELD);
   }
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
@@ -148,17 +149,16 @@ public class SushiSettingsAPI implements SushiSettingsResource {
       vertxContext.runOnContext(v -> {
         String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
         try {
-          Criteria idCrit = new Criteria(RAML_PATH + SCHEMA_PATH);
-          idCrit.addField(ID_FIELD);
-          idCrit.setOperation("=");
-          idCrit.setValue(entity.getId());
+          String id = entity.getId();
+          if (id == null) {
+            id = UUID.randomUUID().toString();
+            entity.setId(id);
+          }
           Criteria labelCrit = new Criteria(RAML_PATH + SCHEMA_PATH);
           labelCrit.addField(LABEL_FIELD);
           labelCrit.setOperation("=");
           labelCrit.setValue(entity.getLabel());
-          Criterion crit = new Criterion();
-          crit.addCriterion(idCrit, "OR", labelCrit);
-
+          Criterion crit = new Criterion(labelCrit);
           try {
             PostgresClient.getInstance(vertxContext.owner(),
                 TenantTool.calculateTenantId(tenantId)).get(TABLE_NAME_SUSHI_SETTINGS,
@@ -183,50 +183,31 @@ public class SushiSettingsAPI implements SushiSettingsResource {
                     } else {
                       PostgresClient postgresClient = PostgresClient
                           .getInstance(vertxContext.owner(), tenantId);
-                      postgresClient.startTx(connection -> {
-                        logger.debug("Attempting to save new record");
-                        try {
-                          Date now = new Date();
-                          entity.setCreatedDate(now);
-                          entity.setUpdatedDate(now);
-                          postgresClient.save(connection, TABLE_NAME_SUSHI_SETTINGS, entity,
-                              reply -> {
-                                try {
-                                  if (reply.succeeded()) {
-                                    logger.debug("save successful");
-                                    final SushiSetting sushiSetting = entity;
-                                    sushiSetting.setId(entity.getId());
-                                    OutStream stream = new OutStream();
-                                    stream.setData(sushiSetting);
-                                    postgresClient.endTx(connection, done -> {
-                                      asyncResultHandler.handle(
-                                          Future.succeededFuture(
-                                              PostSushisettingsResponse
-                                                  .withJsonCreated(
-                                                      reply.result(), stream)));
-                                    });
-                                  } else {
-                                    postgresClient.rollbackTx(connection, rollback -> {
-                                      asyncResultHandler.handle(Future.succeededFuture(
-                                          PostSushisettingsResponse.withPlainBadRequest(
-                                              messages.getMessage(lang,
-                                                  MessageConsts.UnableToProcessRequest))));
-                                    });
-                                  }
-                                } catch (Exception e) {
-                                  asyncResultHandler.handle(Future.succeededFuture(
-                                      PostSushisettingsResponse.withPlainInternalServerError(
-                                          e.getMessage())));
-                                }
-                              });
-                        } catch (Exception e) {
-                          postgresClient.rollbackTx(connection, rollback -> {
-                            asyncResultHandler.handle(Future.succeededFuture(
-                                PostSushisettingsResponse.withPlainInternalServerError(
-                                    getReply.cause().getMessage())));
+                      postgresClient
+                          .save(TABLE_NAME_SUSHI_SETTINGS, entity.getId(), entity, reply -> {
+                            try {
+                              if (reply.succeeded()) {
+                                logger.debug("save successful");
+                                final SushiSetting sushiSetting = entity;
+                                sushiSetting.setId(entity.getId());
+                                OutStream stream = new OutStream();
+                                stream.setData(sushiSetting);
+                                asyncResultHandler.handle(
+                                    Future.succeededFuture(
+                                        PostSushisettingsResponse
+                                            .withJsonCreated(
+                                                reply.result(), stream)));
+                              } else {
+                                asyncResultHandler.handle(Future.succeededFuture(
+                                    PostSushisettingsResponse.withPlainInternalServerError(
+                                        reply.cause().toString())));
+                              }
+                            } catch (Exception e) {
+                              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+                                  PostSushisettingsResponse
+                                      .withPlainInternalServerError(e.getMessage())));
+                            }
                           });
-                        }
-                      });
                     }
                   }
                 });
@@ -235,7 +216,6 @@ public class SushiSettingsAPI implements SushiSettingsResource {
             asyncResultHandler.handle(Future.succeededFuture(
                 PostSushisettingsResponse.withPlainInternalServerError(
                     messages.getMessage(lang, MessageConsts.InternalServerError))));
-
           }
         } catch (Exception e) {
           asyncResultHandler.handle(Future.succeededFuture(
