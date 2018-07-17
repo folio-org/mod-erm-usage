@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Counter Report Schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "download_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "creation_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "release": {
+      "type": "string"
+    },
+    "report_name": {
+      "type": "string"
+    },
+    "begin_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "vendor_id": {
+      "type": "string"
+    },
+    "platform_id": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string"
+    },
+    "report": {
+      "type": "string"
+    },
+    "createdDate": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedDate": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "id",
+    "download_time",
+    "creation_time",
+    "release",
+    "report_name",
+    "begin_date",
+    "end_date",
+    "customer_id",
+    "vendor_id",
+    "platform_id",
+    "format",
+    "report"
+  ],
+  "additionalProperties": false
+}

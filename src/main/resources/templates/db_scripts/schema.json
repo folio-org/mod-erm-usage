@@ -35,6 +35,14 @@
           "tOps": "ADD"
         }
       ]
+    },
+    {
+      "tableName": "counter_reports",
+      "generateId": true,
+      "fromModuleVersion": "1.0",
+      "populateJsonWithId": true,
+      "pkColumnName": "_id",
+      "withMetadata": true
     }
   ],
   "views": [

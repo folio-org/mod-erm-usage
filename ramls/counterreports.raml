@@ -1,0 +1,61 @@
+#%RAML 0.8
+title: Counter Reports
+version: v1
+baseUri: http://localhost/mod-erm-usage
+
+documentation:
+  - title: mod-erm-usage API
+    content: This documents the API calls that can be made to query and manage counter reports
+
+schemas:
+  - counterReportData.json: !include ./schemas/counterReportData.json
+  - counterReportDataDataCollection: !include ./schemas/counterReportDataCollection.json
+  - errors: !include ./raml-util/schemas/errors.schema
+  - error.schema: !include ./raml-util/schemas/error.schema
+  - parameters.schema: !include ./raml-util/schemas/parameters.schema
+  - ../metadata.schema: !include ./raml-util/schemas/metadata.schema
+
+traits:
+  - secured: !include ./raml-util/traits/auth.raml
+  - orderable: !include ./raml-util/traits/orderable.raml
+  - pageable: !include ./raml-util/traits/pageable.raml
+  - searchable: !include ./raml-util/traits/searchable.raml
+  - language: !include ./raml-util/traits/language.raml
+  - validate: !include ./raml-util/traits/validation.raml
+  - facets: !include ./raml-util/traits/facets.raml
+
+resourceTypes:
+  - collection: !include ./raml-util/rtypes/collection.raml
+  - collection-item: !include ./raml-util/rtypes/item-collection.raml
+  - get-only: !include ./raml-util/rtypes/get-only.raml
+  - post-empty-body: !include ./raml-util/rtypes/post-empty-body.raml
+
+/counterreports:
+  displayName: Counter Reports
+  type:
+    collection:
+      exampleCollection: !include ./examples/counterreport_collection.sample
+      exampleItem: !include ./examples/counterreport.sample
+      schemaCollection: counterReportDataDataCollection
+      schemaItem: counterReportData.json
+  get:
+    is: [
+      searchable: {description: "", example: "active=true sortBy username"},
+      orderable: {fieldsList: "field A, field B"},
+      pageable
+    ]
+    description: Get all reports
+  post:
+    is: [validate]
+    description: Post new report
+  /{id}:
+    type:
+      collection-item:
+        exampleItem: !include ./examples/counterreport.sample
+        schema: counterReportData.json
+    get:
+      description: Get one report identified by id
+    delete:
+      description: Delete report identified by id
+    put:
+      description: Put report identified by id

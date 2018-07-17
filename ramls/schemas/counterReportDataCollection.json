@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "reports": {
+      "type": "array",
+      "id": "counterReportData",
+      "items": {
+        "type": "object",
+        "$ref": "counterReportData.json"
+      }
+    },
+    "total_records": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "reports",
+    "total_records"
+  ]
+}
