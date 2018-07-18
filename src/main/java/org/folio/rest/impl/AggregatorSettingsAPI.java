@@ -29,16 +29,15 @@ import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
+import org.folio.rest.util.Constants;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 public class AggregatorSettingsAPI implements AggregatorSettingsResource {
 
-  public static final String RAML_PATH = "apidocs/raml";
   public static final String ID_FIELD = "_id";
   public static final String LABEL_FIELD = "'label'";
   public static final String SCHEMA_PATH = "/schemas/aggregatorSettingsData.json";
-  private static final String OKAPI_HEADER_TENANT = "x-okapi-tenant";
   private static final String TABLE_NAME_AGGREGATOR_SETTINGS = "aggregator_settings";
 
   private final Messages messages = Messages.getInstance();
@@ -64,7 +63,8 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
     try {
       CQLWrapper cql = getCQL(query, limit, offset);
       vertxContext.runOnContext(v -> {
-        String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
+        String tenantId = TenantTool
+            .calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
         logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
         logger.debug("tenantId = " + tenantId);
         String[] fieldList = {"*"};
@@ -150,7 +150,8 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
       Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
-        String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
+        String tenantId = TenantTool
+            .calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
         try {
 
           String id = entity.getId();
@@ -158,7 +159,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
             id = UUID.randomUUID().toString();
             entity.setId(id);
           }
-          Criteria labelCrit = new Criteria(RAML_PATH + SCHEMA_PATH);
+          Criteria labelCrit = new Criteria(Constants.RAML_PATH + SCHEMA_PATH);
           labelCrit.addField(LABEL_FIELD);
           labelCrit.setOperation("=");
           labelCrit.setValue(entity.getLabel());
@@ -242,10 +243,18 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
-        String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
+        String tenantId = TenantTool
+            .calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
         try {
+          Criteria idCrit = new Criteria(Constants.RAML_PATH + SCHEMA_PATH)
+              .addField(ID_FIELD)
+              .setJSONB(false)
+              .setOperation("=")
+              .setValue("'" + id + "'");
+          Criterion criterion = new Criterion(idCrit);
+          logger.debug("Using criterion: " + criterion.toString());
           PostgresClient.getInstance(vertxContext.owner(), tenantId)
-              .get(TABLE_NAME_AGGREGATOR_SETTINGS, Aggregator.class,
+              .get(TABLE_NAME_AGGREGATOR_SETTINGS, AggregatorSetting.class, criterion,
                   true, false, getReply -> {
                     if (getReply.failed()) {
                       asyncResultHandler.handle(Future.succeededFuture(
@@ -294,7 +303,8 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
-        String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
+        String tenantId = TenantTool
+            .calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
         try {
           PostgresClient.getInstance(vertxContext.owner(), tenantId).delete(
               TABLE_NAME_AGGREGATOR_SETTINGS, id, deleteReply -> {
@@ -337,7 +347,8 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
               PutAggregatorsettingsByIdResponse
                   .withPlainBadRequest("You cannot change the value of the id field")));
         } else {
-          String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(OKAPI_HEADER_TENANT));
+          String tenantId = TenantTool
+              .calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
           Criteria nameCrit = new Criteria();
           nameCrit.addField(LABEL_FIELD);
           nameCrit.setOperation("=");

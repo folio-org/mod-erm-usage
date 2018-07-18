@@ -38,7 +38,7 @@
     },
     {
       "tableName": "counter_reports",
-      "generateId": true,
+      "generateId": false,
       "fromModuleVersion": "1.0",
       "populateJsonWithId": true,
       "pkColumnName": "_id",
