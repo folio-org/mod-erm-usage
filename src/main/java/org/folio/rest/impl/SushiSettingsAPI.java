@@ -241,10 +241,11 @@ public class SushiSettingsAPI implements SushiSettingsResource {
         String tenantId = TenantTool
             .calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
         try {
-          Criteria idCrit = new Criteria(Constants.RAML_PATH + SCHEMA_PATH);
-          idCrit.addField(ID_FIELD);
-          idCrit.setOperation("=");
-          idCrit.setValue("'" + id + "'");
+          Criteria idCrit = new Criteria(Constants.RAML_PATH + SCHEMA_PATH)
+              .addField(ID_FIELD)
+              .setJSONB(false)
+              .setOperation("=")
+              .setValue("'" + id + "'");
           Criterion criterion = new Criterion(idCrit);
           logger.debug("Using criterion: " + criterion.toString());
           PostgresClient.getInstance(vertxContext.owner(), tenantId)
@@ -299,10 +300,11 @@ public class SushiSettingsAPI implements SushiSettingsResource {
       vertxContext.runOnContext(v -> {
         String tenantId = TenantTool
             .calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
-        Criteria idCrit = new Criteria();
-        idCrit.addField(ID_FIELD);
-        idCrit.setOperation("=");
-        idCrit.setValue(id);
+        Criteria idCrit = new Criteria()
+            .addField(ID_FIELD)
+            .setJSONB(false)
+            .setOperation("=")
+            .setValue("'" + id + "'");
         try {
           PostgresClient.getInstance(vertxContext.owner(), tenantId).delete(
               TABLE_NAME_SUSHI_SETTINGS, new Criterion(idCrit), deleteReply -> {
@@ -351,7 +353,7 @@ public class SushiSettingsAPI implements SushiSettingsResource {
           Criteria nameCrit = new Criteria();
           nameCrit.addField(LABEL_FIELD);
           nameCrit.setOperation("=");
-          nameCrit.setValue(entity.getLabel());
+          nameCrit.setValue("'" + entity.getLabel() + "'");
           try {
             PostgresClient.getInstance(vertxContext.owner(), tenantId)
                 .get(TABLE_NAME_SUSHI_SETTINGS,
@@ -379,10 +381,11 @@ public class SushiSettingsAPI implements SushiSettingsResource {
                           } else {
                             createdDate = now;
                           }
-                          Criteria idCrit = new Criteria();
-                          idCrit.addField(ID_FIELD);
-                          idCrit.setOperation("=");
-                          idCrit.setValue(id);
+                          Criteria idCrit = new Criteria()
+                              .addField(ID_FIELD)
+                              .setJSONB(false)
+                              .setOperation("=")
+                              .setValue("'" + id + "'");
                           entity.setUpdatedDate(now);
                           entity.setCreatedDate(createdDate);
                           try {
