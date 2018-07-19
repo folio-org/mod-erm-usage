@@ -1,21 +1,21 @@
 {
-  "aggregator_settings": [
+  "aggregatorSettings": [
     {
       "id": "4c66b956-23a8-4418-aef6-1c35dcdaccc4",
       "label": "ACM Digital Library",
-      "username": "",
-      "password": "",
-      "api_key": "",
-      "service_url", "",
-      "account_config": {
-        "config_type": "Manual",
-        "config_mail": "ab@counter-stats.com",
-        "display_contact": [
+      "username": "user name",
+      "password": "XXXuserpasswordXXX",
+      "apiKey": "XXX123ABCXXX",
+      "serviceUrl": "www.myaggregator.com",
+      "accountConfig": {
+        "configType": "Manual",
+        "configMail": "ab@counter-stats.com",
+        "displayContact": [
           "Counter Aggregator Contact",
           "Tel: +49 1234 - 9876"
         ]
       }
     }
   ],
-  "total_records": 1
+  "totalRecords": 1
 }

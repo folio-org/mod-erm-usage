@@ -3,12 +3,12 @@
   "label": "ACM Digital Library",
   "username": "user name",
   "password": "XXXuserpasswordXXX",
-  "api_key": "XXX123ABCXXX",
-  "service_url": "www.myaggregator.com",
-  "account_config": {
-    "config_type": "Manual",
-    "config_mail": "ab@counter-stats.com",
-    "display_contact": [
+  "apiKey": "XXX123ABCXXX",
+  "serviceUrl": "www.myaggregator.com",
+  "accountConfig": {
+    "configType": "Manual",
+    "configMail": "ab@counter-stats.com",
+    "displayContact": [
       "Counter Aggregator Contact",
       "Tel: +49 1234 - 9876"
     ]
