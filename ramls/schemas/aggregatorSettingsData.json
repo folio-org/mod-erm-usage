@@ -15,16 +15,16 @@
     "password": {
       "type": "string"
     },
-    "api_key": {
+    "apiKey": {
       "type": "string"
     },
-    "service_url": {
+    "serviceUrl": {
       "type": "string"
     },
-    "account_config": {
+    "accountConfig": {
       "type": "object",
       "properties": {
-        "config_type": {
+        "configType": {
           "type": "string",
           "enum": [
             "Mail",
@@ -32,10 +32,10 @@
             "Manual"
           ]
         },
-        "config_mail": {
+        "configMail": {
           "type": "string"
         },
-        "display_contact": {
+        "displayContact": {
           "type": "array",
           "minItems": 0,
           "items": {
@@ -44,8 +44,8 @@
         }
       },
       "required": [
-        "config_type",
-        "config_mail"
+        "configType",
+        "configMail"
       ]
     },
     "createdDate": {
@@ -62,8 +62,8 @@
     "label",
     "username",
     "password",
-    "service_url",
-    "account_config"
+    "serviceUrl",
+    "accountConfig"
   ],
   "additionalProperties": false
 }

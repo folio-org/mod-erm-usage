@@ -87,15 +87,15 @@ public class CounterReportIT {
     CounterReport counterReport = given()
         .body("{\n"
             + "\t\"id\": \"8c6b1c02-e153-4413-970b-1b1a3eca1325\",\n"
-            + "\t\"download_time\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"creation_time\": \"2018-07-18T14:12:00+02:00\",\n"
+            + "\t\"downloadTime\": \"2018-07-18T14:12:00+02:00\",\n"
+            + "\t\"creationTime\": \"2018-07-18T14:12:00+02:00\",\n"
             + "\t\"release\": \"4\",\n"
-            + "\t\"report_name\": \"JR1\",\n"
-            + "\t\"begin_date\": \"2018-07-18\",\n"
-            + "\t\"end_date\": \"2018-07-18\",\n"
-            + "\t\"customer_id\": \"CUSTOMER_ID\",\n"
-            + "\t\"vendor_id\": \"5fb03fb5-56c0-4a6e-9f4e-194d1b540140\",\n"
-            + "\t\"platform_id\": \"19b535aa-7007-435a-96da-a390853e6666\",\n"
+            + "\t\"reportName\": \"JR1\",\n"
+            + "\t\"beginDate\": \"2018-07-18\",\n"
+            + "\t\"endDate\": \"2018-07-18\",\n"
+            + "\t\"customerId\": \"CUSTOMER_ID\",\n"
+            + "\t\"vendorId\": \"5fb03fb5-56c0-4a6e-9f4e-194d1b540140\",\n"
+            + "\t\"platformId\": \"19b535aa-7007-435a-96da-a390853e6666\",\n"
             + "\t\"format\": \"xml\",\n"
             + "\t\"report\": \"<?xml version='1.0' encoding='UTF-8'?><cs:ReportResponse xmlns:cs='http://www.niso.org/schemas/sushi/counter' xmlns:s='http://www.niso.org/schemas/sushi' xmlns='http://www.niso.org/schemas/counter'>...</cs:ReportResponse>\"\n"
             + "}")
@@ -120,20 +120,20 @@ public class CounterReportIT {
         .contentType(ContentType.JSON)
         .statusCode(200)
         .body("id", equalTo(counterReport.getId()))
-        .body("customer_id", equalTo(counterReport.getCustomerId()));
+        .body("customerId", equalTo(counterReport.getCustomerId()));
 
     given()
         .body("{\n"
             + "\t\"id\": \"8c6b1c02-e153-4413-970b-1b1a3eca1325\",\n"
-            + "\t\"download_time\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"creation_time\": \"2018-07-18T14:12:00+02:00\",\n"
+            + "\t\"downloadTime\": \"2018-07-18T14:12:00+02:00\",\n"
+            + "\t\"creationTime\": \"2018-07-18T14:12:00+02:00\",\n"
             + "\t\"release\": \"4\",\n"
-            + "\t\"report_name\": \"JR1\",\n"
-            + "\t\"begin_date\": \"2018-07-18\",\n"
-            + "\t\"end_date\": \"2018-07-18\",\n"
-            + "\t\"customer_id\": \"CUSTOMER_ID_CHANGED\",\n"
-            + "\t\"vendor_id\": \"5fb03fb5-56c0-4a6e-9f4e-194d1b540140\",\n"
-            + "\t\"platform_id\": \"19b535aa-7007-435a-96da-a390853e6666\",\n"
+            + "\t\"reportName\": \"JR1\",\n"
+            + "\t\"beginDate\": \"2018-07-18\",\n"
+            + "\t\"endDate\": \"2018-07-18\",\n"
+            + "\t\"customerId\": \"CUSTOMER_ID_CHANGED\",\n"
+            + "\t\"vendorId\": \"5fb03fb5-56c0-4a6e-9f4e-194d1b540140\",\n"
+            + "\t\"platformId\": \"19b535aa-7007-435a-96da-a390853e6666\",\n"
             + "\t\"format\": \"xml\",\n"
             + "\t\"report\": \"<?xml version='1.0' encoding='UTF-8'?><cs:ReportResponse xmlns:cs='http://www.niso.org/schemas/sushi/counter' xmlns:s='http://www.niso.org/schemas/sushi' xmlns='http://www.niso.org/schemas/counter'>...</cs:ReportResponse>\"\n"
             + "}")
@@ -180,13 +180,13 @@ public class CounterReportIT {
     given()
         .body("{\n"
             + "\t\"id\": \"8c6b1c02-e153-4413-970b-1b1a3eca1325\",\n"
-            + "\t\"download_time\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"creation_time\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"begin_date\": \"2018-07-18\",\n"
-            + "\t\"end_date\": \"2018-07-18\",\n"
-            + "\t\"customer_id\": \"CUSTOMER_ID_CHANGED\",\n"
-            + "\t\"vendor_id\": \"5fb03fb5-56c0-4a6e-9f4e-194d1b540140\",\n"
-            + "\t\"platform_id\": \"19b535aa-7007-435a-96da-a390853e6666\",\n"
+            + "\t\"downloadTime\": \"2018-07-18T14:12:00+02:00\",\n"
+            + "\t\"creationTime\": \"2018-07-18T14:12:00+02:00\",\n"
+            + "\t\"beginDate\": \"2018-07-18\",\n"
+            + "\t\"endDate\": \"2018-07-18\",\n"
+            + "\t\"customerId\": \"CUSTOMER_ID_CHANGED\",\n"
+            + "\t\"vendorId\": \"5fb03fb5-56c0-4a6e-9f4e-194d1b540140\",\n"
+            + "\t\"platformId\": \"19b535aa-7007-435a-96da-a390853e6666\",\n"
             + "\t\"format\": \"xml\",\n"
             + "\t\"report\": \"<?xml version='1.0' encoding='UTF-8'?><cs:ReportResponse xmlns:cs='http://www.niso.org/schemas/sushi/counter' xmlns:s='http://www.niso.org/schemas/sushi' xmlns='http://www.niso.org/schemas/counter'>...</cs:ReportResponse>\"\n"
             + "}")

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "counter_reports": {
+    "counterReports": {
       "type": "array",
       "id": "counterReportData",
       "items": {
@@ -10,12 +10,12 @@
         "$ref": "counterReportData.json"
       }
     },
-    "total_records": {
+    "totalRecords": {
       "type": "integer"
     }
   },
   "required": [
-    "counter_reports",
-    "total_records"
+    "counterReports",
+    "totalRecords"
   ]
 }

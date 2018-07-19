@@ -6,35 +6,35 @@
     "id": {
       "type": "string"
     },
-    "download_time": {
+    "downloadTime": {
       "type": "string",
       "format": "date-time"
     },
-    "creation_time": {
+    "creationTime": {
       "type": "string",
       "format": "date-time"
     },
     "release": {
       "type": "string"
     },
-    "report_name": {
+    "reportName": {
       "type": "string"
     },
-    "begin_date": {
+    "beginDate": {
       "type": "string",
       "format": "date-time"
     },
-    "end_date": {
+    "endDate": {
       "type": "string",
       "format": "date-time"
     },
-    "customer_id": {
+    "customerId": {
       "type": "string"
     },
-    "vendor_id": {
+    "vendorId": {
       "type": "string"
     },
-    "platform_id": {
+    "platformId": {
       "type": "string"
     },
     "format": {
@@ -54,15 +54,15 @@
   },
   "required": [
     "id",
-    "download_time",
-    "creation_time",
+    "downloadTime",
+    "creationTime",
     "release",
-    "report_name",
-    "begin_date",
-    "end_date",
-    "customer_id",
-    "vendor_id",
-    "platform_id",
+    "reportName",
+    "beginDate",
+    "endDate",
+    "customerId",
+    "vendorId",
+    "platformId",
     "format",
     "report"
   ],

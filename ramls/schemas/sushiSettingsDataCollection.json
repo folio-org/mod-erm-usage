@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "sushi_settings": {
+    "sushiSettings": {
       "type": "array",
       "id": "sushiSettingsData",
       "items": {
@@ -10,12 +10,12 @@
         "$ref": "sushiSettingsData.json"
       }
     },
-    "total_records": {
+    "totalRecords": {
       "type": "integer"
     }
   },
   "required": [
-    "sushi_settings",
-    "total_records"
+    "sushiSettings",
+    "totalRecords"
   ]
 }

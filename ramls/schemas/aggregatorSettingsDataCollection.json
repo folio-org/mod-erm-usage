@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "aggregator_settings": {
+    "aggregatorSettings": {
       "type": "array",
       "id": "aggregatorSettingsData",
       "items": {
@@ -10,12 +10,12 @@
         "$ref": "aggregatorSettingsData.json"
       }
     },
-    "total_records": {
+    "totalRecords": {
       "type": "integer"
     }
   },
   "required": [
-    "aggregator_settings",
-    "total_records"
+    "aggregatorSettings",
+    "totalRecords"
   ]
 }
