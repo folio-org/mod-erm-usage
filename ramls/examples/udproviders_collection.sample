@@ -1,5 +1,5 @@
 {
-  "sushi_settings": [
+  "usageDataProviders": [
     {
       "id": "4c66b956-23a8-4418-aef6-1c35dcdaccc4",
       "label": "ACM Digital Library",

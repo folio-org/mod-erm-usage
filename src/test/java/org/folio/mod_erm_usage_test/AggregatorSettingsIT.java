@@ -9,12 +9,14 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.parsing.Parser;
 import io.vertx.core.Context;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.util.List;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
@@ -31,6 +33,7 @@ public class AggregatorSettingsIT {
 
   public static final String TENANT = "diku";
   public static final String APPLICATION_JSON = "application/json";
+  public static final String BASE_URI = "/aggregator-settings";
   private static Vertx vertx;
   private static Context vertxContext;
   private static int port;
@@ -84,6 +87,7 @@ public class AggregatorSettingsIT {
 
   @Test
   public void checkThatWeCanAddGetPutAndDeleteAggregatorSettings() {
+
     AggregatorSetting aggSetting = given()
         .body("{\n"
             + "  \"id\": \"debb8412-3cd9-4dc6-8390-5e71b017c24e\",\n"
@@ -105,7 +109,7 @@ public class AggregatorSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
-        .post("/aggregatorsettings")
+        .post(BASE_URI)
         .thenReturn()
         .as(AggregatorSetting.class);
     assertThat(aggSetting.getLabel()).isEqualTo("Nationaler Statistikserver");
@@ -116,7 +120,7 @@ public class AggregatorSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
-        .get("/aggregatorsettings" + "/" + aggSetting.getId())
+        .get(BASE_URI + "/" + aggSetting.getId())
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
@@ -144,7 +148,7 @@ public class AggregatorSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .request()
-        .put("/aggregatorsettings/" + aggSetting.getId())
+        .put(BASE_URI + "/" + aggSetting.getId())
         .then()
         .statusCode(204);
 
@@ -153,7 +157,7 @@ public class AggregatorSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
-        .get("/aggregatorsettings/" + aggSetting.getId())
+        .get(BASE_URI + "/" + aggSetting.getId())
         .thenReturn()
         .as(AggregatorSetting.class);
     assertThat(changed.getId()).isEqualTo(aggSetting.getId());
@@ -165,7 +169,7 @@ public class AggregatorSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .when()
-        .delete("/aggregatorsettings/" + aggSetting.getId())
+        .delete(BASE_URI + "/" + aggSetting.getId())
         .then()
         .statusCode(204);
 
@@ -174,7 +178,7 @@ public class AggregatorSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
-        .get("/aggregatorsettings/" + aggSetting.getId())
+        .get(BASE_URI + "/" + aggSetting.getId())
         .then()
         .statusCode(404);
   }
@@ -201,7 +205,7 @@ public class AggregatorSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
-        .post("/aggregatorsettings")
+        .post(BASE_URI)
         .then()
         .statusCode(422);
   }

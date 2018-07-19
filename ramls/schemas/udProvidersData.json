@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Sushi Settings Schema",
+  "title": "Usage Data Provider Schema",
   "type": "object",
   "properties": {
     "id": {

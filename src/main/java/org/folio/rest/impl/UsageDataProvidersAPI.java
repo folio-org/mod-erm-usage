@@ -14,9 +14,9 @@ import java.util.Map;
 import java.util.UUID;
 import javax.ws.rs.core.Response;
 import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.SushiSetting;
-import org.folio.rest.jaxrs.model.SushiSettingsDataCollection;
-import org.folio.rest.jaxrs.resource.SushiSettingsResource;
+import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.jaxrs.resource.UsageDataProvidersResource;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
@@ -32,17 +32,17 @@ import org.folio.rest.util.Constants;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
 
-public class SushiSettingsAPI implements SushiSettingsResource {
+public class UsageDataProvidersAPI implements UsageDataProvidersResource {
 
   public static final String ID_FIELD = "_id";
   public static final String LABEL_FIELD = "'label'";
-  public static final String SCHEMA_PATH = "/schemas/sushiSettingsData.json";
-  private static final String TABLE_NAME_SUSHI_SETTINGS = "sushi_settings";
+  public static final String SCHEMA_PATH = "/schemas/udProvidersData.json";
+  private static final String TABLE_NAME_SUSHI_SETTINGS = "usage_data_providers";
 
   private final Messages messages = Messages.getInstance();
-  private final Logger logger = LoggerFactory.getLogger(SushiSettingsAPI.class);
+  private final Logger logger = LoggerFactory.getLogger(UsageDataProvidersAPI.class);
 
-  public SushiSettingsAPI(Vertx vertx, String tenantId) {
+  public UsageDataProvidersAPI(Vertx vertx, String tenantId) {
     PostgresClient.getInstance(vertx, tenantId).setIdField(ID_FIELD);
   }
 
@@ -52,12 +52,12 @@ public class SushiSettingsAPI implements SushiSettingsResource {
         .setOffset(new Offset(offset));
   }
 
-  @Validate
   @Override
-  public void getSushisettings(String query, String orderBy, Order order, int offset, int limit,
-      String lang, Map<String, String> okapiHeaders,
+  @Validate
+  public void getUsageDataProviders(String query, String orderBy, Order order, int offset,
+      int limit, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
-    logger.debug("Getting sushi settings");
+    logger.debug("Getting usage data providers");
     try {
       CQLWrapper cql = getCQL(query, limit, offset);
       vertxContext.runOnContext(v -> {
@@ -68,21 +68,21 @@ public class SushiSettingsAPI implements SushiSettingsResource {
         String[] fieldList = {"*"};
         try {
           PostgresClient.getInstance(vertxContext.owner(), tenantId).get(TABLE_NAME_SUSHI_SETTINGS,
-              SushiSetting.class, fieldList, cql, true, false, reply -> {
+              UsageDataProvider.class, fieldList, cql, true, false, reply -> {
                 try {
                   if (reply.succeeded()) {
-                    SushiSettingsDataCollection sushiSettingsDataCollection = new SushiSettingsDataCollection();
-                    List<SushiSetting> sushiSettings = (List<SushiSetting>) reply
+                    UdProvidersDataCollection udProvidersDataCollection = new UdProvidersDataCollection();
+                    List<UsageDataProvider> dataProviders = (List<UsageDataProvider>) reply
                         .result().getResults();
-                    sushiSettingsDataCollection.setSushiSettings(sushiSettings);
-                    sushiSettingsDataCollection
+                    udProvidersDataCollection.setUsageDataProviders(dataProviders);
+                    udProvidersDataCollection
                         .setTotalRecords(reply.result().getResultInfo().getTotalRecords());
                     asyncResultHandler.handle(Future.succeededFuture(
-                        GetSushisettingsResponse.withJsonOK(sushiSettingsDataCollection)
+                        GetUsageDataProvidersResponse.withJsonOK(udProvidersDataCollection)
                     ));
                   } else {
                     asyncResultHandler.handle(Future.succeededFuture(
-                        GetSushisettingsResponse.withPlainInternalServerError(
+                        GetUsageDataProvidersResponse.withPlainInternalServerError(
                             reply.cause().getMessage()
                         )
                     ));
@@ -91,7 +91,7 @@ public class SushiSettingsAPI implements SushiSettingsResource {
                   logger.debug(e.getLocalizedMessage());
 
                   asyncResultHandler.handle(Future.succeededFuture(
-                      GetSushisettingsResponse.withPlainInternalServerError(
+                      GetUsageDataProvidersResponse.withPlainInternalServerError(
                           reply.cause().getMessage()
                       )
                   ));
@@ -100,7 +100,7 @@ public class SushiSettingsAPI implements SushiSettingsResource {
         } catch (IllegalStateException e) {
           logger.debug("IllegalStateException: " + e.getLocalizedMessage());
           asyncResultHandler
-              .handle(Future.succeededFuture(GetSushisettingsResponse.withPlainBadRequest(
+              .handle(Future.succeededFuture(GetUsageDataProvidersResponse.withPlainBadRequest(
                   "CQL Illegal State Error for '" + "" + "': " + e.getLocalizedMessage())));
         } catch (Exception e) {
           Throwable cause = e;
@@ -112,11 +112,11 @@ public class SushiSettingsAPI implements SushiSettingsResource {
           if (cause.getClass().getSimpleName().contains("CQLParseException")) {
             logger.debug("BAD CQL");
             asyncResultHandler
-                .handle(Future.succeededFuture(GetSushisettingsResponse.withPlainBadRequest(
+                .handle(Future.succeededFuture(GetUsageDataProvidersResponse.withPlainBadRequest(
                     "CQL Parsing Error for '" + "" + "': " + cause.getLocalizedMessage())));
           } else {
             asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                GetSushisettingsResponse.withPlainInternalServerError(
+                GetUsageDataProvidersResponse.withPlainInternalServerError(
                     messages.getMessage(lang,
                         MessageConsts.InternalServerError))));
           }
@@ -128,11 +128,11 @@ public class SushiSettingsAPI implements SushiSettingsResource {
           .contains("CQLParseException")) {
         logger.debug("BAD CQL");
         asyncResultHandler
-            .handle(Future.succeededFuture(GetSushisettingsResponse.withPlainBadRequest(
+            .handle(Future.succeededFuture(GetUsageDataProvidersResponse.withPlainBadRequest(
                 "CQL Parsing Error for '" + "" + "': " + e.getLocalizedMessage())));
       } else {
         asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-            GetSushisettingsResponse.withPlainInternalServerError(
+            GetUsageDataProvidersResponse.withPlainInternalServerError(
                 messages.getMessage(lang,
                     MessageConsts.InternalServerError))));
       }
@@ -141,10 +141,9 @@ public class SushiSettingsAPI implements SushiSettingsResource {
 
   @Override
   @Validate
-  public void postSushisettings(String lang, SushiSetting
-      entity, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws
-      Exception {
+  public void postUsageDataProviders(String lang, UsageDataProvider entity,
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
         String tenantId = TenantTool
@@ -163,24 +162,25 @@ public class SushiSettingsAPI implements SushiSettingsResource {
           try {
             PostgresClient.getInstance(vertxContext.owner(),
                 TenantTool.calculateTenantId(tenantId)).get(TABLE_NAME_SUSHI_SETTINGS,
-                SushiSetting.class, crit, true, getReply -> {
+                UsageDataProvider.class, crit, true, getReply -> {
                   logger.debug("Attempting to get existing sushi settings of same id and/or label");
                   if (getReply.failed()) {
                     logger.debug("Attempt to get sushi settings failed: " +
                         getReply.cause().getMessage());
                     asyncResultHandler.handle(Future.succeededFuture(
-                        PostSushisettingsResponse.withPlainInternalServerError(
+                        PostUsageDataProvidersResponse.withPlainInternalServerError(
                             getReply.cause().getMessage())));
                   } else {
-                    List<SushiSetting> sushiList = (List<SushiSetting>) getReply.result()
+                    List<UsageDataProvider> dataProviders = (List<UsageDataProvider>) getReply
+                        .result()
                         .getResults();
-                    if (sushiList.size() > 0) {
-                      logger.debug("Sushi Setting with this id already exists");
+                    if (dataProviders.size() > 0) {
+                      logger.debug("Usage data provider with this label/id already exists");
                       asyncResultHandler.handle(Future.succeededFuture(
-                          PostSushisettingsResponse.withJsonUnprocessableEntity(
+                          PostUsageDataProvidersResponse.withJsonUnprocessableEntity(
                               ValidationHelper.createValidationErrorMessage(
                                   "'label'", entity.getLabel(),
-                                  "Sushisetting with this id already exists"))));
+                                  "Usage data provider with this label/id already exists"))));
                     } else {
                       PostgresClient postgresClient = PostgresClient
                           .getInstance(vertxContext.owner(), tenantId);
@@ -189,23 +189,23 @@ public class SushiSettingsAPI implements SushiSettingsResource {
                             try {
                               if (reply.succeeded()) {
                                 logger.debug("save successful");
-                                final SushiSetting sushiSetting = entity;
-                                sushiSetting.setId(entity.getId());
+                                final UsageDataProvider usageDataProvider = entity;
+                                usageDataProvider.setId(entity.getId());
                                 OutStream stream = new OutStream();
-                                stream.setData(sushiSetting);
+                                stream.setData(usageDataProvider);
                                 asyncResultHandler.handle(
                                     Future.succeededFuture(
-                                        PostSushisettingsResponse
+                                        PostUsageDataProvidersResponse
                                             .withJsonCreated(
                                                 reply.result(), stream)));
                               } else {
                                 asyncResultHandler.handle(Future.succeededFuture(
-                                    PostSushisettingsResponse.withPlainInternalServerError(
+                                    PostUsageDataProvidersResponse.withPlainInternalServerError(
                                         reply.cause().toString())));
                               }
                             } catch (Exception e) {
                               asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                                  PostSushisettingsResponse
+                                  PostUsageDataProvidersResponse
                                       .withPlainInternalServerError(e.getMessage())));
                             }
                           });
@@ -215,27 +215,26 @@ public class SushiSettingsAPI implements SushiSettingsResource {
           } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             asyncResultHandler.handle(Future.succeededFuture(
-                PostSushisettingsResponse.withPlainInternalServerError(
+                PostUsageDataProvidersResponse.withPlainInternalServerError(
                     messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         } catch (Exception e) {
           asyncResultHandler.handle(Future.succeededFuture(
-              PostSushisettingsResponse.withPlainInternalServerError(
+              PostUsageDataProvidersResponse.withPlainInternalServerError(
                   messages.getMessage(lang, MessageConsts.InternalServerError))));
         }
       });
     } catch (Exception e) {
       asyncResultHandler.handle(Future.succeededFuture(
-          PostSushisettingsResponse.withPlainInternalServerError(
+          PostUsageDataProvidersResponse.withPlainInternalServerError(
               messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
 
   @Override
   @Validate
-  public void getSushisettingsById(String id, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws
-      Exception {
+  public void getUsageDataProvidersById(String id, String lang, Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
         String tenantId = TenantTool
@@ -249,53 +248,52 @@ public class SushiSettingsAPI implements SushiSettingsResource {
           Criterion criterion = new Criterion(idCrit);
           logger.debug("Using criterion: " + criterion.toString());
           PostgresClient.getInstance(vertxContext.owner(), tenantId)
-              .get(TABLE_NAME_SUSHI_SETTINGS, SushiSetting.class, criterion,
+              .get(TABLE_NAME_SUSHI_SETTINGS, UsageDataProvider.class, criterion,
                   true, false, getReply -> {
                     if (getReply.failed()) {
                       asyncResultHandler.handle(Future.succeededFuture(
-                          GetSushisettingsByIdResponse.withPlainInternalServerError(
+                          GetUsageDataProvidersByIdResponse.withPlainInternalServerError(
                               messages.getMessage(lang, MessageConsts.InternalServerError))));
                     } else {
-                      List<SushiSetting> sushiSettingList = (List<SushiSetting>) getReply.result()
+                      List<UsageDataProvider> dataProviders = (List<UsageDataProvider>) getReply
+                          .result()
                           .getResults();
-                      if (sushiSettingList.size() < 1) {
+                      if (dataProviders.size() < 1) {
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetSushisettingsByIdResponse.withPlainNotFound("Sushi setting" +
-                                messages.getMessage(lang,
-                                    MessageConsts.ObjectDoesNotExist))));
-                      } else if (sushiSettingList.size() > 1) {
-                        logger.debug("Multiple sushi settings found with the same id");
+                            GetUsageDataProvidersByIdResponse
+                                .withPlainNotFound("Usage data provider " +
+                                    messages.getMessage(lang,
+                                        MessageConsts.ObjectDoesNotExist))));
+                      } else if (dataProviders.size() > 1) {
+                        logger.debug("Multiple usage data providers found with the same id");
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetSushisettingsByIdResponse.withPlainInternalServerError(
+                            GetUsageDataProvidersByIdResponse.withPlainInternalServerError(
                                 messages.getMessage(lang,
                                     MessageConsts.InternalServerError))));
                       } else {
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetSushisettingsByIdResponse.withJsonOK(sushiSettingList.get(0))));
+                            GetUsageDataProvidersByIdResponse.withJsonOK(dataProviders.get(0))));
                       }
                     }
                   });
         } catch (Exception e) {
           logger.debug("Error occurred: " + e.getMessage());
           asyncResultHandler.handle(Future.succeededFuture(
-              GetSushisettingsByIdResponse.withPlainInternalServerError(messages.getMessage(
+              GetUsageDataProvidersByIdResponse.withPlainInternalServerError(messages.getMessage(
                   lang, MessageConsts.InternalServerError))));
         }
       });
     } catch (Exception e) {
       asyncResultHandler.handle(Future.succeededFuture(
-          GetSushisettingsByIdResponse.withPlainInternalServerError(messages.getMessage(
+          GetUsageDataProvidersByIdResponse.withPlainInternalServerError(messages.getMessage(
               lang, MessageConsts.InternalServerError))));
     }
-
   }
 
   @Override
   @Validate
-  public void deleteSushisettingsById(String id, String
-      lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws
-      Exception {
+  public void deleteUsageDataProvidersById(String id, String lang, Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
         String tenantId = TenantTool
@@ -311,17 +309,17 @@ public class SushiSettingsAPI implements SushiSettingsResource {
                 if (deleteReply.failed()) {
                   logger.debug("Delete failed: " + deleteReply.cause().getMessage());
                   asyncResultHandler.handle(Future.succeededFuture(
-                      DeleteSushisettingsByIdResponse.withPlainNotFound("Not found")));
+                      DeleteUsageDataProvidersByIdResponse.withPlainNotFound("Not found")));
                 } else {
                   asyncResultHandler.handle(Future.succeededFuture(
-                      DeleteSushisettingsByIdResponse.withNoContent()));
+                      DeleteUsageDataProvidersByIdResponse.withNoContent()));
                 }
               });
         } catch (Exception e) {
           logger.debug("Delete failed: " + e.getMessage());
           asyncResultHandler.handle(
               Future.succeededFuture(
-                  DeleteSushisettingsByIdResponse.withPlainInternalServerError(
+                  DeleteUsageDataProvidersByIdResponse.withPlainInternalServerError(
                       messages.getMessage(lang,
                           MessageConsts.InternalServerError))));
         }
@@ -329,7 +327,7 @@ public class SushiSettingsAPI implements SushiSettingsResource {
     } catch (Exception e) {
       asyncResultHandler.handle(
           Future.succeededFuture(
-              DeleteSushisettingsByIdResponse.withPlainInternalServerError(
+              DeleteUsageDataProvidersByIdResponse.withPlainInternalServerError(
                   messages.getMessage(lang,
                       MessageConsts.InternalServerError))));
     }
@@ -337,15 +335,14 @@ public class SushiSettingsAPI implements SushiSettingsResource {
 
   @Override
   @Validate
-  public void putSushisettingsById(String id, String lang, SushiSetting entity,
-      Map<String, String> okapiHeaders, Handler<AsyncResult
-      <Response>> asyncResultHandler,
+  public void putUsageDataProvidersById(String id, String lang, UsageDataProvider entity,
+      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
         if (!id.equals(entity.getId())) {
           asyncResultHandler.handle(Future.succeededFuture(
-              PutSushisettingsByIdResponse
+              PutUsageDataProvidersByIdResponse
                   .withPlainBadRequest("You cannot change the value of the id field")));
         } else {
           String tenantId = TenantTool
@@ -357,27 +354,28 @@ public class SushiSettingsAPI implements SushiSettingsResource {
           try {
             PostgresClient.getInstance(vertxContext.owner(), tenantId)
                 .get(TABLE_NAME_SUSHI_SETTINGS,
-                    SushiSetting.class, new Criterion(nameCrit), true, false, getReply -> {
+                    UsageDataProvider.class, new Criterion(nameCrit), true, false, getReply -> {
                       if (getReply.failed()) {
                         logger.debug("Error querying existing sushi settings: " + getReply.cause()
                             .getLocalizedMessage());
                         asyncResultHandler.handle(Future.succeededFuture(
-                            PutSushisettingsByIdResponse.withPlainInternalServerError(
+                            PutUsageDataProvidersByIdResponse.withPlainInternalServerError(
                                 messages.getMessage(lang,
                                     MessageConsts.InternalServerError))));
                       } else {
-                        List<SushiSetting> sushiSettingList = (List<SushiSetting>) getReply.result()
+                        List<UsageDataProvider> dataProviders = (List<UsageDataProvider>) getReply
+                            .result()
                             .getResults();
-                        if (sushiSettingList.size() > 0 && (!sushiSettingList.get(0).getId()
+                        if (dataProviders.size() > 0 && (!dataProviders.get(0).getId()
                             .equals(entity.getId()))) {
                           asyncResultHandler.handle(Future.succeededFuture(
-                              PutSushisettingsByIdResponse.withPlainBadRequest(
+                              PutUsageDataProvidersByIdResponse.withPlainBadRequest(
                                   "Label " + entity.getLabel() + " is already in use")));
                         } else {
                           Date createdDate = null;
                           Date now = new Date();
-                          if (sushiSettingList.size() > 0) {
-                            createdDate = sushiSettingList.get(0).getCreatedDate();
+                          if (dataProviders.size() > 0) {
+                            createdDate = dataProviders.get(0).getCreatedDate();
                           } else {
                             createdDate = now;
                           }
@@ -395,22 +393,24 @@ public class SushiSettingsAPI implements SushiSettingsResource {
                                   try {
                                     if (putReply.failed()) {
                                       asyncResultHandler.handle(Future.succeededFuture(
-                                          PutSushisettingsByIdResponse.withPlainInternalServerError(
-                                              putReply.cause().getMessage())));
+                                          PutUsageDataProvidersByIdResponse
+                                              .withPlainInternalServerError(
+                                                  putReply.cause().getMessage())));
                                     } else {
                                       asyncResultHandler.handle(Future.succeededFuture(
-                                          PutSushisettingsByIdResponse.withNoContent()));
+                                          PutUsageDataProvidersByIdResponse.withNoContent()));
                                     }
                                   } catch (Exception e) {
                                     asyncResultHandler.handle(Future.succeededFuture(
-                                        PutSushisettingsByIdResponse.withPlainInternalServerError(
-                                            messages.getMessage(lang,
-                                                MessageConsts.InternalServerError))));
+                                        PutUsageDataProvidersByIdResponse
+                                            .withPlainInternalServerError(
+                                                messages.getMessage(lang,
+                                                    MessageConsts.InternalServerError))));
                                   }
                                 });
                           } catch (Exception e) {
                             asyncResultHandler.handle(Future.succeededFuture(
-                                PutSushisettingsByIdResponse.withPlainInternalServerError(
+                                PutUsageDataProvidersByIdResponse.withPlainInternalServerError(
                                     messages.getMessage(lang,
                                         MessageConsts.InternalServerError))));
                           }
@@ -420,7 +420,7 @@ public class SushiSettingsAPI implements SushiSettingsResource {
           } catch (Exception e) {
             logger.debug(e.getLocalizedMessage());
             asyncResultHandler.handle(Future.succeededFuture(
-                PutSushisettingsByIdResponse.withPlainInternalServerError(
+                PutUsageDataProvidersByIdResponse.withPlainInternalServerError(
                     messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         }
@@ -428,7 +428,7 @@ public class SushiSettingsAPI implements SushiSettingsResource {
     } catch (Exception e) {
       logger.debug(e.getLocalizedMessage());
       asyncResultHandler.handle(Future.succeededFuture(
-          PutSushisettingsByIdResponse.withPlainInternalServerError(
+          PutUsageDataProvidersByIdResponse.withPlainInternalServerError(
               messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }

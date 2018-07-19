@@ -31,6 +31,7 @@ public class CounterReportIT {
 
   public static final String TENANT = "diku";
   public static final String APPLICATION_JSON = "application/json";
+  public static final String BASE_URI = "/counter-reports";
   private static Vertx vertx;
   private static Context vertxContext;
   private static int port;
@@ -103,7 +104,7 @@ public class CounterReportIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
-        .post("/counterreports")
+        .post(BASE_URI)
         .thenReturn()
         .as(CounterReport.class);
     assertThat(counterReport.getRelease()).isEqualTo("4");
@@ -115,7 +116,7 @@ public class CounterReportIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
-        .get("/counterreports" + "/" + counterReport.getId())
+        .get(BASE_URI + "/" + counterReport.getId())
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
@@ -141,7 +142,7 @@ public class CounterReportIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .request()
-        .put("/counterreports/" + counterReport.getId())
+        .put(BASE_URI + "/" + counterReport.getId())
         .then()
         .statusCode(204);
 
@@ -150,7 +151,7 @@ public class CounterReportIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
-        .get("/counterreports/" + counterReport.getId())
+        .get(BASE_URI + "/" + counterReport.getId())
         .thenReturn()
         .as(CounterReport.class);
     assertThat(changed.getId()).isEqualTo(counterReport.getId());
@@ -161,7 +162,7 @@ public class CounterReportIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .when()
-        .delete("/counterreports/" + counterReport.getId())
+        .delete(BASE_URI + "/" + counterReport.getId())
         .then()
         .statusCode(204);
 
@@ -170,7 +171,7 @@ public class CounterReportIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
-        .get("/counterreports/" + counterReport.getId())
+        .get(BASE_URI + "/" + counterReport.getId())
         .then()
         .statusCode(404);
   }
@@ -194,7 +195,7 @@ public class CounterReportIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
-        .post("/counterreports")
+        .post(BASE_URI)
         .then()
         .statusCode(422);
   }

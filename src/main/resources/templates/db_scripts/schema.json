@@ -16,7 +16,7 @@
       ]
     },
     {
-      "tableName": "sushi_settings",
+      "tableName": "usage_data_providers",
       "generateId": false,
       "fromModuleVersion": "1.0",
       "populateJsonWithId": true,

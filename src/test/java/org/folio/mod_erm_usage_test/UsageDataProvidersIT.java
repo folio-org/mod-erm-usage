@@ -17,7 +17,7 @@ import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
-import org.folio.rest.jaxrs.model.SushiSetting;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
@@ -27,10 +27,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
-public class SushiSettingsIT {
+public class UsageDataProvidersIT {
 
   public static final String TENANT = "diku";
   public static final String APPLICATION_JSON = "application/json";
+  public static final String BASE_URI = "/usage-data-providers";
   private static Vertx vertx;
   private static Context vertxContext;
   private static int port;
@@ -83,8 +84,8 @@ public class SushiSettingsIT {
   }
 
   @Test
-  public void checkThatWeCanAddGetPutAndDeleteSushiSettings() {
-    SushiSetting sushiSetting = given()
+  public void checkThatWeCanAddGetPutAndDeleteUsageDataProviders() {
+    UsageDataProvider usageDataProvider = given()
         .body("{\n"
             + "  \"id\": \"fc20602a-8ade-4b66-90d0-2853c99affa5\",\n"
             + "  \"label\": \"Nature Sushi\",\n"
@@ -107,23 +108,23 @@ public class SushiSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
-        .post("/sushisettings")
+        .post(BASE_URI)
         .thenReturn()
-        .as(SushiSetting.class);
-    assertThat(sushiSetting.getLabel()).isEqualTo("Nature Sushi");
-    assertThat(sushiSetting.getId()).isNotEmpty();
+        .as(UsageDataProvider.class);
+    assertThat(usageDataProvider.getLabel()).isEqualTo("Nature Sushi");
+    assertThat(usageDataProvider.getId()).isNotEmpty();
 
     given()
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
-        .get("/sushisettings" + "/" + sushiSetting.getId())
+        .get(BASE_URI + "/" + usageDataProvider.getId())
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
-        .body("id", equalTo(sushiSetting.getId()))
-        .body("label", equalTo(sushiSetting.getLabel()));
+        .body("id", equalTo(usageDataProvider.getId()))
+        .body("label", equalTo(usageDataProvider.getLabel()));
 
     given()
         .body("{\n"
@@ -148,19 +149,19 @@ public class SushiSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .request()
-        .put("/sushisettings/" + sushiSetting.getId())
+        .put(BASE_URI + "/" + usageDataProvider.getId())
         .then()
         .statusCode(204);
 
-    SushiSetting changed = given()
+    UsageDataProvider changed = given()
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
-        .get("/sushisettings/" + sushiSetting.getId())
+        .get(BASE_URI + "/" + usageDataProvider.getId())
         .thenReturn()
-        .as(SushiSetting.class);
-    assertThat(changed.getId()).isEqualTo(sushiSetting.getId());
+        .as(UsageDataProvider.class);
+    assertThat(changed.getId()).isEqualTo(usageDataProvider.getId());
     assertThat(changed.getLabel()).isEqualTo("Nature CHANGED");
     assertThat(changed.getRequestorMail()).isEqualTo("CHANGED@ub.uni-leipzig.de");
 
@@ -169,7 +170,7 @@ public class SushiSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .when()
-        .delete("/sushisettings/" + sushiSetting.getId())
+        .delete(BASE_URI + "/" + usageDataProvider.getId())
         .then()
         .statusCode(204);
 
@@ -178,13 +179,13 @@ public class SushiSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
-        .get("/sushisettings/" + sushiSetting.getId())
+        .get(BASE_URI + "/" + usageDataProvider.getId())
         .then()
         .statusCode(404);
   }
 
   @Test
-  public void checkThatInvalidSushiSettingsIsNotPosted() {
+  public void checkThatInvalidUsageDataProviderIsNotPosted() {
     given()
         .body("{\n"
             + "  \"id\": \"fc20602a-8ade-4b66-90d0-2853c99affa5\",\n"
@@ -207,7 +208,7 @@ public class SushiSettingsIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
-        .post("/sushisettings")
+        .post(BASE_URI)
         .then()
         .statusCode(422);
   }

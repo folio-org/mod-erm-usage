@@ -1,15 +1,15 @@
 #%RAML 0.8
-title: Sushi Settings
+title: Usage Data Providers
 version: v1
 baseUri: http://localhost/mod-erm-usage
 
 documentation:
   - title: mod-erm-usage API
-    content: This documents the API calls that can be made to query and manage Sushi settings
+    content: This documents the API calls that can be made to query and manage usage data providers
 
 schemas:
-  - sushiSettingsData.json: !include schemas/sushiSettingsData.json
-  - sushiSettingsDataCollection: !include ./schemas/sushiSettingsDataCollection.json
+  - udProvidersData.json: !include schemas/udProvidersData.json
+  - udProvidersDataCollection: !include ./schemas/udProvidersDataCollection.json
   - errors: !include ./raml-util/schemas/errors.schema
   - error.schema: !include ./raml-util/schemas/error.schema
   - parameters.schema: !include ./raml-util/schemas/parameters.schema
@@ -30,32 +30,32 @@ resourceTypes:
   - get-only: !include ./raml-util/rtypes/get-only.raml
   - post-empty-body: !include ./raml-util/rtypes/post-empty-body.raml
 
-/sushisettings:
-  displayName: Sushi Settings
+/usage-data-providers:
+  displayName: Usage Data Providers
   type:
     collection:
-      exampleCollection: !include ./examples/sushisettings_collection.sample
-      exampleItem: !include ./examples/sushisettings.sample
-      schemaCollection: sushiSettingsDataCollection
-      schemaItem: sushiSettingsData.json
+      exampleCollection: !include ./examples/udproviders_collection.sample
+      exampleItem: !include ./examples/udproviders.sample
+      schemaCollection: udProvidersDataCollection
+      schemaItem: udProvidersData.json
   get:
     is: [
       searchable: {description: "", example: "active=true sortBy username"},
       orderable: {fieldsList: "field A, field B"},
       pageable
     ]
-    description: Get all Sushi settings
+    description: Get all usage data providers
   post:
     is: [validate]
-    description: Post new Sushi settings
+    description: Post new usage data providers
   /{id}:
     type:
       collection-item:
-        exampleItem: !include ./examples/sushisettings.sample
-        schema: sushiSettingsData.json
+        exampleItem: !include ./examples/udproviders.sample
+        schema: udProvidersData.json
     get:
-      description: Get one Sushi setting identified by id
+      description: Get one usage data provider identified by id
     delete:
-      description: Delete Sushi setting identified by id
+      description: Delete an usage data provider identified by id
     put:
-      description: Put Sushi setting identified by id
+      description: Put an usage data provider identified by id

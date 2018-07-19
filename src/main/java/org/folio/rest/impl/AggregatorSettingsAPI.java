@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.UUID;
 import javax.ws.rs.core.Response;
 import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.AggregatorSettingsDataCollection;
 import org.folio.rest.jaxrs.resource.AggregatorSettingsResource;
@@ -56,7 +55,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
 
   @Override
   @Validate
-  public void getAggregatorsettings(String query, String orderBy, Order order, int offset,
+  public void getAggregatorSettings(String query, String orderBy, Order order, int offset,
       int limit, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     logger.debug("Getting aggregator settings");
@@ -81,12 +80,12 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                         aggregatorSettingsDataCollection
                             .setTotalRecords(reply.result().getResultInfo().getTotalRecords());
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetAggregatorsettingsResponse
+                            GetAggregatorSettingsResponse
                                 .withJsonOK(aggregatorSettingsDataCollection)
                         ));
                       } else {
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetAggregatorsettingsResponse.withPlainInternalServerError(
+                            GetAggregatorSettingsResponse.withPlainInternalServerError(
                                 reply.cause().getMessage()
                             )
                         ));
@@ -95,7 +94,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                       logger.debug(e.getLocalizedMessage());
 
                       asyncResultHandler.handle(Future.succeededFuture(
-                          GetAggregatorsettingsResponse.withPlainInternalServerError(
+                          GetAggregatorSettingsResponse.withPlainInternalServerError(
                               reply.cause().getMessage()
                           )
                       ));
@@ -104,7 +103,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
         } catch (IllegalStateException e) {
           logger.debug("IllegalStateException: " + e.getLocalizedMessage());
           asyncResultHandler
-              .handle(Future.succeededFuture(GetAggregatorsettingsResponse.withPlainBadRequest(
+              .handle(Future.succeededFuture(GetAggregatorSettingsResponse.withPlainBadRequest(
                   "CQL Illegal State Error for '" + query + "': " + e.getLocalizedMessage())));
         } catch (Exception e) {
           Throwable cause = e;
@@ -116,11 +115,11 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
           if (cause.getClass().getSimpleName().contains("CQLParseException")) {
             logger.debug("BAD CQL");
             asyncResultHandler
-                .handle(Future.succeededFuture(GetAggregatorsettingsResponse.withPlainBadRequest(
+                .handle(Future.succeededFuture(GetAggregatorSettingsResponse.withPlainBadRequest(
                     "CQL Parsing Error for '" + query + "': " + cause.getLocalizedMessage())));
           } else {
             asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                GetAggregatorsettingsResponse.withPlainInternalServerError(
+                GetAggregatorSettingsResponse.withPlainInternalServerError(
                     messages.getMessage(lang,
                         MessageConsts.InternalServerError))));
           }
@@ -132,11 +131,11 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
           .contains("CQLParseException")) {
         logger.debug("BAD CQL");
         asyncResultHandler
-            .handle(Future.succeededFuture(GetAggregatorsettingsResponse.withPlainBadRequest(
+            .handle(Future.succeededFuture(GetAggregatorSettingsResponse.withPlainBadRequest(
                 "CQL Parsing Error for '" + query + "': " + e.getLocalizedMessage())));
       } else {
         asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-            GetAggregatorsettingsResponse.withPlainInternalServerError(
+            GetAggregatorSettingsResponse.withPlainInternalServerError(
                 messages.getMessage(lang,
                     MessageConsts.InternalServerError))));
       }
@@ -145,7 +144,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
 
   @Override
   @Validate
-  public void postAggregatorsettings(String lang, AggregatorSetting entity,
+  public void postAggregatorSettings(String lang, AggregatorSetting entity,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) throws Exception {
     try {
@@ -174,7 +173,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                     logger.debug("Attempt to get aggregator settings failed: " +
                         getReply.cause().getMessage());
                     asyncResultHandler.handle(Future.succeededFuture(
-                        PostAggregatorsettingsResponse.withPlainInternalServerError(
+                        PostAggregatorSettingsResponse.withPlainInternalServerError(
                             getReply.cause().getMessage())));
                   } else {
                     List<AggregatorSetting> aggregatorList = (List<AggregatorSetting>) getReply
@@ -183,7 +182,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                     if (aggregatorList.size() > 0) {
                       logger.debug("Aggregator setting with this id already exists");
                       asyncResultHandler.handle(Future.succeededFuture(
-                          PostAggregatorsettingsResponse.withJsonUnprocessableEntity(
+                          PostAggregatorSettingsResponse.withJsonUnprocessableEntity(
                               ValidationHelper.createValidationErrorMessage(
                                   "'label'", entity.getLabel(),
                                   "Aggregator setting with this id already exists"))));
@@ -201,17 +200,17 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                                 stream.setData(aggregatorSetting);
                                 asyncResultHandler.handle(
                                     Future.succeededFuture(
-                                        PostAggregatorsettingsResponse
+                                        PostAggregatorSettingsResponse
                                             .withJsonCreated(
                                                 reply.result(), stream)));
                               } else {
                                 asyncResultHandler.handle(Future.succeededFuture(
-                                    PostAggregatorsettingsResponse.withPlainInternalServerError(
+                                    PostAggregatorSettingsResponse.withPlainInternalServerError(
                                         reply.cause().toString())));
                               }
                             } catch (Exception e) {
                               asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                                  PostAggregatorsettingsResponse
+                                  PostAggregatorSettingsResponse
                                       .withPlainInternalServerError(e.getMessage())));
                             }
                           });
@@ -221,25 +220,25 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
           } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             asyncResultHandler.handle(Future.succeededFuture(
-                PostAggregatorsettingsResponse.withPlainInternalServerError(
+                PostAggregatorSettingsResponse.withPlainInternalServerError(
                     messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         } catch (Exception e) {
           asyncResultHandler.handle(Future.succeededFuture(
-              PostAggregatorsettingsResponse.withPlainInternalServerError(
+              PostAggregatorSettingsResponse.withPlainInternalServerError(
                   messages.getMessage(lang, MessageConsts.InternalServerError))));
         }
       });
     } catch (Exception e) {
       asyncResultHandler.handle(Future.succeededFuture(
-          PostAggregatorsettingsResponse.withPlainInternalServerError(
+          PostAggregatorSettingsResponse.withPlainInternalServerError(
               messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
 
   @Override
   @Validate
-  public void getAggregatorsettingsById(String id, String lang, Map<String, String> okapiHeaders,
+  public void getAggregatorSettingsById(String id, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
@@ -258,7 +257,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                   true, false, getReply -> {
                     if (getReply.failed()) {
                       asyncResultHandler.handle(Future.succeededFuture(
-                          GetAggregatorsettingsByIdResponse.withPlainInternalServerError(
+                          GetAggregatorSettingsByIdResponse.withPlainInternalServerError(
                               messages.getMessage(lang, MessageConsts.InternalServerError))));
                     } else {
                       List<AggregatorSetting> aggregatorSettingList = (List<AggregatorSetting>) getReply
@@ -266,19 +265,19 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                           .getResults();
                       if (aggregatorSettingList.size() < 1) {
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetAggregatorsettingsByIdResponse
+                            GetAggregatorSettingsByIdResponse
                                 .withPlainNotFound("Aggregator setting" +
                                     messages.getMessage(lang,
                                         MessageConsts.ObjectDoesNotExist))));
                       } else if (aggregatorSettingList.size() > 1) {
                         logger.debug("Multiple aggregator settings found with the same id");
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetAggregatorsettingsByIdResponse.withPlainInternalServerError(
+                            GetAggregatorSettingsByIdResponse.withPlainInternalServerError(
                                 messages.getMessage(lang,
                                     MessageConsts.InternalServerError))));
                       } else {
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetAggregatorsettingsByIdResponse
+                            GetAggregatorSettingsByIdResponse
                                 .withJsonOK(aggregatorSettingList.get(0))));
                       }
                     }
@@ -286,20 +285,20 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
         } catch (Exception e) {
           logger.debug("Error occurred: " + e.getMessage());
           asyncResultHandler.handle(Future.succeededFuture(
-              GetAggregatorsettingsByIdResponse.withPlainInternalServerError(messages.getMessage(
+              GetAggregatorSettingsByIdResponse.withPlainInternalServerError(messages.getMessage(
                   lang, MessageConsts.InternalServerError))));
         }
       });
     } catch (Exception e) {
       asyncResultHandler.handle(Future.succeededFuture(
-          GetAggregatorsettingsByIdResponse.withPlainInternalServerError(messages.getMessage(
+          GetAggregatorSettingsByIdResponse.withPlainInternalServerError(messages.getMessage(
               lang, MessageConsts.InternalServerError))));
     }
   }
 
   @Override
   @Validate
-  public void deleteAggregatorsettingsById(String id, String lang, Map<String, String> okapiHeaders,
+  public void deleteAggregatorSettingsById(String id, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
@@ -311,17 +310,17 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                 if (deleteReply.failed()) {
                   logger.debug("Delete failed: " + deleteReply.cause().getMessage());
                   asyncResultHandler.handle(Future.succeededFuture(
-                      DeleteAggregatorsettingsByIdResponse.withPlainNotFound("Delete failed.")));
+                      DeleteAggregatorSettingsByIdResponse.withPlainNotFound("Delete failed.")));
                 } else {
                   asyncResultHandler.handle(Future.succeededFuture(
-                      DeleteAggregatorsettingsByIdResponse.withNoContent()));
+                      DeleteAggregatorSettingsByIdResponse.withNoContent()));
                 }
               });
         } catch (Exception e) {
           logger.debug("Delete failed: " + e.getMessage());
           asyncResultHandler.handle(
               Future.succeededFuture(
-                  DeleteAggregatorsettingsByIdResponse.withPlainInternalServerError(
+                  DeleteAggregatorSettingsByIdResponse.withPlainInternalServerError(
                       messages.getMessage(lang,
                           MessageConsts.InternalServerError))));
         }
@@ -329,7 +328,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
     } catch (Exception e) {
       asyncResultHandler.handle(
           Future.succeededFuture(
-              DeleteAggregatorsettingsByIdResponse.withPlainInternalServerError(
+              DeleteAggregatorSettingsByIdResponse.withPlainInternalServerError(
                   messages.getMessage(lang,
                       MessageConsts.InternalServerError))));
     }
@@ -337,14 +336,14 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
 
   @Override
   @Validate
-  public void putAggregatorsettingsById(String id, String lang, AggregatorSetting entity,
+  public void putAggregatorSettingsById(String id, String lang, AggregatorSetting entity,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
         if (!id.equals(entity.getId())) {
           asyncResultHandler.handle(Future.succeededFuture(
-              PutAggregatorsettingsByIdResponse
+              PutAggregatorSettingsByIdResponse
                   .withPlainBadRequest("You cannot change the value of the id field")));
         } else {
           String tenantId = TenantTool
@@ -362,7 +361,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                             "Error querying existing aggregator settings: " + getReply.cause()
                                 .getLocalizedMessage());
                         asyncResultHandler.handle(Future.succeededFuture(
-                            PutAggregatorsettingsByIdResponse.withPlainInternalServerError(
+                            PutAggregatorSettingsByIdResponse.withPlainInternalServerError(
                                 messages.getMessage(lang,
                                     MessageConsts.InternalServerError))));
                       } else {
@@ -373,7 +372,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                             .getId()
                             .equals(entity.getId()))) {
                           asyncResultHandler.handle(Future.succeededFuture(
-                              PutAggregatorsettingsByIdResponse.withPlainBadRequest(
+                              PutAggregatorSettingsByIdResponse.withPlainBadRequest(
                                   "Label " + entity.getLabel() + " is already in use")));
                         } else {
                           Date createdDate = null;
@@ -392,16 +391,16 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                                   try {
                                     if (putReply.failed()) {
                                       asyncResultHandler.handle(Future.succeededFuture(
-                                          PutAggregatorsettingsByIdResponse
+                                          PutAggregatorSettingsByIdResponse
                                               .withPlainInternalServerError(
                                                   putReply.cause().getMessage())));
                                     } else {
                                       asyncResultHandler.handle(Future.succeededFuture(
-                                          PutAggregatorsettingsByIdResponse.withNoContent()));
+                                          PutAggregatorSettingsByIdResponse.withNoContent()));
                                     }
                                   } catch (Exception e) {
                                     asyncResultHandler.handle(Future.succeededFuture(
-                                        PutAggregatorsettingsByIdResponse
+                                        PutAggregatorSettingsByIdResponse
                                             .withPlainInternalServerError(
                                                 messages.getMessage(lang,
                                                     MessageConsts.InternalServerError))));
@@ -409,7 +408,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                                 });
                           } catch (Exception e) {
                             asyncResultHandler.handle(Future.succeededFuture(
-                                PutAggregatorsettingsByIdResponse.withPlainInternalServerError(
+                                PutAggregatorSettingsByIdResponse.withPlainInternalServerError(
                                     messages.getMessage(lang,
                                         MessageConsts.InternalServerError))));
                           }
@@ -419,7 +418,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
           } catch (Exception e) {
             logger.debug(e.getLocalizedMessage());
             asyncResultHandler.handle(Future.succeededFuture(
-                PutAggregatorsettingsByIdResponse.withPlainInternalServerError(
+                PutAggregatorSettingsByIdResponse.withPlainInternalServerError(
                     messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         }
@@ -427,7 +426,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
     } catch (Exception e) {
       logger.debug(e.getLocalizedMessage());
       asyncResultHandler.handle(Future.succeededFuture(
-          PutAggregatorsettingsByIdResponse.withPlainInternalServerError(
+          PutAggregatorSettingsByIdResponse.withPlainInternalServerError(
               messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }

@@ -2,12 +2,12 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "sushiSettings": {
+    "usageDataProviders": {
       "type": "array",
-      "id": "sushiSettingsData",
+      "id": "udProvidersData",
       "items": {
         "type": "object",
-        "$ref": "sushiSettingsData.json"
+        "$ref": "udProvidersData.json"
       }
     },
     "totalRecords": {
@@ -15,7 +15,7 @@
     }
   },
   "required": [
-    "sushiSettings",
+    "usageDataProviders",
     "totalRecords"
   ]
 }

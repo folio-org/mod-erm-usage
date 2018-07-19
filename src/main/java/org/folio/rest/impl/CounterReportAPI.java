@@ -53,7 +53,7 @@ public class CounterReportAPI implements CounterReportsResource {
 
   @Override
   @Validate
-  public void getCounterreports(String query, String orderBy, Order order, int offset, int limit,
+  public void getCounterReports(String query, String orderBy, Order order, int offset, int limit,
       String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     logger.debug("Getting counter reports");
@@ -77,11 +77,11 @@ public class CounterReportAPI implements CounterReportsResource {
                     counterReportDataDataCollection
                         .setTotalRecords(reply.result().getResultInfo().getTotalRecords());
                     asyncResultHandler.handle(Future.succeededFuture(
-                        GetCounterreportsResponse.withJsonOK(counterReportDataDataCollection)
+                        GetCounterReportsResponse.withJsonOK(counterReportDataDataCollection)
                     ));
                   } else {
                     asyncResultHandler.handle(Future.succeededFuture(
-                        GetCounterreportsResponse.withPlainInternalServerError(
+                        GetCounterReportsResponse.withPlainInternalServerError(
                             reply.cause().getMessage()
                         )
                     ));
@@ -89,7 +89,7 @@ public class CounterReportAPI implements CounterReportsResource {
                 } catch (Exception e) {
                   logger.debug(e.getLocalizedMessage());
                   asyncResultHandler.handle(Future.succeededFuture(
-                      GetCounterreportsResponse.withPlainInternalServerError(
+                      GetCounterReportsResponse.withPlainInternalServerError(
                           reply.cause().getMessage()
                       )
                   ));
@@ -98,7 +98,7 @@ public class CounterReportAPI implements CounterReportsResource {
         } catch (IllegalStateException e) {
           logger.debug("IllegalStateException: " + e.getLocalizedMessage());
           asyncResultHandler
-              .handle(Future.succeededFuture(GetCounterreportsResponse.withPlainBadRequest(
+              .handle(Future.succeededFuture(GetCounterReportsResponse.withPlainBadRequest(
                   "CQL Illegal State Error for '" + "" + "': " + e.getLocalizedMessage())));
         } catch (Exception e) {
           Throwable cause = e;
@@ -110,11 +110,11 @@ public class CounterReportAPI implements CounterReportsResource {
           if (cause.getClass().getSimpleName().contains("CQLParseException")) {
             logger.debug("BAD CQL");
             asyncResultHandler
-                .handle(Future.succeededFuture(GetCounterreportsResponse.withPlainBadRequest(
+                .handle(Future.succeededFuture(GetCounterReportsResponse.withPlainBadRequest(
                     "CQL Parsing Error for '" + "" + "': " + cause.getLocalizedMessage())));
           } else {
             asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                GetCounterreportsResponse.withPlainInternalServerError(
+                GetCounterReportsResponse.withPlainInternalServerError(
                     messages.getMessage(lang,
                         MessageConsts.InternalServerError))));
           }
@@ -126,11 +126,11 @@ public class CounterReportAPI implements CounterReportsResource {
           .contains("CQLParseException")) {
         logger.debug("BAD CQL");
         asyncResultHandler
-            .handle(Future.succeededFuture(GetCounterreportsResponse.withPlainBadRequest(
+            .handle(Future.succeededFuture(GetCounterReportsResponse.withPlainBadRequest(
                 "CQL Parsing Error for '" + "" + "': " + e.getLocalizedMessage())));
       } else {
         asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-            GetCounterreportsResponse.withPlainInternalServerError(
+            GetCounterReportsResponse.withPlainInternalServerError(
                 messages.getMessage(lang,
                     MessageConsts.InternalServerError))));
       }
@@ -139,7 +139,7 @@ public class CounterReportAPI implements CounterReportsResource {
 
   @Override
   @Validate
-  public void postCounterreports(String lang, CounterReport entity,
+  public void postCounterReports(String lang, CounterReport entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     try {
@@ -161,7 +161,7 @@ public class CounterReportAPI implements CounterReportsResource {
                     logger.debug("Attempt to get counter report failed: " +
                         getReply.cause().getMessage());
                     asyncResultHandler.handle(Future.succeededFuture(
-                        PostCounterreportsResponse.withPlainInternalServerError(
+                        PostCounterReportsResponse.withPlainInternalServerError(
                             getReply.cause().getMessage())));
                   } else {
                     List<CounterReport> reportList = (List<CounterReport>) getReply.result()
@@ -169,7 +169,7 @@ public class CounterReportAPI implements CounterReportsResource {
                     if (reportList.size() > 0) {
                       logger.debug("Counter report with this id already exists");
                       asyncResultHandler.handle(Future.succeededFuture(
-                          PostCounterreportsResponse.withJsonUnprocessableEntity(
+                          PostCounterReportsResponse.withJsonUnprocessableEntity(
                               ValidationHelper.createValidationErrorMessage(
                                   "'id'", entity.getId(),
                                   "Counter report with this id already exists"))));
@@ -187,17 +187,17 @@ public class CounterReportAPI implements CounterReportsResource {
                                 stream.setData(report);
                                 asyncResultHandler.handle(
                                     Future.succeededFuture(
-                                        PostCounterreportsResponse
+                                        PostCounterReportsResponse
                                             .withJsonCreated(
                                                 reply.result(), stream)));
                               } else {
                                 asyncResultHandler.handle(Future.succeededFuture(
-                                    PostCounterreportsResponse.withPlainInternalServerError(
+                                    PostCounterReportsResponse.withPlainInternalServerError(
                                         reply.cause().toString())));
                               }
                             } catch (Exception e) {
                               asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                                  PostCounterreportsResponse
+                                  PostCounterReportsResponse
                                       .withPlainInternalServerError(e.getMessage())));
                             }
                           });
@@ -207,24 +207,25 @@ public class CounterReportAPI implements CounterReportsResource {
           } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             asyncResultHandler.handle(Future.succeededFuture(
-                PostCounterreportsResponse.withPlainInternalServerError(
+                PostCounterReportsResponse.withPlainInternalServerError(
                     messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         } catch (Exception e) {
           asyncResultHandler.handle(Future.succeededFuture(
-              PostCounterreportsResponse.withPlainInternalServerError(
+              PostCounterReportsResponse.withPlainInternalServerError(
                   messages.getMessage(lang, MessageConsts.InternalServerError))));
         }
       });
     } catch (Exception e) {
       asyncResultHandler.handle(Future.succeededFuture(
-          PostCounterreportsResponse.withPlainInternalServerError(
+          PostCounterReportsResponse.withPlainInternalServerError(
               messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
 
   @Override
-  public void getCounterreportsById(String id, String lang, Map<String, String> okapiHeaders,
+  @Validate
+  public void getCounterReportsById(String id, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
@@ -243,45 +244,45 @@ public class CounterReportAPI implements CounterReportsResource {
                   true, false, getReply -> {
                     if (getReply.failed()) {
                       asyncResultHandler.handle(Future.succeededFuture(
-                          GetCounterreportsByIdResponse.withPlainInternalServerError(
+                          GetCounterReportsByIdResponse.withPlainInternalServerError(
                               messages.getMessage(lang, MessageConsts.InternalServerError))));
                     } else {
                       List<CounterReport> reportList = (List<CounterReport>) getReply.result()
                           .getResults();
                       if (reportList.size() < 1) {
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetCounterreportsByIdResponse.withPlainNotFound("Counter report: " +
+                            GetCounterReportsByIdResponse.withPlainNotFound("Counter report: " +
                                 messages.getMessage(lang,
                                     MessageConsts.ObjectDoesNotExist))));
                       } else if (reportList.size() > 1) {
                         logger.debug("Multiple counter reports found with the same id");
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetCounterreportsByIdResponse.withPlainInternalServerError(
+                            GetCounterReportsByIdResponse.withPlainInternalServerError(
                                 messages.getMessage(lang,
                                     MessageConsts.InternalServerError))));
                       } else {
                         asyncResultHandler.handle(Future.succeededFuture(
-                            GetCounterreportsByIdResponse.withJsonOK(reportList.get(0))));
+                            GetCounterReportsByIdResponse.withJsonOK(reportList.get(0))));
                       }
                     }
                   });
         } catch (Exception e) {
           logger.info("Error occurred: " + e.getMessage());
           asyncResultHandler.handle(Future.succeededFuture(
-              GetCounterreportsByIdResponse.withPlainInternalServerError(messages.getMessage(
+              GetCounterReportsByIdResponse.withPlainInternalServerError(messages.getMessage(
                   lang, MessageConsts.InternalServerError))));
         }
       });
     } catch (Exception e) {
       asyncResultHandler.handle(Future.succeededFuture(
-          GetCounterreportsByIdResponse.withPlainInternalServerError(messages.getMessage(
+          GetCounterReportsByIdResponse.withPlainInternalServerError(messages.getMessage(
               lang, MessageConsts.InternalServerError))));
     }
   }
 
   @Override
   @Validate
-  public void deleteCounterreportsById(String id, String lang, Map<String, String> okapiHeaders,
+  public void deleteCounterReportsById(String id, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
@@ -298,17 +299,17 @@ public class CounterReportAPI implements CounterReportsResource {
                 if (deleteReply.failed()) {
                   logger.debug("Delete failed: " + deleteReply.cause().getMessage());
                   asyncResultHandler.handle(Future.succeededFuture(
-                      DeleteCounterreportsByIdResponse.withPlainNotFound("Not found")));
+                      DeleteCounterReportsByIdResponse.withPlainNotFound("Not found")));
                 } else {
                   asyncResultHandler.handle(Future.succeededFuture(
-                      DeleteCounterreportsByIdResponse.withNoContent()));
+                      DeleteCounterReportsByIdResponse.withNoContent()));
                 }
               });
         } catch (Exception e) {
           logger.debug("Delete failed: " + e.getMessage());
           asyncResultHandler.handle(
               Future.succeededFuture(
-                  DeleteCounterreportsByIdResponse.withPlainInternalServerError(
+                  DeleteCounterReportsByIdResponse.withPlainInternalServerError(
                       messages.getMessage(lang,
                           MessageConsts.InternalServerError))));
         }
@@ -316,7 +317,7 @@ public class CounterReportAPI implements CounterReportsResource {
     } catch (Exception e) {
       asyncResultHandler.handle(
           Future.succeededFuture(
-              DeleteCounterreportsByIdResponse.withPlainInternalServerError(
+              DeleteCounterReportsByIdResponse.withPlainInternalServerError(
                   messages.getMessage(lang,
                       MessageConsts.InternalServerError))));
     }
@@ -324,14 +325,14 @@ public class CounterReportAPI implements CounterReportsResource {
 
   @Override
   @Validate
-  public void putCounterreportsById(String id, String lang, CounterReport entity,
+  public void putCounterReportsById(String id, String lang, CounterReport entity,
       Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) throws Exception {
     try {
       vertxContext.runOnContext(v -> {
         if (!id.equals(entity.getId())) {
           asyncResultHandler.handle(Future.succeededFuture(
-              PutCounterreportsByIdResponse
+              PutCounterReportsByIdResponse
                   .withPlainBadRequest("You cannot change the value of the id field")));
         } else {
           String tenantId = TenantTool
@@ -344,7 +345,7 @@ public class CounterReportAPI implements CounterReportsResource {
                         logger.debug("Error querying existing counter report: " + getReply.cause()
                             .getLocalizedMessage());
                         asyncResultHandler.handle(Future.succeededFuture(
-                            PutCounterreportsByIdResponse.withPlainInternalServerError(
+                            PutCounterReportsByIdResponse.withPlainInternalServerError(
                                 messages.getMessage(lang,
                                     MessageConsts.InternalServerError))));
                       } else {
@@ -372,23 +373,23 @@ public class CounterReportAPI implements CounterReportsResource {
                                 try {
                                   if (putReply.failed()) {
                                     asyncResultHandler.handle(Future.succeededFuture(
-                                        PutCounterreportsByIdResponse
+                                        PutCounterReportsByIdResponse
                                             .withPlainInternalServerError(
                                                 putReply.cause().getMessage())));
                                   } else {
                                     asyncResultHandler.handle(Future.succeededFuture(
-                                        PutCounterreportsByIdResponse.withNoContent()));
+                                        PutCounterReportsByIdResponse.withNoContent()));
                                   }
                                 } catch (Exception e) {
                                   asyncResultHandler.handle(Future.succeededFuture(
-                                      PutCounterreportsByIdResponse.withPlainInternalServerError(
+                                      PutCounterReportsByIdResponse.withPlainInternalServerError(
                                           messages.getMessage(lang,
                                               MessageConsts.InternalServerError))));
                                 }
                               });
                         } catch (Exception e) {
                           asyncResultHandler.handle(Future.succeededFuture(
-                              PutCounterreportsByIdResponse.withPlainInternalServerError(
+                              PutCounterReportsByIdResponse.withPlainInternalServerError(
                                   messages.getMessage(lang,
                                       MessageConsts.InternalServerError))));
                         }
@@ -397,7 +398,7 @@ public class CounterReportAPI implements CounterReportsResource {
           } catch (Exception e) {
             logger.debug(e.getLocalizedMessage());
             asyncResultHandler.handle(Future.succeededFuture(
-                PutCounterreportsByIdResponse.withPlainInternalServerError(
+                PutCounterReportsByIdResponse.withPlainInternalServerError(
                     messages.getMessage(lang, MessageConsts.InternalServerError))));
           }
         }
@@ -405,9 +406,10 @@ public class CounterReportAPI implements CounterReportsResource {
     } catch (Exception e) {
       logger.debug(e.getLocalizedMessage());
       asyncResultHandler.handle(Future.succeededFuture(
-          PutCounterreportsByIdResponse.withPlainInternalServerError(
+          PutCounterReportsByIdResponse.withPlainInternalServerError(
               messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
+
 }
 
