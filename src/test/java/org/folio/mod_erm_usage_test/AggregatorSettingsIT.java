@@ -16,10 +16,12 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
+import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
@@ -184,10 +186,68 @@ public class AggregatorSettingsIT {
   }
 
   @Test
+  public void checkThatWeCanSearchByCQL() throws UnsupportedEncodingException {
+    AggregatorSetting aggSetting = given()
+        .body("{\n"
+            + "  \"id\": \"decd9dd8-ffdf-489a-bebd-38e0cb3c4948\",\n"
+            + "  \"label\": \"Test Aggregator\",\n"
+            + "\t\"username\": \"TestUser\",\n"
+            + "  \"password\": \"TestPassword\",\n"
+            + "  \"apiKey\": \"132Test456ApiKey\",\n"
+            + "  \"serviceUrl\": \"https://sushi.redi-bw.de\",\n"
+            + "  \"accountConfig\": {\n"
+            + "    \"configType\": \"Manual\",\n"
+            + "    \"configMail\": \"ab@counter-stats.com\",\n"
+            + "    \"displayContact\": [\n"
+            + "      \"Counter Aggregator Contact\",\n"
+            + "      \"Tel: +49 1234 - 9876\"\n"
+            + "    ]\n"
+            + "  }\n"
+            + "}")
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .request()
+        .post(BASE_URI)
+        .thenReturn()
+        .as(AggregatorSetting.class);
+    assertThat(aggSetting.getLabel()).isEqualTo("Test Aggregator");
+    assertThat(aggSetting.getId()).isNotEmpty();
+
+    String cqlLabel = "?query=(label=\"Test Aggr*\")";
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .when()
+        .get(BASE_URI + cqlLabel)
+        .then()
+        .contentType(ContentType.JSON)
+        .statusCode(200)
+        .body("aggregatorSettings.size()", equalTo(1))
+        .body("aggregatorSettings[0].id", equalTo(aggSetting.getId()))
+        .body("aggregatorSettings[0].label", equalTo(aggSetting.getLabel()));
+
+    String cqlConfigType = "?query=(accountConfig.configType=\"Manual\")";
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .when()
+        .get(BASE_URI + cqlConfigType)
+        .then()
+        .contentType(ContentType.JSON)
+        .statusCode(200)
+        .body("aggregatorSettings.size()", equalTo(1))
+        .body("aggregatorSettings[0].id", equalTo(aggSetting.getId()))
+        .body("aggregatorSettings[0].label", equalTo(aggSetting.getLabel()));
+  }
+
+  @Test
   public void checkThatInvalidAggregatorSettingsIsNotPosted() {
     given()
         .body("{\n"
-            + "  \"id\": \"debb8412-3cd9-4dc6-8390-5e71b017c24e\",\n"
+            + "  \"id\": \"fb7f9f78-6fff-4492-8312-455f2e043175\",\n"
             + "  \"username\": \"TestUser\",\n"
             + "  \"password\": \"TestPassword\",\n"
             + "  \"apiKey\": \"132Test456ApiKey\",\n"

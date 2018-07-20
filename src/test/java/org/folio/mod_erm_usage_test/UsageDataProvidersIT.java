@@ -15,8 +15,10 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.io.UnsupportedEncodingException;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
+import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -182,6 +184,53 @@ public class UsageDataProvidersIT {
         .get(BASE_URI + "/" + usageDataProvider.getId())
         .then()
         .statusCode(404);
+  }
+
+  @Test
+  public void checkThatWeCanSearchByCQL() throws UnsupportedEncodingException {
+    UsageDataProvider usageDataProvider = given()
+        .body("{\n"
+            + "  \"id\": \"b4a196da-434c-475f-9c65-63f9951d1909\",\n"
+            + "  \"label\": \"Test Usage Data Provider\",\n"
+            + "  \"vendorId\": \"uuid-123456789\",\n"
+            + "  \"platformId\": \"uuid-123456789\",\n"
+            + "  \"harvestingStatus\": \"active\",\n"
+            + "  \"apiType\": \"Sushi Lite\",\n"
+            + "  \"vendorServiceUrl\": \"http://example.com\",\n"
+            + " \"reportRelease\": 4,\n"
+            + "  \"requestedReports\": [\n"
+            + "    \"JR1\"\n"
+            + "  ],"
+            + "  \"customerId\": \"12345def\",\n"
+            + "  \"requestorId\": \"1234abcd\",\n"
+            + "  \"apiKey\": \"678iuoi\",\n"
+            + "  \"requestorName\": \"Karla Kolumna\",\n"
+            + "  \"requestorMail\": \"kolumna@ub.uni-leipzig.de\"\n"
+            + "}")
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .request()
+        .post(BASE_URI)
+        .thenReturn()
+        .as(UsageDataProvider.class);
+    assertThat(usageDataProvider.getLabel()).isEqualTo("Test Usage Data Provider");
+    assertThat(usageDataProvider.getId()).isNotEmpty();
+
+    String cqlLabel = "?query=(label=\"Test Usage*\")";
+    UdProvidersDataCollection queryResult = given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .when()
+        .get(BASE_URI + cqlLabel)
+        .thenReturn()
+        .as(UdProvidersDataCollection.class);
+    assertThat(queryResult.getUsageDataProviders().size()).isEqualTo(1);
+    assertThat(queryResult.getUsageDataProviders().get(0).getLabel())
+        .isEqualTo(usageDataProvider.getLabel());
+    assertThat(queryResult.getUsageDataProviders().get(0).getId())
+        .isEqualTo(usageDataProvider.getId());
   }
 
   @Test

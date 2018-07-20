@@ -180,12 +180,12 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                         .result()
                         .getResults();
                     if (aggregatorList.size() > 0) {
-                      logger.debug("Aggregator setting with this id already exists");
+                      logger.debug("Aggregator setting with this id/label already exists");
                       asyncResultHandler.handle(Future.succeededFuture(
                           PostAggregatorSettingsResponse.withJsonUnprocessableEntity(
                               ValidationHelper.createValidationErrorMessage(
                                   "'label'", entity.getLabel(),
-                                  "Aggregator setting with this id already exists"))));
+                                  "Aggregator setting with this id/label already exists"))));
                     } else {
                       PostgresClient postgresClient = PostgresClient
                           .getInstance(vertxContext.owner(), tenantId);
