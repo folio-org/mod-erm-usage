@@ -267,7 +267,7 @@
         </executions>
       </plugin>
 
-      <!--<plugin>
+      <plugin>
         <groupId>com.coderplus.maven.plugins</groupId>
         <artifactId>copy-rename-maven-plugin</artifactId>
         <version>1.0</version>
@@ -282,17 +282,20 @@
               <fileSets>
                 <fileSet>
                   <sourceFile>${project.build.directory}/ModuleDescriptor-template.json</sourceFile>
-                  <destinationFile>${project.build.directory}/ModuleDescriptor.json</destinationFile>
+                  <destinationFile>${project.build.directory}/ModuleDescriptor.json
+                  </destinationFile>
                 </fileSet>
                 <fileSet>
-                  <sourceFile>${project.build.directory}/DeploymentDescriptor-template.json</sourceFile>
-                  <destinationFile>${project.build.directory}/DeploymentDescriptor.json</destinationFile>
+                  <sourceFile>${project.build.directory}/DeploymentDescriptor-template.json
+                  </sourceFile>
+                  <destinationFile>${project.build.directory}/DeploymentDescriptor.json
+                  </destinationFile>
                 </fileSet>
               </fileSets>
             </configuration>
           </execution>
         </executions>
-      </plugin>-->
+      </plugin>
 
       <!-- Replace the baseUri and the protocols in the RAMLs that have been copied to
         apidocs directory so that they can be used via the local html api console. -->
