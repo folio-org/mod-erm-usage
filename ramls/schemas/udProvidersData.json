@@ -38,14 +38,14 @@
         "id"
       ]
     },
-    "apiType": {
+    "serviceType": {
       "type": "string",
       "enum": [
         "Sushi Lite",
         "Sushi"
       ]
     },
-    "vendorServiceUrl": {
+    "serviceUrl": {
       "type": "string"
     },
     "reportRelease": {

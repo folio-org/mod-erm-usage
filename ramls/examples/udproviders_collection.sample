@@ -27,8 +27,8 @@
       "vendorId": "uuid-123456789",
       "platformId": "uuid-123456789",
       "harvestingStatus": "active",
-      "apiType": "Sushi",
-    	"vendorServiceUrl": "http://myvendor.com",
+      "serviceType": "Sushi",
+      "serviceUrl": "http://myvendor.com",
       "reportRelease": 4,
       "requestedReports": [
         "JR1",
