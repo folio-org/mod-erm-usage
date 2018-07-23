@@ -31,9 +31,9 @@ import org.junit.runner.RunWith;
 @RunWith(VertxUnitRunner.class)
 public class UsageDataProvidersIT {
 
-  private static final String TENANT = "diku";
   public static final String APPLICATION_JSON = "application/json";
   public static final String BASE_URI = "/usage-data-providers";
+  private static final String TENANT = "diku";
   private static Vertx vertx;
   private static Context vertxContext;
   private static int port;
@@ -89,22 +89,22 @@ public class UsageDataProvidersIT {
   public void checkThatWeCanAddGetPutAndDeleteUsageDataProviders() {
     UsageDataProvider usageDataProvider = given()
         .body("{\n"
-            + "  \"id\": \"fc20602a-8ade-4b66-90d0-2853c99affa5\",\n"
-            + "  \"label\": \"Nature Sushi\",\n"
-            + "  \"vendorId\": \"uuid-123456789\",\n"
-            + "  \"platformId\": \"uuid-123456789\",\n"
-            + "  \"harvestingStatus\": \"active\",\n"
-            + "  \"apiType\": \"Sushi Lite\",\n"
-            + "  \"vendorServiceUrl\": \"http://example.com\",\n"
+            + " \"id\": \"fc20602a-8ade-4b66-90d0-2853c99affa5\",\n"
+            + " \"label\": \"Nature Sushi\",\n"
+            + " \"vendorId\": \"uuid-123456789\",\n"
+            + " \"platformId\": \"uuid-123456789\",\n"
+            + " \"harvestingStatus\": \"active\",\n"
+            + " \"serviceType\": \"Sushi Lite\",\n"
+            + " \"serviceUrl\": \"http://example.com\",\n"
             + " \"reportRelease\": 4,\n"
-            + "  \"requestedReports\": [\n"
-            + "    \"JR1\"\n"
-            + "  ],"
-            + "  \"customerId\": \"12345def\",\n"
-            + "  \"requestorId\": \"1234abcd\",\n"
-            + "  \"apiKey\": \"678iuoi\",\n"
-            + "  \"requestorName\": \"Karla Kolumna\",\n"
-            + "  \"requestorMail\": \"kolumna@ub.uni-leipzig.de\"\n"
+            + " \"requestedReports\": [\n"
+            + "  \"JR1\"\n"
+            + " ],"
+            + " \"customerId\": \"12345def\",\n"
+            + " \"requestorId\": \"1234abcd\",\n"
+            + " \"apiKey\": \"678iuoi\",\n"
+            + " \"requestorName\": \"Karla Kolumna\",\n"
+            + " \"requestorMail\": \"kolumna@ub.uni-leipzig.de\"\n"
             + "}")
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
@@ -130,22 +130,22 @@ public class UsageDataProvidersIT {
 
     given()
         .body("{\n"
-            + "  \"id\": \"fc20602a-8ade-4b66-90d0-2853c99affa5\",\n"
-            + "  \"label\": \"Nature CHANGED\",\n"
-            + "  \"vendorId\": \"uuid-123456789\",\n"
-            + "  \"platformId\": \"uuid-123456789\",\n"
-            + "  \"harvestingStatus\": \"active\",\n"
-            + "  \"apiType\": \"Sushi Lite\",\n"
-            + "  \"vendorServiceUrl\": \"http://example.com\",\n"
+            + " \"id\": \"fc20602a-8ade-4b66-90d0-2853c99affa5\",\n"
+            + " \"label\": \"Nature CHANGED\",\n"
+            + " \"vendorId\": \"uuid-123456789\",\n"
+            + " \"platformId\": \"uuid-123456789\",\n"
+            + " \"harvestingStatus\": \"active\",\n"
+            + " \"serviceType\": \"Sushi Lite\",\n"
+            + " \"serviceUrl\": \"http://example.com\",\n"
             + " \"reportRelease\": 4,\n"
-            + "  \"requestedReports\": [\n"
-            + "    \"JR1\"\n"
-            + "  ],"
-            + "  \"customerId\": \"12345def\",\n"
-            + "  \"requestorId\": \"1234abcd\",\n"
-            + "  \"apiKey\": \"678iuoi\",\n"
-            + "  \"requestorName\": \"Karla Kolumna\",\n"
-            + "  \"requestorMail\": \"CHANGED@ub.uni-leipzig.de\"\n"
+            + " \"requestedReports\": [\n"
+            + "  \"JR1\"\n"
+            + " ],"
+            + " \"customerId\": \"12345def\",\n"
+            + " \"requestorId\": \"1234abcd\",\n"
+            + " \"apiKey\": \"678iuoi\",\n"
+            + " \"requestorName\": \"Karla Kolumna\",\n"
+            + " \"requestorMail\": \"CHANGED@ub.uni-leipzig.de\"\n"
             + "}")
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
@@ -190,22 +190,22 @@ public class UsageDataProvidersIT {
   public void checkThatWeCanSearchByCQL() throws UnsupportedEncodingException {
     UsageDataProvider usageDataProvider = given()
         .body("{\n"
-            + "  \"id\": \"b4a196da-434c-475f-9c65-63f9951d1909\",\n"
-            + "  \"label\": \"Test Usage Data Provider\",\n"
-            + "  \"vendorId\": \"uuid-123456789\",\n"
-            + "  \"platformId\": \"uuid-123456789\",\n"
-            + "  \"harvestingStatus\": \"active\",\n"
-            + "  \"apiType\": \"Sushi Lite\",\n"
-            + "  \"vendorServiceUrl\": \"http://example.com\",\n"
+            + " \"id\": \"b4a196da-434c-475f-9c65-63f9951d1909\",\n"
+            + " \"label\": \"Test Usage Data Provider\",\n"
+            + " \"vendorId\": \"uuid-123456789\",\n"
+            + " \"platformId\": \"uuid-123456789\",\n"
+            + " \"harvestingStatus\": \"active\",\n"
+            + " \"serviceType\": \"Sushi Lite\",\n"
+            + " \"serviceUrl\": \"http://example.com\",\n"
             + " \"reportRelease\": 4,\n"
-            + "  \"requestedReports\": [\n"
-            + "    \"JR1\"\n"
-            + "  ],"
-            + "  \"customerId\": \"12345def\",\n"
-            + "  \"requestorId\": \"1234abcd\",\n"
-            + "  \"apiKey\": \"678iuoi\",\n"
-            + "  \"requestorName\": \"Karla Kolumna\",\n"
-            + "  \"requestorMail\": \"kolumna@ub.uni-leipzig.de\"\n"
+            + " \"requestedReports\": [\n"
+            + "  \"JR1\"\n"
+            + " ],"
+            + " \"customerId\": \"12345def\",\n"
+            + " \"requestorId\": \"1234abcd\",\n"
+            + " \"apiKey\": \"678iuoi\",\n"
+            + " \"requestorName\": \"Karla Kolumna\",\n"
+            + " \"requestorMail\": \"kolumna@ub.uni-leipzig.de\"\n"
             + "}")
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
@@ -237,21 +237,21 @@ public class UsageDataProvidersIT {
   public void checkThatInvalidUsageDataProviderIsNotPosted() {
     given()
         .body("{\n"
-            + "  \"id\": \"fc20602a-8ade-4b66-90d0-2853c99affa5\",\n"
-            + "  \"vendorId\": \"uuid-123456789\",\n"
-            + "  \"platformId\": \"uuid-123456789\",\n"
-            + "  \"harvestingStatus\": \"active\",\n"
-            + "  \"apiType\": \"Sushi Lite\",\n"
-            + "  \"vendorServiceUrl\": \"http://example.com\",\n"
+            + " \"id\": \"fc20602a-8ade-4b66-90d0-2853c99affa5\",\n"
+            + " \"vendorId\": \"uuid-123456789\",\n"
+            + " \"platformId\": \"uuid-123456789\",\n"
+            + " \"harvestingStatus\": \"active\",\n"
+            + " \"serviceType\": \"Sushi Lite\",\n"
+            + " \"serviceUrl\": \"http://example.com\",\n"
             + " \"reportRelease\": 4,\n"
-            + "  \"requestedReports\": [\n"
-            + "    \"JR1\"\n"
-            + "  ],"
-            + "  \"customerId\": \"12345def\",\n"
-            + "  \"requestorId\": \"1234abcd\",\n"
-            + "  \"apiKey\": \"678iuoi\",\n"
-            + "  \"requestorName\": \"Karla Kolumna\",\n"
-            + "  \"requestorMail\": \"kolumna@ub.uni-leipzig.de\"\n"
+            + " \"requestedReports\": [\n"
+            + "  \"JR1\"\n"
+            + " ],"
+            + " \"customerId\": \"12345def\",\n"
+            + " \"requestorId\": \"1234abcd\",\n"
+            + " \"apiKey\": \"678iuoi\",\n"
+            + " \"requestorName\": \"Karla Kolumna\",\n"
+            + " \"requestorMail\": \"kolumna@ub.uni-leipzig.de\"\n"
             + "}")
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
