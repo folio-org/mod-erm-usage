@@ -18,6 +18,12 @@
     "apiKey": {
       "type": "string"
     },
+    "serviceType": {
+      "type": "string",
+      "enum": [
+        "Nationaler Statistikserver"
+      ]
+    },
     "serviceUrl": {
       "type": "string"
     },

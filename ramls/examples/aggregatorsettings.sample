@@ -4,6 +4,7 @@
   "username": "user name",
   "password": "XXXuserpasswordXXX",
   "apiKey": "XXX123ABCXXX",
+  "serviceType": "My Service",
   "serviceUrl": "www.myaggregator.com",
   "accountConfig": {
     "configType": "Manual",
