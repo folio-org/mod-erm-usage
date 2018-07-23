@@ -34,9 +34,9 @@ import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 public class AggregatorSettingsAPI implements AggregatorSettingsResource {
 
-  public static final String ID_FIELD = "_id";
-  public static final String LABEL_FIELD = "'label'";
-  public static final String SCHEMA_PATH = "/schemas/aggregatorSettingsData.json";
+  private static final String ID_FIELD = "_id";
+  private static final String LABEL_FIELD = "'label'";
+  private static final String SCHEMA_PATH = "/schemas/aggregatorSettingsData.json";
   private static final String TABLE_NAME_AGGREGATOR_SETTINGS = "aggregator_settings";
 
   private final Messages messages = Messages.getInstance();
@@ -57,7 +57,7 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
   @Validate
   public void getAggregatorSettings(String query, String orderBy, Order order, int offset,
       int limit, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     logger.debug("Getting aggregator settings");
     try {
       CQLWrapper cql = getCQL(query, limit, offset);

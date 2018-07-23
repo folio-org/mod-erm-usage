@@ -9,7 +9,6 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.parsing.Parser;
 import io.vertx.core.Context;
 import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -17,11 +16,9 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.UnsupportedEncodingException;
-import java.util.List;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
-import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
@@ -33,9 +30,9 @@ import org.junit.runner.RunWith;
 @RunWith(VertxUnitRunner.class)
 public class AggregatorSettingsIT {
 
-  public static final String TENANT = "diku";
   public static final String APPLICATION_JSON = "application/json";
   public static final String BASE_URI = "/aggregator-settings";
+  private static final String TENANT = "diku";
   private static Vertx vertx;
   private static Context vertxContext;
   private static int port;

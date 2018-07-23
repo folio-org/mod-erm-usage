@@ -16,7 +16,6 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -31,9 +30,9 @@ import org.junit.runner.RunWith;
 @RunWith(VertxUnitRunner.class)
 public class CounterReportIT {
 
-  public static final String TENANT = "diku";
   public static final String APPLICATION_JSON = "application/json";
   public static final String BASE_URI = "/counter-reports";
+  private static final String TENANT = "diku";
   private static Vertx vertx;
   private static Context vertxContext;
   private static int port;

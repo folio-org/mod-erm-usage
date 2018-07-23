@@ -34,8 +34,7 @@ import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 public class CounterReportAPI implements CounterReportsResource {
 
-  public static final String ID_FIELD = "_id";
-  public static final String SCHEMA_PATH = "/schemas/counterReportData.json";
+  private static final String ID_FIELD = "_id";
   private static final String TABLE_NAME_COUNTER_REPORTS = "counter_reports";
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);

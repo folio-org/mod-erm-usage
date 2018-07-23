@@ -34,9 +34,9 @@ import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 public class UsageDataProvidersAPI implements UsageDataProvidersResource {
 
-  public static final String ID_FIELD = "_id";
-  public static final String LABEL_FIELD = "'label'";
-  public static final String SCHEMA_PATH = "/schemas/udProvidersData.json";
+  private static final String ID_FIELD = "_id";
+  private static final String LABEL_FIELD = "'label'";
+  private static final String SCHEMA_PATH = "/schemas/udProvidersData.json";
   private static final String TABLE_NAME_SUSHI_SETTINGS = "usage_data_providers";
 
   private final Messages messages = Messages.getInstance();
@@ -56,7 +56,7 @@ public class UsageDataProvidersAPI implements UsageDataProvidersResource {
   @Validate
   public void getUsageDataProviders(String query, String orderBy, Order order, int offset,
       int limit, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
+      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     logger.debug("Getting usage data providers");
     try {
       CQLWrapper cql = getCQL(query, limit, offset);

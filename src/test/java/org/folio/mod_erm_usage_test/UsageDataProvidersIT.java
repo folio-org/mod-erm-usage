@@ -31,7 +31,7 @@ import org.junit.runner.RunWith;
 @RunWith(VertxUnitRunner.class)
 public class UsageDataProvidersIT {
 
-  public static final String TENANT = "diku";
+  private static final String TENANT = "diku";
   public static final String APPLICATION_JSON = "application/json";
   public static final String BASE_URI = "/usage-data-providers";
   private static Vertx vertx;
