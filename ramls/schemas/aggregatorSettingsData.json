@@ -19,10 +19,7 @@
       "type": "string"
     },
     "serviceType": {
-      "type": "string",
-      "enum": [
-        "Nationaler Statistikserver"
-      ]
+      "type": "string"
     },
     "serviceUrl": {
       "type": "string"

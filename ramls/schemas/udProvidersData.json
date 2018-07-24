@@ -39,11 +39,7 @@
       ]
     },
     "serviceType": {
-      "type": "string",
-      "enum": [
-        "Sushi Lite",
-        "Sushi"
-      ]
+      "type": "string"
     },
     "serviceUrl": {
       "type": "string"
