@@ -43,8 +43,15 @@ public class Harvester {
     WebClient client = WebClient.create(vertx);
     client.getAbs(url).send(ar -> {
       if (ar.succeeded()) {
-        if (ar.result().statusCode() == 200) {
-          JsonArray jsonarray = ar.result().bodyAsJsonArray();
+        if (200 == ar.result().statusCode()) {
+          JsonArray jsonarray;
+          try {
+            jsonarray = ar.result().bodyAsJsonArray();
+          } catch (Exception e) {
+            future.fail("Did not recieve a JsonArray from " + url + ". " + e.getMessage());
+            client.close();
+            return;
+          }
           if (!jsonarray.isEmpty()) {
             List<String> tenants = jsonarray.stream()
                 .map(o -> ((JsonObject) o).getString("id"))
@@ -222,8 +229,7 @@ public class Harvester {
     return Future.succeededFuture();
   }
 
-  public Harvester() {
-  }
+  public Harvester() {}
 
   public Harvester(String okapiUrl, String tenantsPath, String moduleId) {
     this.okapiUrl = okapiUrl;
