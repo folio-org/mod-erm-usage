@@ -48,7 +48,7 @@ public class Harvester {
           try {
             jsonarray = ar.result().bodyAsJsonArray();
           } catch (Exception e) {
-            future.fail("Did not recieve a JsonArray from " + url + ". " + e.getMessage());
+            future.fail("Did not receive a JsonArray from " + url + ". " + e.getMessage());
             client.close();
             return;
           }
@@ -84,7 +84,7 @@ public class Harvester {
           hasUsageModule = true;
           future.complete();
         } else {
-          future.fail(logprefix + "recieved status code " + ar.result().statusCode() + " - "
+          future.fail(logprefix + "received status code " + ar.result().statusCode() + " - "
               + ar.result().statusMessage());
         }
         LOG.info(logprefix + "module enabled: " + hasUsageModule);
@@ -238,11 +238,15 @@ public class Harvester {
   }
 
   public void run() {
-    getTenants(okapiUrl + tenantsPath).compose(
-        tenants -> tenants.forEach(t -> hasUsageModule(t).compose(f -> getProviders(t).compose(
-            providers -> providers.getUsageDataProviders().forEach(p -> fetchReports(t, p)),
-            Future.future()))),
-        Future.future());
+    getTenants(
+        okapiUrl + tenantsPath)
+            .compose(
+                tenants -> tenants
+                    .forEach(t -> hasUsageModule(t).compose(f -> getProviders(t).compose(
+                        providers -> providers.getUsageDataProviders()
+                            .forEach(p -> fetchReports(t, p)),
+                        Future.future().setHandler(ar -> LOG.error(ar.cause().getMessage()))))),
+                Future.future().setHandler(ar -> LOG.error(ar.cause().getMessage())));
   }
 
   public static void main(String[] args) {
