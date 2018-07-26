@@ -72,16 +72,22 @@ public class Harvester {
     return future;
   }
 
-  private Future<Void> hasUsageModule(String tenantId) {
+  public Future<Void> hasUsageModule(String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     Future<Void> future = Future.future();
     WebClient client = WebClient.create(vertx);
-    client.getAbs(okapiUrl + tenantsPath + "/" + tenantId + "/modules/" + moduleId).send(ar -> {
+    String url = okapiUrl + tenantsPath + "/" + tenantId + "/modules/" + moduleId;
+    client.getAbs(url).send(ar -> {
       if (ar.succeeded()) {
         Boolean hasUsageModule = false;
-        if (ar.result().statusCode() == 200
-            && ar.result().bodyAsJsonObject().getString("id").equals(moduleId)) {
-          hasUsageModule = true;
+        if (ar.result().statusCode() == 200) {
+          try {
+            hasUsageModule = ar.result().bodyAsJsonObject().getString("id").equals(moduleId);
+          } catch (Exception e) {
+            future.fail("Did not receive a JsonObject from " + url + ". " + e.getMessage());
+            client.close();
+            return;
+          }
           future.complete();
         } else {
           future.fail(logprefix + "received status code " + ar.result().statusCode() + " - "

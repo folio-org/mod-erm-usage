@@ -26,8 +26,7 @@ public class HarvesterTest {
   @Test
   public void getTenantsBodyValid(TestContext context) {
     final String path = "/getTenantsBodyValid";
-    stubFor(get(urlEqualTo(path))
-        .willReturn(aResponse().withBody("[ {\"id\": \"diku\"}, {\"id\": \"supermock\"}]")));
+    stubFor(get(urlEqualTo(path)).willReturn(aResponse().withBodyFile("TenantsResponse200.json")));
 
     Async async = context.async();
     new Harvester().getTenants(wireMockRule.url(path)).setHandler(ar -> {
@@ -46,6 +45,7 @@ public class HarvesterTest {
     Async async = context.async();
     new Harvester().getTenants(wireMockRule.url(path)).setHandler(ar -> {
       context.assertTrue(ar.failed());
+      context.assertTrue(ar.cause().getMessage().contains("Did not receive a JsonArray"));
       async.complete();
     });
   }
@@ -58,6 +58,7 @@ public class HarvesterTest {
     Async async = context.async();
     new Harvester().getTenants(wireMockRule.url(path)).setHandler(ar -> {
       context.assertTrue(ar.failed());
+      context.assertTrue(ar.cause().getMessage().equals("No tenants found."));
       async.complete();
     });
   }
@@ -70,6 +71,8 @@ public class HarvesterTest {
     Async async = context.async();
     new Harvester().getTenants(wireMockRule.url(path)).setHandler(ar -> {
       context.assertTrue(ar.failed());
+      context.assertTrue(ar.cause().getMessage().contains("Received status code"));
+      context.assertTrue(ar.cause().getMessage().contains("404"));
       async.complete();
     });
   }
@@ -79,22 +82,79 @@ public class HarvesterTest {
     final String path = "/getTenantsNoService";
     int port = wireMockRule.port();
     wireMockRule.stop();
-    
+
     Async async = context.async();
     new Harvester().getTenants("http://localhost:" + port + path).setHandler(ar -> {
       context.assertTrue(ar.failed());
       async.complete();
     });
   }
-  
+
   @Test
   public void getTenantsWithFault(TestContext context) {
     final String path = "/getTenantsWithFault";
-    stubFor(get(urlEqualTo(path))
-        .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
-    
+    stubFor(
+        get(urlEqualTo(path)).willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+
     Async async = context.async();
     new Harvester().getTenants(wireMockRule.url(path)).setHandler(ar -> {
+      context.assertTrue(ar.failed());
+      async.complete();
+    });
+  }
+
+  @Test
+  public void hasUsageModuleYes(TestContext context) {
+    final String path = "/_/proxy/tenants/diku/modules/mod-erm-usage-0.0.1";
+    stubFor(get(urlEqualTo(path))
+        .willReturn(aResponse().withBody("{ \"id\" : \"mod-erm-usage-0.0.1\" }")));
+
+    Async async = context.async();
+    Harvester h = new Harvester(wireMockRule.url(""), "_/proxy/tenants", "mod-erm-usage-0.0.1");
+    h.hasUsageModule("diku").setHandler(ar -> {
+      context.assertTrue(ar.succeeded(), "Future failed.");
+      async.complete();
+    });
+  }
+
+  @Test
+  public void hasUsageModuleNo(TestContext context) {
+    final String path = "/_/proxy/tenants/diku/modules/mod-erm-usage-0.0.1";
+    stubFor(get(urlEqualTo(path))
+        .willReturn(aResponse().withBody("mod-erm-usage-0.0.1")));
+
+    Async async = context.async();
+    Harvester h = new Harvester(wireMockRule.url(""), "_/proxy/tenants", "mod-erm-usage-0.0.1");
+    h.hasUsageModule("diku").setHandler(ar -> {
+      context.assertTrue(ar.failed());
+      context.assertTrue(ar.cause().getMessage().contains("JsonObject"));
+      async.complete();
+    });
+  }
+  
+  @Test
+  public void hasUsageModuleResponseInvalid(TestContext context) {
+    final String path = "/_/proxy/tenants/diku/modules/mod-erm-usage-0.0.1";
+    stubFor(get(urlEqualTo(path))
+        .willReturn(aResponse().withStatus(404)));
+
+    Async async = context.async();
+    Harvester h = new Harvester(wireMockRule.url(""), "_/proxy/tenants", "mod-erm-usage-0.0.1");
+    h.hasUsageModule("diku").setHandler(ar -> {
+      context.assertTrue(ar.failed());
+      context.assertTrue(ar.cause().getMessage().contains("status code 404"));
+      async.complete();
+    });
+  }
+  
+  @Test
+  public void hasUsageModuleNoService(TestContext context) {
+    int port = wireMockRule.port();
+    wireMockRule.stop();
+
+    Async async = context.async();
+    Harvester h = new Harvester("http://localhost:" + port + "/", "_/proxy/tenants", "mod-erm-usage-0.0.1");
+    h.hasUsageModule("diku").setHandler(ar -> {
       context.assertTrue(ar.failed());
       async.complete();
     });
