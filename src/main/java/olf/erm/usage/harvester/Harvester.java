@@ -25,9 +25,9 @@ import olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 public class Harvester {
 
   private static final Logger LOG = Logger.getLogger(Harvester.class);
-  private static final String OKAPI_URL = "http://192.168.56.103:9130";
-  private static final String TENANTS_PATH = "/_/proxy/tenants";
-  private static final String MODULE_ID = "mod-erm-usage-0.0.1";
+  private String okapiUrl = "http://192.168.56.103:9130";
+  private String tenantsPath = "/_/proxy/tenants";
+  private String moduleId = "mod-erm-usage-0.0.1";
 
   private Vertx vertx = Vertx.vertx();
 
@@ -38,10 +38,10 @@ public class Harvester {
     return okapiHeaders;
   }
 
-  private Future<List<String>> getTenants() {
+  public Future<List<String>> getTenants(String url) {
     Future<List<String>> future = Future.future();
     WebClient client = WebClient.create(vertx);
-    client.getAbs(OKAPI_URL + TENANTS_PATH).send(ar -> {
+    client.getAbs(url).send(ar -> {
       if (ar.succeeded()) {
         if (ar.result().statusCode() == 200) {
           JsonArray jsonarray = ar.result().bodyAsJsonArray();
@@ -55,8 +55,7 @@ public class Harvester {
             future.fail("No tenants found.");
           }
         } else {
-          future.fail("Received status code " + ar.result().statusCode() + " from " + OKAPI_URL
-              + TENANTS_PATH);
+          future.fail("Received status code " + ar.result().statusCode() + " from " + url);
         }
       } else {
         future.fail(ar.cause());
@@ -70,11 +69,11 @@ public class Harvester {
     final String logprefix = "Tenant: " + tenantId + ", ";
     Future<Void> future = Future.future();
     WebClient client = WebClient.create(vertx);
-    client.getAbs(OKAPI_URL + TENANTS_PATH + "/" + tenantId + "/modules/" + MODULE_ID).send(ar -> {
+    client.getAbs(okapiUrl + tenantsPath + "/" + tenantId + "/modules/" + moduleId).send(ar -> {
       if (ar.succeeded()) {
         Boolean hasUsageModule = false;
         if (ar.result().statusCode() == 200
-            && ar.result().bodyAsJsonObject().getString("id").equals(MODULE_ID)) {
+            && ar.result().bodyAsJsonObject().getString("id").equals(moduleId)) {
           hasUsageModule = true;
           future.complete();
         } else {
@@ -224,11 +223,16 @@ public class Harvester {
   }
 
   public Harvester() {
-    // TODO Auto-generated constructor stub
+  }
+
+  public Harvester(String okapiUrl, String tenantsPath, String moduleId) {
+    this.okapiUrl = okapiUrl;
+    this.tenantsPath = tenantsPath;
+    this.moduleId = moduleId;
   }
 
   public void run() {
-    getTenants().compose(
+    getTenants(okapiUrl + tenantsPath).compose(
         tenants -> tenants.forEach(t -> hasUsageModule(t).compose(f -> getProviders(t).compose(
             providers -> providers.getUsageDataProviders().forEach(p -> fetchReports(t, p)),
             Future.future()))),
