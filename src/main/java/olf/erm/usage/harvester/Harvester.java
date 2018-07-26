@@ -46,7 +46,8 @@ public class Harvester {
         if (ar.result().statusCode() == 200) {
           JsonArray jsonarray = ar.result().bodyAsJsonArray();
           if (!jsonarray.isEmpty()) {
-            List<String> tenants = jsonarray.stream().map(o -> ((JsonObject) o).getString("id"))
+            List<String> tenants = jsonarray.stream()
+                .map(o -> ((JsonObject) o).getString("id"))
                 .collect(Collectors.toList());
             LOG.info("Found tenants: " + tenants);
             future.complete(tenants);
@@ -178,12 +179,9 @@ public class Harvester {
     aggrFuture.compose(as -> {
       ServiceEndpoint sep = ServiceEndpoint.create(provider, as);
       if (sep != null) {
-        provider.getRequestedReports().forEach(r -> {
-          fetchSingleReport(tenantId, sep.buildURL(r, "2018-03-01", "2018-03-31"))
-              .compose(report -> {
-                return postReport(tenantId, report);
-              });
-        });
+        provider.getRequestedReports()
+            .forEach(r -> fetchSingleReport(tenantId, sep.buildURL(r, "2018-03-01", "2018-03-31"))
+                .compose(report -> postReport(tenantId, report)));
       }
       return Future.succeededFuture();
     });
@@ -230,17 +228,11 @@ public class Harvester {
   }
 
   public void run() {
-    getTenants().compose(tenants -> {
-      tenants.forEach(t -> {
-        hasUsageModule(t).compose(f -> {
-          return getProviders(t).compose(providers -> {
-            providers.getUsageDataProviders().forEach(p -> {
-              fetchReports(t, p);
-            });
-          }, Future.future().setHandler(ar -> LOG.error(ar.cause())));
-        });
-      });
-    }, Future.future().setHandler(ar -> LOG.error(ar.cause())));
+    getTenants().compose(
+        tenants -> tenants.forEach(t -> hasUsageModule(t).compose(f -> getProviders(t).compose(
+            providers -> providers.getUsageDataProviders().forEach(p -> fetchReports(t, p)),
+            Future.future()))),
+        Future.future());
   }
 
   public static void main(String[] args) {
