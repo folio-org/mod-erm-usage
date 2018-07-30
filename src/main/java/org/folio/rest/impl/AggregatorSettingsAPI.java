@@ -310,7 +310,8 @@ public class AggregatorSettingsAPI implements AggregatorSettingsResource {
                 if (deleteReply.failed()) {
                   logger.debug("Delete failed: " + deleteReply.cause().getMessage());
                   asyncResultHandler.handle(Future.succeededFuture(
-                      DeleteAggregatorSettingsByIdResponse.withPlainNotFound("Delete failed.")));
+                      DeleteAggregatorSettingsByIdResponse.withPlainBadRequest(
+                          "Delete failed. Maybe aggregator setting is referenced by usage data provider?")));
                 } else {
                   asyncResultHandler.handle(Future.succeededFuture(
                       DeleteAggregatorSettingsByIdResponse.withNoContent()));
