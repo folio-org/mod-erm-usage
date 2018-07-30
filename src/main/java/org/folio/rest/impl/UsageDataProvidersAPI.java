@@ -5,6 +5,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.util.Arrays;
@@ -12,6 +13,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import javax.ws.rs.core.Response;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
@@ -23,6 +25,8 @@ import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
+import org.folio.rest.tools.client.HttpClientFactory;
+import org.folio.rest.tools.client.interfaces.HttpClientInterface;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.OutStream;
@@ -182,32 +186,52 @@ public class UsageDataProvidersAPI implements UsageDataProvidersResource {
                                   "'label'", entity.getLabel(),
                                   "Usage data provider with this label/id already exists"))));
                     } else {
-                      PostgresClient postgresClient = PostgresClient
-                          .getInstance(vertxContext.owner(), tenantId);
-                      postgresClient
-                          .save(TABLE_NAME_SUSHI_SETTINGS, entity.getId(), entity, reply -> {
-                            try {
-                              if (reply.succeeded()) {
-                                logger.debug("save successful");
-                                final UsageDataProvider usageDataProvider = entity;
-                                usageDataProvider.setId(entity.getId());
-                                OutStream stream = new OutStream();
-                                stream.setData(usageDataProvider);
-                                asyncResultHandler.handle(
-                                    Future.succeededFuture(
-                                        PostUsageDataProvidersResponse
-                                            .withJsonCreated(
-                                                reply.result(), stream)));
-                              } else {
-                                asyncResultHandler.handle(Future.succeededFuture(
-                                    PostUsageDataProvidersResponse.withPlainInternalServerError(
-                                        reply.cause().toString())));
-                              }
-                            } catch (Exception e) {
-                              asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                                  PostUsageDataProvidersResponse
-                                      .withPlainInternalServerError(e.getMessage())));
-                            }
+                      CompletableFuture<org.folio.rest.tools.client.Response> fetchVendor = fetchVendor(
+                          entity, okapiHeaders);
+
+                      fetchVendor.thenAccept(response -> {
+                        if (org.folio.rest.tools.client.Response
+                            .isSuccess(response.getCode())) {
+                          JsonObject responseJson = response.getBody();
+                          String vendorName = responseJson.getString("name");
+                          entity.setVendorName(vendorName);
+
+                          PostgresClient postgresClient = PostgresClient
+                              .getInstance(vertxContext.owner(), tenantId);
+                          postgresClient
+                              .save(TABLE_NAME_SUSHI_SETTINGS, entity.getId(), entity, reply -> {
+                                try {
+                                  if (reply.succeeded()) {
+                                    logger.debug("save successful");
+                                    final UsageDataProvider udp = entity;
+                                    udp.setId(entity.getId());
+                                    OutStream stream = new OutStream();
+                                    stream.setData(udp);
+                                    asyncResultHandler.handle(
+                                        Future.succeededFuture(
+                                            PostUsageDataProvidersResponse
+                                                .withJsonCreated(
+                                                    reply.result(), stream)));
+                                  } else {
+                                    asyncResultHandler.handle(Future.succeededFuture(
+                                        PostUsageDataProvidersResponse.withPlainInternalServerError(
+                                            reply.cause().toString())));
+                                  }
+                                } catch (Exception e) {
+                                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
+                                      PostUsageDataProvidersResponse
+                                          .withPlainInternalServerError(e.getMessage())));
+                                }
+                              });
+                        } else {
+                          asyncResultHandler.handle(Future.succeededFuture(
+                              PostUsageDataProvidersResponse.withPlainBadRequest(
+                                  "Cannot find vendor with id: " + entity.getVendorId())));
+                        }
+                      })
+                          .exceptionally(throwable -> {
+                            logger.info(throwable.getMessage());
+                            return null;
                           });
                     }
                   }
@@ -229,6 +253,27 @@ public class UsageDataProvidersAPI implements UsageDataProvidersResource {
           PostUsageDataProvidersResponse.withPlainInternalServerError(
               messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
+  }
+
+  private CompletableFuture<org.folio.rest.tools.client.Response> fetchVendor(
+      UsageDataProvider entity,
+      Map<String, String> okapiHeaders) {
+    if (entity.getVendorId() != null) {
+      HttpClientInterface httpClient = HttpClientFactory
+          .getHttpClient(getOkapiUrl(okapiHeaders), getOkapiTenant(okapiHeaders));
+      httpClient.setDefaultHeaders(okapiHeaders);
+      try {
+        String vendorId = entity.getVendorId();
+        String vendorUrl = "/vendor/" + vendorId;
+        CompletableFuture<org.folio.rest.tools.client.Response> response = httpClient
+            .request(vendorUrl);
+        return response;
+      } catch (Exception e) {
+        throw new RuntimeException(
+            "Cannot get vendor for id: " + entity.getVendorId() + ": " + e.getMessage());
+      }
+    }
+    return null;
   }
 
   @Override
@@ -387,27 +432,45 @@ public class UsageDataProvidersAPI implements UsageDataProvidersResource {
                           entity.setUpdatedDate(now);
                           entity.setCreatedDate(createdDate);
                           try {
-                            PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
-                                TABLE_NAME_SUSHI_SETTINGS, entity, new Criterion(idCrit), true,
-                                putReply -> {
-                                  try {
-                                    if (putReply.failed()) {
-                                      asyncResultHandler.handle(Future.succeededFuture(
-                                          PutUsageDataProvidersByIdResponse
-                                              .withPlainInternalServerError(
-                                                  putReply.cause().getMessage())));
-                                    } else {
-                                      asyncResultHandler.handle(Future.succeededFuture(
-                                          PutUsageDataProvidersByIdResponse.withNoContent()));
-                                    }
-                                  } catch (Exception e) {
-                                    asyncResultHandler.handle(Future.succeededFuture(
-                                        PutUsageDataProvidersByIdResponse
-                                            .withPlainInternalServerError(
-                                                messages.getMessage(lang,
-                                                    MessageConsts.InternalServerError))));
-                                  }
-                                });
+                            CompletableFuture<org.folio.rest.tools.client.Response> fetchVendor = fetchVendor(
+                                entity, okapiHeaders);
+                            fetchVendor.thenAccept(response -> {
+                              if (!org.folio.rest.tools.client.Response
+                                  .isSuccess(response.getCode())) {
+                                asyncResultHandler.handle(Future.succeededFuture(
+                                    PostUsageDataProvidersResponse.withPlainBadRequest(
+                                        "Cannot find vendor with id: " + entity.getVendorId() + ". " + response.getError().toString())));
+                              } else {
+                                JsonObject responseJson = response.getBody();
+                                String vendorName = responseJson.getString("name");
+                                entity.setVendorName(vendorName);
+
+                                PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
+                                    TABLE_NAME_SUSHI_SETTINGS, entity, new Criterion(idCrit), true,
+                                    putReply -> {
+                                      try {
+                                        if (putReply.failed()) {
+                                          asyncResultHandler.handle(Future.succeededFuture(
+                                              PutUsageDataProvidersByIdResponse
+                                                  .withPlainInternalServerError(
+                                                      putReply.cause().getMessage())));
+                                        } else {
+                                          asyncResultHandler.handle(Future.succeededFuture(
+                                              PutUsageDataProvidersByIdResponse.withNoContent()));
+                                        }
+                                      } catch (Exception e) {
+                                        asyncResultHandler.handle(Future.succeededFuture(
+                                            PutUsageDataProvidersByIdResponse
+                                                .withPlainInternalServerError(
+                                                    messages.getMessage(lang,
+                                                        MessageConsts.InternalServerError))));
+                                      }
+                                    });
+                              }
+                            }).exceptionally(throwable -> {
+                              logger.info(throwable.getMessage());
+                              return null;
+                            });
                           } catch (Exception e) {
                             asyncResultHandler.handle(Future.succeededFuture(
                                 PutUsageDataProvidersByIdResponse.withPlainInternalServerError(
@@ -432,4 +495,21 @@ public class UsageDataProvidersAPI implements UsageDataProvidersResource {
               messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
+
+  private String getOkapiUrl(Map<String, String> headers) {
+    return "http://localhost:9130";
+
+    /*if (headers.containsKey("x-okapi-url")) {
+      return headers.get("x-okapi-url");
+    }
+    return "";*/
+  }
+
+  private String getOkapiTenant(Map<String, String> headers) {
+    if (headers.containsKey("x-okapi-tenant")) {
+      return headers.get("x-okapi-tenant");
+    }
+    return "";
+  }
+
 }

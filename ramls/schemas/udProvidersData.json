@@ -12,6 +12,9 @@
     "vendorId": {
       "type": "string"
     },
+    "vendorName": {
+      "type": "string"
+    },
     "platformId": {
       "type": "string"
     },
