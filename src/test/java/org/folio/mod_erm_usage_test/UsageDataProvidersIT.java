@@ -119,6 +119,7 @@ public class UsageDataProvidersIT {
         .thenReturn()
         .as(UsageDataProvider.class);
     assertThat(usageDataProvider.getLabel()).isEqualTo("Nature Sushi");
+    assertThat(usageDataProvider.getVendorName()).isEqualTo("Test Vendor");
     assertThat(usageDataProvider.getId()).isNotEmpty();
 
     given()
