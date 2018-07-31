@@ -6,12 +6,18 @@ import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import java.io.IOException;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.google.common.base.Charsets;
+import com.google.common.io.Resources;
+import com.google.gson.JsonSyntaxException;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -159,7 +165,7 @@ public class HarvesterTest {
   }
 
   @Test
-  public void getProviders(TestContext context) {
+  public void getProvidersBodyValid(TestContext context) {
     final String path = "/usage-data-providers";
     stubFor(get(urlPathMatching(path))
         .willReturn(aResponse().withBodyFile("usage-data-providers.json")));
@@ -168,6 +174,145 @@ public class HarvesterTest {
     harvester.getProviders(wireMockRule.url(path), tenantId).setHandler(ar -> {
       context.assertTrue(ar.succeeded());
       context.assertEquals(3, ar.result().getTotalRecords());
+      async.complete();
+    });
+  }
+
+  @Test
+  public void getProvidersBodyInvalid(TestContext context) {
+    final String path = "/usage-data-providers";
+    stubFor(get(urlPathMatching(path)).willReturn(aResponse().withBody("")));
+
+    Async async = context.async();
+    harvester.getProviders(wireMockRule.url(path), tenantId).setHandler(ar -> {
+      context.assertTrue(ar.failed());
+      context.assertTrue(ar.cause().getMessage().contains("Error decoding"));
+      async.complete();
+    });
+  }
+
+  @Test
+  public void getProvidersResponseInvalid(TestContext context) {
+    final String path = "/usage-data-providers";
+    stubFor(get(urlPathMatching(path)).willReturn(aResponse().withStatus(404)));
+
+    Async async = context.async();
+    harvester.getProviders(wireMockRule.url(path), tenantId).setHandler(ar -> {
+      context.assertTrue(ar.failed());
+      context.assertTrue(ar.cause().getMessage().contains("404"));
+      async.complete();
+    });
+  }
+
+  @Test
+  public void getProvidersNoService(TestContext context) {
+    final String wireMockUrl = wireMockRule.url("/usage-data-providers");
+    wireMockRule.stop();
+
+    Async async = context.async();
+    harvester.getProviders(wireMockUrl, tenantId).setHandler(ar -> {
+      context.assertTrue(ar.failed());
+      async.complete();
+    });
+  }
+
+  @Test
+  public void getAggregatorSettingsBodyValid(TestContext context)
+      throws JsonSyntaxException, IOException {
+    final UsageDataProvider provider = new ObjectMapper().readValue(Resources
+        .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
+        UsageDataProvider.class);
+    final String path = "/aggregator-settings";
+    stubFor(get(urlEqualTo(path + "/" + provider.getAggregator().getId()))
+        .willReturn(aResponse().withBodyFile("aggregator-setting.json")));
+
+    Async async = context.async();
+    harvester.getAggregatorSetting(wireMockRule.url(path), tenantId, provider).setHandler(ar -> {
+      context.assertTrue(ar.succeeded());
+      context.assertTrue("Nationaler Statistikserver".equals(ar.result().getLabel()));
+      async.complete();
+    });
+  }
+
+  @Test
+  public void getAggregatorSettingsBodyValidNoAggregator(TestContext context)
+      throws JsonSyntaxException, IOException {
+    final UsageDataProvider provider1 = new ObjectMapper().readValue(Resources
+        .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
+        UsageDataProvider.class);
+    final UsageDataProvider provider2 = new ObjectMapper().readValue(Resources
+        .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
+        UsageDataProvider.class);
+
+    provider1.setAggregator(null);
+    Async async = context.async();
+    harvester.getAggregatorSetting("", tenantId, provider1).setHandler(ar -> {
+      context.assertTrue(ar.failed());
+      context.assertTrue(ar.result() == null);
+      context.assertTrue(ar.cause().getMessage().contains("no aggregator found"));
+      async.complete();
+    });
+
+    provider2.getAggregator().setId(null);
+    Async async2 = context.async();
+    harvester.getAggregatorSetting("", tenantId, provider2).setHandler(ar -> {
+      context.assertTrue(ar.failed());
+      context.assertTrue(ar.result() == null);
+      context.assertTrue(ar.cause().getMessage().contains("no aggregator found"));
+      async2.complete();
+    });
+  }
+
+  @Test
+  public void getAggregatorSettingsBodyInvalid(TestContext context)
+      throws JsonSyntaxException, IOException {
+    final UsageDataProvider provider = new ObjectMapper().readValue(Resources
+        .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
+        UsageDataProvider.class);
+    final String path = "/aggregator-settings";
+    stubFor(get(urlEqualTo(path + "/" + provider.getAggregator().getId()))
+        .willReturn(aResponse().withBody("garbage")));
+
+    Async async = context.async();
+    harvester.getAggregatorSetting(wireMockRule.url(path), tenantId, provider).setHandler(ar -> {
+      context.assertTrue(ar.failed());
+      context.assertTrue(ar.result() == null);
+      context.assertTrue(ar.cause().getMessage().contains("Error decoding"));
+      async.complete();
+    });
+  }
+
+  @Test
+  public void getAggregatorSettingsResponseInvalid(TestContext context)
+      throws JsonSyntaxException, IOException {
+    final UsageDataProvider provider = new ObjectMapper().readValue(Resources
+        .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
+        UsageDataProvider.class);
+    final String path = "/aggregator-settings";
+    stubFor(get(urlEqualTo(path + "/" + provider.getAggregator().getId())).willReturn(
+        aResponse().withBody("Aggregator settingObject does not exist").withStatus(404)));
+
+    Async async = context.async();
+    harvester.getAggregatorSetting(wireMockRule.url(path), tenantId, provider).setHandler(ar -> {
+      context.assertTrue(ar.failed());
+      context.assertTrue(ar.result() == null);
+      context.assertTrue(ar.cause().getMessage().contains("404"));
+      async.complete();
+    });
+  }
+
+  @Test
+  public void getAggregatorSettingsNoService(TestContext context)
+      throws JsonSyntaxException, IOException {
+    final UsageDataProvider provider = new ObjectMapper().readValue(Resources
+        .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
+        UsageDataProvider.class);
+    final String wireMockUrl = wireMockRule.url("/aggregator-settings");
+    wireMockRule.stop();
+
+    Async async = context.async();
+    harvester.getAggregatorSetting(wireMockUrl, tenantId, provider).setHandler(ar -> {
+      context.assertTrue(ar.failed());
       async.complete();
     });
   }

@@ -31,6 +31,7 @@ public class Harvester {
     Future<List<String>> future = Future.future();
     WebClient client = WebClient.create(vertx);
     client.getAbs(url).send(ar -> {
+      client.close();
       if (ar.succeeded()) {
         if (ar.result().statusCode() == 200) {
           JsonArray jsonArray;
@@ -47,8 +48,6 @@ public class Harvester {
             }
           } catch (Exception e) {
             future.fail(String.format(ERR_MSG_DECODE, url, e.getMessage()));
-          } finally {
-            client.close();
           }
         } else {
           future.fail(String.format(ERR_MSG_STATUS, ar.result().statusCode(),
@@ -57,7 +56,6 @@ public class Harvester {
       } else {
         future.fail(ar.cause());
       }
-      client.close();
     });
     return future;
   }
@@ -69,6 +67,7 @@ public class Harvester {
     Future<Void> future = Future.future();
     WebClient client = WebClient.create(vertx);
     client.getAbs(moduleUrl).send(ar -> {
+      client.close();
       if (ar.succeeded()) {
         Boolean hasUsageModule = false;
         if (ar.result().statusCode() == 200) {
@@ -77,8 +76,6 @@ public class Harvester {
             future.complete();
           } catch (Exception e) {
             future.fail(logprefix + String.format(ERR_MSG_DECODE, moduleUrl, e.getMessage()));
-          } finally {
-            client.close();
           }
         } else {
           future.fail(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
@@ -88,7 +85,6 @@ public class Harvester {
       } else {
         future.fail(ar.cause());
       }
-      client.close();
     });
     return future;
   }
@@ -106,6 +102,7 @@ public class Harvester {
         .setQueryParam("limit", "30")
         .setQueryParam("offset", "0")
         .send(ar -> {
+          client.close();
           if (ar.succeeded()) {
             if (ar.result().statusCode() == 200) {
               UdProvidersDataCollection entity;
@@ -115,8 +112,6 @@ public class Harvester {
                 future.complete(entity);
               } catch (Exception e) {
                 future.fail(logprefix + String.format(ERR_MSG_DECODE, url, e.getMessage()));
-              } finally {
-                client.close();
               }
             } else {
               future.fail(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
@@ -124,7 +119,6 @@ public class Harvester {
             }
           } else {
             future.fail(logprefix + "error: " + ar.cause().getMessage());
-            client.close();
           }
         });
     return future;
@@ -147,6 +141,7 @@ public class Harvester {
         .putHeader(Constants.OKAPI_HEADER_TENANT, tenantId)
         .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
         .send(ar -> {
+          client.close();
           if (ar.succeeded()) {
             if (ar.result().statusCode() == 200) {
               try {
@@ -155,8 +150,6 @@ public class Harvester {
                 future.complete(setting);
               } catch (Exception e) {
                 future.fail(logprefix + String.format(ERR_MSG_DECODE, aggrUrl, e.getMessage()));
-              } finally {
-                client.close();
               }
             } else {
               future.fail(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
@@ -166,7 +159,6 @@ public class Harvester {
             future.fail(logprefix + "failed getting AggregatorSetting for id: " + aggregator.getId()
                 + ", " + ar.cause().getMessage());
           }
-          client.close();
         });
     return future;
   }
