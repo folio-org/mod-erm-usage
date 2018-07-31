@@ -33,6 +33,9 @@
         "id": {
           "type": "string"
         },
+        "name": {
+          "type": "string"
+        },
         "vendorCode": {
           "type": "string"
         }

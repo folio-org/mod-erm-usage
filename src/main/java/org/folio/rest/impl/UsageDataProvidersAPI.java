@@ -186,51 +186,63 @@ public class UsageDataProvidersAPI implements UsageDataProvidersResource {
                                   "'label'", entity.getLabel(),
                                   "Usage data provider with this label/id already exists"))));
                     } else {
-                      CompletableFuture<org.folio.rest.tools.client.Response> fetchVendor = fetchVendor(
-                          entity, okapiHeaders);
-
-                      fetchVendor.thenAccept(response -> {
-                        if (org.folio.rest.tools.client.Response
-                            .isSuccess(response.getCode())) {
-                          JsonObject responseJson = response.getBody();
-                          String vendorName = responseJson.getString("name");
-                          entity.setVendorName(vendorName);
-
-                          PostgresClient postgresClient = PostgresClient
-                              .getInstance(vertxContext.owner(), tenantId);
-                          postgresClient
-                              .save(TABLE_NAME_SUSHI_SETTINGS, entity.getId(), entity, reply -> {
-                                try {
-                                  if (reply.succeeded()) {
-                                    logger.debug("save successful");
-                                    final UsageDataProvider udp = entity;
-                                    udp.setId(entity.getId());
-                                    OutStream stream = new OutStream();
-                                    stream.setData(udp);
-                                    asyncResultHandler.handle(
-                                        Future.succeededFuture(
-                                            PostUsageDataProvidersResponse
-                                                .withJsonCreated(
-                                                    reply.result(), stream)));
-                                  } else {
-                                    asyncResultHandler.handle(Future.succeededFuture(
-                                        PostUsageDataProvidersResponse.withPlainInternalServerError(
-                                            reply.cause().toString())));
+                      fetchVendorName(entity, okapiHeaders)
+                          .thenAccept(vendorName -> {
+                            entity.setVendorName(vendorName);
+                            fetchAggregatorName(entity, okapiHeaders)
+                                .thenAccept(aggregatorName -> {
+                                  if (entity.getAggregator() != null) {
+                                    entity.getAggregator().setName(aggregatorName);
                                   }
-                                } catch (Exception e) {
-                                  asyncResultHandler.handle(io.vertx.core.Future.succeededFuture(
-                                      PostUsageDataProvidersResponse
-                                          .withPlainInternalServerError(e.getMessage())));
-                                }
-                              });
-                        } else {
-                          asyncResultHandler.handle(Future.succeededFuture(
-                              PostUsageDataProvidersResponse.withPlainBadRequest(
-                                  "Cannot find vendor with id: " + entity.getVendorId())));
-                        }
-                      })
-                          .exceptionally(throwable -> {
-                            logger.info(throwable.getMessage());
+                                  PostgresClient postgresClient = PostgresClient
+                                      .getInstance(vertxContext.owner(), tenantId);
+                                  postgresClient
+                                      .save(TABLE_NAME_SUSHI_SETTINGS, entity.getId(), entity,
+                                          reply -> {
+                                            try {
+                                              if (reply.succeeded()) {
+                                                logger.debug("save successful");
+                                                final UsageDataProvider udp = entity;
+                                                udp.setId(entity.getId());
+                                                OutStream stream = new OutStream();
+                                                stream.setData(udp);
+                                                asyncResultHandler.handle(
+                                                    Future.succeededFuture(
+                                                        PostUsageDataProvidersResponse
+                                                            .withJsonCreated(
+                                                                reply.result(), stream)));
+                                              } else {
+                                                asyncResultHandler.handle(Future.succeededFuture(
+                                                    PostUsageDataProvidersResponse
+                                                        .withPlainInternalServerError(
+                                                            reply.cause().toString())));
+                                              }
+                                            } catch (Exception e) {
+                                              asyncResultHandler
+                                                  .handle(io.vertx.core.Future.succeededFuture(
+                                                      PostUsageDataProvidersResponse
+                                                          .withPlainInternalServerError(
+                                                              e.getMessage())));
+                                            }
+                                          });
+                                })
+                                .exceptionally(throwable -> {
+                                  logger.error("Cannot fetch aggregator name for id: " + entity
+                                      .getAggregator().getId(), throwable);
+                                  asyncResultHandler.handle(Future.succeededFuture(
+                                      PostUsageDataProvidersResponse.withPlainBadRequest(
+                                          "Error while fetching aggregator name. " + throwable
+                                              .getMessage())
+                                  ));
+                                  return null;
+                                });
+                          })
+                          .exceptionally(o -> {
+                            logger
+                                .error("Cannot fetch vendor name for id: " + entity.getVendorId());
+                            asyncResultHandler.handle(Future.succeededFuture(
+                                PostUsageDataProvidersResponse
+                                    .withPlainBadRequest("Error while fetching vendor name.")));
                             return null;
                           });
                     }
@@ -253,27 +265,6 @@ public class UsageDataProvidersAPI implements UsageDataProvidersResource {
           PostUsageDataProvidersResponse.withPlainInternalServerError(
               messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
-  }
-
-  private CompletableFuture<org.folio.rest.tools.client.Response> fetchVendor(
-      UsageDataProvider entity,
-      Map<String, String> okapiHeaders) {
-    if (entity.getVendorId() != null) {
-      HttpClientInterface httpClient = HttpClientFactory
-          .getHttpClient(getOkapiUrl(okapiHeaders), getOkapiTenant(okapiHeaders));
-      httpClient.setDefaultHeaders(okapiHeaders);
-      try {
-        String vendorId = entity.getVendorId();
-        String vendorUrl = "/vendor/" + vendorId;
-        CompletableFuture<org.folio.rest.tools.client.Response> response = httpClient
-            .request(vendorUrl);
-        return response;
-      } catch (Exception e) {
-        throw new RuntimeException(
-            "Cannot get vendor for id: " + entity.getVendorId() + ": " + e.getMessage());
-      }
-    }
-    return null;
   }
 
   @Override
@@ -432,45 +423,66 @@ public class UsageDataProvidersAPI implements UsageDataProvidersResource {
                           entity.setUpdatedDate(now);
                           entity.setCreatedDate(createdDate);
                           try {
-                            CompletableFuture<org.folio.rest.tools.client.Response> fetchVendor = fetchVendor(
-                                entity, okapiHeaders);
-                            fetchVendor.thenAccept(response -> {
-                              if (!org.folio.rest.tools.client.Response
-                                  .isSuccess(response.getCode())) {
-                                asyncResultHandler.handle(Future.succeededFuture(
-                                    PostUsageDataProvidersResponse.withPlainBadRequest(
-                                        "Cannot find vendor with id: " + entity.getVendorId() + ". " + response.getError().toString())));
-                              } else {
-                                JsonObject responseJson = response.getBody();
-                                String vendorName = responseJson.getString("name");
-                                entity.setVendorName(vendorName);
 
-                                PostgresClient.getInstance(vertxContext.owner(), tenantId).update(
-                                    TABLE_NAME_SUSHI_SETTINGS, entity, new Criterion(idCrit), true,
-                                    putReply -> {
-                                      try {
-                                        if (putReply.failed()) {
-                                          asyncResultHandler.handle(Future.succeededFuture(
-                                              PutUsageDataProvidersByIdResponse
-                                                  .withPlainInternalServerError(
-                                                      putReply.cause().getMessage())));
-                                        } else {
-                                          asyncResultHandler.handle(Future.succeededFuture(
-                                              PutUsageDataProvidersByIdResponse.withNoContent()));
+                            fetchVendorName(entity, okapiHeaders)
+                                .thenAccept(vendorName -> {
+                                  entity.setVendorName(vendorName);
+                                  fetchAggregatorName(entity, okapiHeaders)
+                                      .thenAccept(aggregatorName -> {
+                                        if (entity.getAggregator() != null) {
+                                          entity.getAggregator().setName(aggregatorName);
                                         }
-                                      } catch (Exception e) {
+                                        PostgresClient.getInstance(vertxContext.owner(), tenantId)
+                                            .update(
+                                                TABLE_NAME_SUSHI_SETTINGS, entity,
+                                                new Criterion(idCrit), true,
+                                                putReply -> {
+                                                  try {
+                                                    if (putReply.failed()) {
+                                                      asyncResultHandler
+                                                          .handle(Future.succeededFuture(
+                                                              PutUsageDataProvidersByIdResponse
+                                                                  .withPlainInternalServerError(
+                                                                      putReply.cause()
+                                                                          .getMessage())));
+                                                    } else {
+                                                      asyncResultHandler
+                                                          .handle(Future.succeededFuture(
+                                                              PutUsageDataProvidersByIdResponse
+                                                                  .withNoContent()));
+                                                    }
+                                                  } catch (Exception e) {
+                                                    asyncResultHandler
+                                                        .handle(Future.succeededFuture(
+                                                            PutUsageDataProvidersByIdResponse
+                                                                .withPlainInternalServerError(
+                                                                    messages.getMessage(lang,
+                                                                        MessageConsts.InternalServerError))));
+                                                  }
+                                                });
+                                      })
+                                      .exceptionally(throwable -> {
+                                        logger
+                                            .error("Cannot fetch aggregator name for id: " + entity
+                                                .getAggregator().getId(), throwable);
                                         asyncResultHandler.handle(Future.succeededFuture(
-                                            PutUsageDataProvidersByIdResponse
-                                                .withPlainInternalServerError(
-                                                    messages.getMessage(lang,
-                                                        MessageConsts.InternalServerError))));
-                                      }
-                                    });
-                              }
-                            }).exceptionally(throwable -> {
-                              logger.info(throwable.getMessage());
-                              return null;
-                            });
+                                            PostUsageDataProvidersResponse.withPlainBadRequest(
+                                                "Error while fetching aggregator name. " + throwable
+                                                    .getMessage())
+                                        ));
+                                        return null;
+                                      });
+                                })
+                                .exceptionally(o -> {
+                                  logger
+                                      .error("Cannot fetch vendor name for id: " + entity
+                                          .getVendorId());
+                                  asyncResultHandler.handle(Future.succeededFuture(
+                                      PostUsageDataProvidersResponse
+                                          .withPlainBadRequest(
+                                              "Error while fetching vendor name.")));
+                                  return null;
+                                });
                           } catch (Exception e) {
                             asyncResultHandler.handle(Future.succeededFuture(
                                 PutUsageDataProvidersByIdResponse.withPlainInternalServerError(
@@ -510,6 +522,74 @@ public class UsageDataProvidersAPI implements UsageDataProvidersResource {
       return headers.get("x-okapi-tenant");
     }
     return "";
+  }
+
+  private CompletableFuture<String> fetchVendorName(
+      UsageDataProvider entity,
+      Map<String, String> okapiHeaders) {
+    if (entity.getVendorId() == null) {
+      CompletableFuture<String> res = new CompletableFuture<>();
+      res.complete("");
+      return res;
+    } else {
+      HttpClientInterface httpClient = HttpClientFactory
+          .getHttpClient(getOkapiUrl(okapiHeaders), getOkapiTenant(okapiHeaders));
+      httpClient.setDefaultHeaders(okapiHeaders);
+      try {
+        String vendorId = entity.getVendorId();
+        String vendorUrl = "/vendor/" + vendorId;
+        CompletableFuture<org.folio.rest.tools.client.Response> response = httpClient
+            .request(vendorUrl);
+        return response.thenApply(vendorResponse -> {
+          if (org.folio.rest.tools.client.Response
+              .isSuccess(vendorResponse.getCode())) {
+            JsonObject json = vendorResponse.getBody();
+            return json.getString("name");
+          } else {
+            throw new RuntimeException("Cannot get vendor for id: " + entity.getVendorId());
+          }
+        });
+      } catch (Exception e) {
+        throw new RuntimeException(
+            "Cannot get vendor for id: " + entity.getVendorId() + ": " + e.getMessage());
+      }
+    }
+
+  }
+
+  private CompletableFuture<String> fetchAggregatorName(
+      UsageDataProvider entity,
+      Map<String, String> okapiHeaders) {
+    if (entity.getAggregator() == null || entity.getAggregator().getId() == null) {
+      CompletableFuture<String> res = new CompletableFuture<>();
+      res.complete("");
+      return res;
+    } else {
+      HttpClientInterface httpClient = HttpClientFactory
+          .getHttpClient(getOkapiUrl(okapiHeaders), getOkapiTenant(okapiHeaders));
+      httpClient.setDefaultHeaders(okapiHeaders);
+      try {
+        String aggregatorId = entity.getAggregator().getId();
+        String aggregatorUrl = "/aggregator-settings/" + aggregatorId;
+        CompletableFuture<org.folio.rest.tools.client.Response> response = httpClient
+            .request(aggregatorUrl);
+        return response.thenApply(vendorResponse -> {
+          if (org.folio.rest.tools.client.Response
+              .isSuccess(vendorResponse.getCode())) {
+            JsonObject json = vendorResponse.getBody();
+            return json.getString("label");
+          } else {
+            throw new RuntimeException(
+                "Cannot get aggregator for id: " + entity.getAggregator().getId());
+          }
+        });
+      } catch (Exception e) {
+        throw new RuntimeException(
+            "Cannot get aggregator for id: " + entity.getAggregator().getId() + ": " + e
+                .getMessage());
+      }
+    }
+
   }
 
 }
