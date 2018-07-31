@@ -6,8 +6,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.log4j.Logger;
-import org.folio.rest.impl.AggregatorSettingsAPI;
-import org.folio.rest.impl.UsageDataProvidersAPI;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
@@ -15,8 +13,11 @@ import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HarvestingStatus;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.util.Constants;
+import com.google.common.net.HttpHeaders;
+import com.google.common.net.MediaType;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
@@ -31,7 +32,7 @@ public class Harvester {
 
   private Vertx vertx = Vertx.vertx();
 
-  private Map<String, String> createOkapiHeaders(String tenantId) {
+  public Map<String, String> createOkapiHeaders(String tenantId) {
     Map<String, String> okapiHeaders = new HashMap<>();
     okapiHeaders.put(Constants.OKAPI_HEADER_TENANT, TenantTool.calculateTenantId(tenantId));
     okapiHeaders.put("accept", "application/json");
@@ -102,49 +103,63 @@ public class Harvester {
     return future;
   }
 
-  private Future<UdProvidersDataCollection> getProviders(String tenantId) {
+  public Future<UdProvidersDataCollection> getProviders(String url, String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     LOG.info(logprefix + "getting providers");
     Future<UdProvidersDataCollection> future = Future.future();
 
-    // call UsageDataProviders API
-    UsageDataProvidersAPI api = new UsageDataProvidersAPI(vertx, tenantId);
-    try {
-      api.getUsageDataProviders(null, null, null, 0, 30, null, createOkapiHeaders(tenantId), ar -> {
-        if (ar.succeeded()) {
-          UdProvidersDataCollection entity = (UdProvidersDataCollection) ar.result().getEntity();
-          LOG.info(logprefix + "total providers: " + entity.getTotalRecords());
-          future.complete(entity);
-        } else {
-          future.fail(logprefix + "error: " + ar.cause().getMessage());
-        }
-      }, vertx.getOrCreateContext());
-    } catch (Exception e) {
-      future.fail(logprefix + "error: " + e.getMessage());
-    }
+    WebClient client = WebClient.create(vertx);
+    client.requestAbs(HttpMethod.GET, url)
+        .putHeader(Constants.OKAPI_HEADER_TENANT, tenantId)
+        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
+        .setQueryParam("limit", "30")
+        .setQueryParam("offset", "0")
+        .send(ar -> {
+          if (ar.succeeded()) {
+            UdProvidersDataCollection entity;
+            try {
+              entity = ar.result().bodyAsJson(UdProvidersDataCollection.class);
+              LOG.info(logprefix + "total providers: " + entity.getTotalRecords());
+              future.complete(entity);
+            } catch (Exception e) {
+              future.fail(e);
+            } finally {
+              client.close();
+            }
+          } else {
+            future.fail(logprefix + "error: " + ar.cause().getMessage());
+            client.close();
+          }
+        });
     return future;
   }
 
-  private Future<AggregatorSetting> getAggregatorSetting(String tenantId,
+  public Future<AggregatorSetting> getAggregatorSetting(String url, String tenantId,
       UsageDataProvider provider) {
+    final String logprefix = "Tenant: " + tenantId + ", ";
     Future<AggregatorSetting> future = Future.future();
+
     Aggregator aggregator = provider.getAggregator();
-    AggregatorSettingsAPI api = new AggregatorSettingsAPI(vertx, tenantId);
-    try {
-      api.getAggregatorSettingsById(aggregator.getId(), null, createOkapiHeaders(tenantId), ar -> {
-        if (ar.succeeded()) {
-          AggregatorSetting setting = (AggregatorSetting) ar.result().getEntity();
-          LOG.info("Tenant: " + tenantId + ", got AggregatorSetting for id: " + aggregator.getId());
-          future.complete(setting);
-        } else {
-          future.fail("Tenant: " + tenantId + ", failed getting AggregatorSetting for id: "
-              + aggregator.getId() + ", " + ar.cause().getMessage());
-        }
-      }, vertx.getOrCreateContext());
-    } catch (Exception e) {
-      future.fail("Tenant: " + tenantId + ", failed getting AggregatorSetting for id: "
-          + aggregator.getId() + ", " + e.getMessage());
+    if (aggregator == null || aggregator.getId() == null) {
+      return Future
+          .failedFuture(logprefix + "no aggregator found for provider " + provider.getLabel());
     }
+
+    WebClient client = WebClient.create(vertx);
+    client.requestAbs(HttpMethod.GET, url + "/" + aggregator.getId())
+        .putHeader(Constants.OKAPI_HEADER_TENANT, tenantId)
+        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
+        .send(ar -> {
+          if (ar.succeeded()) {
+            AggregatorSetting setting = ar.result().bodyAsJson(AggregatorSetting.class);
+            LOG.info(logprefix + "got AggregatorSetting for id: " + aggregator.getId());
+            future.complete(setting);
+          } else {
+            future.fail(logprefix + "failed getting AggregatorSetting for id: " + aggregator.getId()
+                + ", " + ar.cause().getMessage());
+          }
+          client.close();
+        });
     return future;
   }
 
@@ -171,8 +186,6 @@ public class Harvester {
     final String logprefix = "Tenant: " + tenantId + ", ";
     LOG.info(logprefix + "processing provider: " + provider.getLabel());
 
-    Aggregator aggregator = provider.getAggregator();
-
     // check if harvesting status is 'active'
     if (!provider.getHarvestingStatus().equals(HarvestingStatus.ACTIVE)) {
       LOG.info(logprefix + "skipping " + provider.getLabel() + " as harvesting status is "
@@ -180,10 +193,12 @@ public class Harvester {
       return;
     }
 
+    Aggregator aggregator = provider.getAggregator();
     // Complete aggrFuture if aggregator is not set.. aka skip it
     Future<AggregatorSetting> aggrFuture = Future.future();
     if (aggregator != null) {
-      aggrFuture = getAggregatorSetting(tenantId, provider);
+      aggrFuture =
+          getAggregatorSetting("http://localhost:8081/aggregator-settings", tenantId, provider);
     } else {
       aggrFuture.complete(null);
     }
@@ -244,15 +259,15 @@ public class Harvester {
   }
 
   public void run() {
-    getTenants(
-        okapiUrl + tenantsPath)
-            .compose(
-                tenants -> tenants
-                    .forEach(t -> hasUsageModule(t).compose(f -> getProviders(t).compose(
-                        providers -> providers.getUsageDataProviders()
-                            .forEach(p -> fetchReports(t, p)),
-                        Future.future().setHandler(ar -> LOG.error(ar.cause().getMessage()))))),
-                Future.future().setHandler(ar -> LOG.error(ar.cause().getMessage())));
+    getTenants(okapiUrl + tenantsPath).compose(tenants -> tenants.forEach(t -> hasUsageModule(t)
+        .compose(f -> getProviders(okapiUrl + "/usage-data-providers", t).compose(
+            providers -> providers.getUsageDataProviders().forEach(p -> fetchReports(t, p)),
+            handleErrorFuture()), handleErrorFuture())),
+        handleErrorFuture());
+  }
+
+  private Future<Object> handleErrorFuture() {
+    return Future.future().setHandler(ar -> LOG.error(ar.cause().getMessage()));
   }
 
   public static void main(String[] args) {

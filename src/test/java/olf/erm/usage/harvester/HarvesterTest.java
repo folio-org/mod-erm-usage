@@ -4,6 +4,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import org.junit.Rule;
 import org.junit.Test;
@@ -120,8 +121,7 @@ public class HarvesterTest {
   @Test
   public void hasUsageModuleNo(TestContext context) {
     final String path = "/_/proxy/tenants/diku/modules/mod-erm-usage-0.0.1";
-    stubFor(get(urlEqualTo(path))
-        .willReturn(aResponse().withBody("mod-erm-usage-0.0.1")));
+    stubFor(get(urlEqualTo(path)).willReturn(aResponse().withBody("mod-erm-usage-0.0.1")));
 
     Async async = context.async();
     Harvester h = new Harvester(wireMockRule.url(""), "_/proxy/tenants", "mod-erm-usage-0.0.1");
@@ -131,12 +131,11 @@ public class HarvesterTest {
       async.complete();
     });
   }
-  
+
   @Test
   public void hasUsageModuleResponseInvalid(TestContext context) {
     final String path = "/_/proxy/tenants/diku/modules/mod-erm-usage-0.0.1";
-    stubFor(get(urlEqualTo(path))
-        .willReturn(aResponse().withStatus(404)));
+    stubFor(get(urlEqualTo(path)).willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
     Harvester h = new Harvester(wireMockRule.url(""), "_/proxy/tenants", "mod-erm-usage-0.0.1");
@@ -146,16 +145,30 @@ public class HarvesterTest {
       async.complete();
     });
   }
-  
+
   @Test
   public void hasUsageModuleNoService(TestContext context) {
     int port = wireMockRule.port();
     wireMockRule.stop();
 
     Async async = context.async();
-    Harvester h = new Harvester("http://localhost:" + port + "/", "_/proxy/tenants", "mod-erm-usage-0.0.1");
+    Harvester h =
+        new Harvester("http://localhost:" + port + "/", "_/proxy/tenants", "mod-erm-usage-0.0.1");
     h.hasUsageModule("diku").setHandler(ar -> {
       context.assertTrue(ar.failed());
+      async.complete();
+    });
+  }
+  
+  @Test
+  public void getProviders(TestContext context) {
+    final String path = "/usage-data-providers";
+    stubFor(get(urlPathMatching(path)).willReturn(aResponse().withBodyFile("usage-data-providers.json")));
+
+    Async async = context.async();
+    new Harvester().getProviders(wireMockRule.url(path), "diku").setHandler(ar -> {
+      context.assertTrue(ar.succeeded());
+      context.assertEquals(3, ar.result().getTotalRecords());
       async.complete();
     });
   }
