@@ -24,4 +24,15 @@ public class NSS implements ServiceEndpoint {
     this.provider = provider;
     this.aggregator = aggregator;
   }
+
+  @Override
+  public UsageDataProvider getProvider() {
+    return provider;
+  }
+
+  @Override
+  public AggregatorSetting getAggregator() {
+    return aggregator;
+  }
+
 }

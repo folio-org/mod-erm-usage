@@ -9,9 +9,13 @@ public interface ServiceEndpoint {
 
   String buildURL(String report, String begin, String end);
 
+  UsageDataProvider getProvider();
+
+  AggregatorSetting getAggregator();
+
   public static ServiceEndpoint create(UsageDataProvider provider, AggregatorSetting aggregator) {
     final Logger LOG = Logger.getLogger(ServiceEndpoint.class);
-    
+
     String serviceType = "";
     String name = "";
     if (aggregator == null) {
@@ -21,12 +25,12 @@ public interface ServiceEndpoint {
       serviceType = aggregator.getServiceType();
       name = aggregator.getLabel();
     }
-    
+
     switch (serviceType) {
       case "NSS":
         return new NSS(provider, aggregator);
       default:
-        LOG.error("No implementation found for serviceType '" + serviceType +"'. (" + name + ")");
+        LOG.error("No implementation found for serviceType '" + serviceType + "'. (" + name + ")");
         return null;
     }
   }

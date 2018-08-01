@@ -1,8 +1,9 @@
 package olf.erm.usage.harvester;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
@@ -163,26 +164,44 @@ public class Harvester {
     return future;
   }
 
-  public Future<String> fetchSingleReport(String url, String tenantId) {
+  public Future<JsonObject> fetchSingleReport(ServiceEndpoint sep, String report, String begin,
+      String end, String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
+    final String url = sep.buildURL(report, begin, end);
     LOG.info(logprefix + "fetching report from URL: " + url);
 
-    // WebClient client = WebClient.create(vertx);
-    // Future<String> future = Future.future();
-    // client.getAbs(url).send(ar -> {
-    // if (ar.succeeded()) {
-    // future.complete(ar.result().bodyAsString());
-    // } else {
-    // future.fail(ar.cause());
-    // }
-    // client.close();
-    // });
-    // return future;
-
-    return Future.succeededFuture("RANDOM REPORT DATA " + RandomStringUtils.randomAlphanumeric(12));
+    WebClient client = WebClient.create(vertx);
+    Future<JsonObject> future = Future.future();
+    client.getAbs(url).send(ar -> {
+      client.close();
+      if (ar.succeeded()) {
+        if (ar.result().statusCode() == 200) {
+          JsonObject cr = new JsonObject();
+          cr.put("beginDate", begin);
+          cr.put("reportName", report);
+          cr.put("platformId", sep.getProvider().getPlatformId());
+          cr.put("customerId", sep.getProvider().getCustomerId());
+          cr.put("release", sep.getProvider().getReportRelease());
+          cr.put("format", "???"); // FIXME
+          cr.put("downloadTime", ar.result().getHeader(HttpHeaders.DATE));
+          cr.put("creationTime", LocalDateTime.now().toString()); // FIXME
+          cr.put("endDate", end);
+          cr.put("vendorId", sep.getProvider().getVendorId());
+          cr.put("report", ar.result().bodyAsString());
+          cr.put("id", UUID.randomUUID().toString());
+          future.complete(cr);
+        } else {
+          future.fail(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
+              ar.result().statusMessage(), url));
+        }
+      } else {
+        future.fail(logprefix + ar.cause());
+      }
+    });
+    return future;
   }
 
-  public void fetchReports(String tenantId, UsageDataProvider provider) {
+  public void fetchReports(String url, String tenantId, UsageDataProvider provider) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     LOG.info(logprefix + "processing provider: " + provider.getLabel());
 
@@ -197,8 +216,7 @@ public class Harvester {
     // Complete aggrFuture if aggregator is not set.. aka skip it
     Future<AggregatorSetting> aggrFuture = Future.future();
     if (aggregator != null) {
-      aggrFuture =
-          getAggregatorSetting("http://localhost:8081/aggregator-settings", tenantId, provider);
+      aggrFuture = getAggregatorSetting(url + "/aggregator-settings", tenantId, provider);
     } else {
       aggrFuture.complete(null);
     }
@@ -207,61 +225,46 @@ public class Harvester {
       ServiceEndpoint sep = ServiceEndpoint.create(provider, as);
       if (sep != null) {
         provider.getRequestedReports()
-            .forEach(r -> fetchSingleReport(sep.buildURL(r, "2018-03-01", "2018-03-31"), tenantId)
-                .compose(report -> postReport(tenantId, report)));
+            .forEach(r -> fetchSingleReport(sep, r, "2018-03-01", "2018-03-31", tenantId)
+                .compose(report -> postReport(url + "/counter-reports", tenantId, report)));
       }
       return Future.succeededFuture();
     });
   }
 
-  public Future<Void> postReport(String tenantId, String reportContent) {
+  public Future<Void> postReport(String url, String tenantId, JsonObject reportContent) {
     final String logprefix = "Tenant: " + tenantId + ", ";
+    final Future<Void> future = Future.future();
 
-    // CounterReportAPI api = new CounterReportAPI(vertx, tenantId);
-    // CounterReport cr = new CounterReport();
-    // cr.setReport(reportContent);
-    // Future<Void> future = Future.future();
-    //
-    // Handler<AsyncResult<Response>> asyncResultHandler = (ar) -> {
-    // LOG.info("result successful: " + ar.succeeded());
-    // if (ar.succeeded()) {
-    // if (ar.result().getStatus() == 201) {
-    // future.complete();
-    // } else {
-    // future.fail(
-    // "Got status code " + ar.result().getStatus() + " " + ar.result().getStatusInfo());
-    // }
-    // } else {
-    // future.fail(ar.cause());
-    // }
-    // };
-    //
-    // try {
-    // api.postCounterReports(null, cr, createOkapiHeaders("diku"), asyncResultHandler,
-    // vertx.getOrCreateContext());
-    // } catch (Exception e) {
-    // future.fail(e);
-    // e.printStackTrace();
-    // }
-    //
-    // return future;
+    WebClient client = WebClient.create(vertx);
+    client.requestAbs(HttpMethod.POST, url)
+        .putHeader(Constants.OKAPI_HEADER_TENANT, tenantId)
+        .putHeader("accept", "application/json")
+        .sendJsonObject(reportContent, ar -> {
+          if (ar.succeeded()) {
+            LOG.info(String.format(ERR_MSG_STATUS, ar.result().statusCode(),
+                ar.result().statusMessage(), url));
+            future.complete();
+          } else {
+            LOG.error(ar.cause());
+            future.fail(ar.cause());
+          }
+        });
 
     LOG.info(logprefix + "posting report with data " + reportContent);
-    return Future.succeededFuture();
+    return future;
   }
 
-  public Harvester() {}
-
   public void run() {
-    String okapiUrl = "http://192.168.56.103:9230";
+    String okapiUrl = "http://192.168.56.103:9130";
     String tenantsUrl = okapiUrl + "/_/proxy/tenants";
     String moduleId = "mod-erm-usage-0.0.1";
     String providerPath = "/usage-data-providers";
     getTenants(tenantsUrl).compose(tenants -> tenants.forEach(t -> {
       hasEnabledModule(tenantsUrl, t, moduleId).compose(f -> {
-        getProviders(okapiUrl + providerPath, t).compose(
-            providers -> providers.getUsageDataProviders().forEach(p -> fetchReports(t, p)),
-            handleErrorFuture());
+        getProviders(okapiUrl + providerPath, t)
+            .compose(providers -> providers.getUsageDataProviders()
+                .forEach(p -> fetchReports(okapiUrl, t, p)), handleErrorFuture());
       }, handleErrorFuture());
     }), handleErrorFuture());
   }
