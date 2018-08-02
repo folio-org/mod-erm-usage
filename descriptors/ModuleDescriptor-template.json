@@ -31,10 +31,6 @@
           "pathPattern": "/usage-data-providers",
           "permissionsRequired": [
             "usagedataproviders.item.post"
-          ],
-          "modulePermissions": [
-            "vendor.collection.get",
-            "vendor.item.get"
           ]
         },
         {
@@ -44,10 +40,6 @@
           "pathPattern": "/usage-data-providers/{id}",
           "permissionsRequired": [
             "usagedataproviders.item.put"
-          ],
-          "modulePermissions": [
-            "vendor.collection.get",
-            "vendor.item.get"
           ]
         },
         {
