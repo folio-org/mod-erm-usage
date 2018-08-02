@@ -164,42 +164,26 @@ public class Harvester {
     return future;
   }
 
-  public Future<JsonObject> fetchSingleReport(ServiceEndpoint sep, String report, String begin,
-      String end, String tenantId) {
-    final String logprefix = "Tenant: " + tenantId + ", ";
-    final String url = sep.buildURL(report, begin, end);
-    LOG.info(logprefix + "fetching report from URL: " + url);
 
-    WebClient client = WebClient.create(vertx);
-    Future<JsonObject> future = Future.future();
-    client.getAbs(url).send(ar -> {
-      client.close();
-      if (ar.succeeded()) {
-        if (ar.result().statusCode() == 200) {
-          JsonObject cr = new JsonObject();
-          cr.put("beginDate", begin);
-          cr.put("reportName", report);
-          cr.put("platformId", sep.getProvider().getPlatformId());
-          cr.put("customerId", sep.getProvider().getCustomerId());
-          cr.put("release", sep.getProvider().getReportRelease());
-          cr.put("format", "???"); // FIXME
-          cr.put("downloadTime", ar.result().getHeader(HttpHeaders.DATE));
-          cr.put("creationTime", LocalDateTime.now().toString()); // FIXME
-          cr.put("endDate", end);
-          cr.put("vendorId", sep.getProvider().getVendorId());
-          cr.put("report", ar.result().bodyAsString());
-          cr.put("id", UUID.randomUUID().toString());
-          future.complete(cr);
-        } else {
-          future.fail(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
-              ar.result().statusMessage(), url));
-        }
-      } else {
-        future.fail(logprefix + ar.cause());
-      }
-    });
-    return future;
+  public JsonObject createJsonObjectReport(String report, UsageDataProvider provider, String begin,
+      String end) {
+    JsonObject cr = new JsonObject();
+    cr.put("beginDate", begin);
+    cr.put("reportName", report);
+    cr.put("platformId", provider.getPlatformId());
+    cr.put("customerId", provider.getCustomerId());
+    cr.put("release", provider.getReportRelease());
+    cr.put("format", "???"); // FIXME
+    cr.put("downloadTime", LocalDateTime.now().toString()); // FIXME
+    cr.put("creationTime", LocalDateTime.now().toString()); // FIXME
+    cr.put("endDate", end);
+    cr.put("vendorId", provider.getVendorId());
+    cr.put("report", report);
+    cr.put("id", UUID.randomUUID().toString());
+    return cr;
   }
+
+
 
   public void fetchReports(String url, String tenantId, UsageDataProvider provider) {
     final String logprefix = "Tenant: " + tenantId + ", ";
@@ -225,8 +209,7 @@ public class Harvester {
       ServiceEndpoint sep = ServiceEndpoint.create(provider, as);
       if (sep != null) {
         provider.getRequestedReports()
-            .forEach(r -> fetchSingleReport(sep, r, "2018-03-01", "2018-03-31", tenantId)
-                .compose(report -> postReport(url + "/counter-reports", tenantId, report)));
+            .forEach(r -> sep.fetchSingleReport(r, "2018-03-01", "2018-03-31"));
       }
       return Future.succeededFuture();
     });

@@ -21,16 +21,13 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
 import io.vertx.core.Future;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 
 @RunWith(VertxUnitRunner.class)
-public class HarvesterFetchReportTest {
-
-  private static Harvester harvester = new Harvester();
+public class ServiceEndpointTest {
 
   @Rule
   public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
@@ -38,7 +35,7 @@ public class HarvesterFetchReportTest {
   public Timeout timeoutRule = Timeout.seconds(5);
 
   @Test
-  public void fetchSingleReportFromAggregator(TestContext context)
+  public void fetchSingleReportWithAggregator(TestContext context)
       throws JsonParseException, JsonMappingException, IOException {
     final UsageDataProvider provider = new ObjectMapper().readValue(
         new File(Resources.getResource("__files/usage-data-provider.json").getFile()),
@@ -53,20 +50,19 @@ public class HarvesterFetchReportTest {
     final ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator);
     final String url = sep.buildURL("JR1", beginDate, endDate);
 
+    System.out.println(url);
     stubFor(get(urlEqualTo(url.replaceAll(wireMockRule.url(""), "/")))
         .willReturn(aResponse().withBodyFile("nss-report-2016-03.xml")
             .withHeader(HttpHeaders.DATE, LocalDateTime.now().toString())));
 
     Async async = context.async();
-    Future<JsonObject> fetchSingleReport =
-        harvester.fetchSingleReport(sep, "JR1", beginDate, endDate, "diku");
+    Future<String> fetchSingleReport =
+        ServiceEndpoint.create(provider, aggregator).fetchSingleReport("JR1", beginDate, endDate);
     fetchSingleReport.setHandler(ar -> {
       if (ar.succeeded()) {
         context.assertTrue(ar.succeeded());
-        context.assertTrue(ar.result().getString("downloadTime") != null);
-        context.assertTrue(beginDate.equals(ar.result().getString("beginDate")));
-        context.assertTrue(ar.result().getString("report").startsWith("<!-- wiremock -->"));
-        System.out.println(ar.result().encodePrettily());
+        context.assertTrue(ar.result().startsWith("<!-- wiremock -->"));
+        System.out.println(ar.result());
         async.complete();
       } else {
         System.out.println(ar.cause());

@@ -26,13 +26,8 @@ public class NSS implements ServiceEndpoint {
   }
 
   @Override
-  public UsageDataProvider getProvider() {
-    return provider;
-  }
-
-  @Override
-  public AggregatorSetting getAggregator() {
-    return aggregator;
+  public boolean isValidReport(String report) {
+    return !(report == null || report.contains("<s:Exception>"));
   }
 
 }
