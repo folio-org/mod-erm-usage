@@ -21,6 +21,7 @@ import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.client.test.HttpClientMock2;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -61,8 +62,12 @@ public class UsageDataProvidersIT {
     RestAssured.defaultParser = Parser.JSON;
 
     TenantClient tenantClient = new TenantClient("localhost", port, "diku", "diku");
+
+    JsonObject conf = new JsonObject()
+        .put(HttpClientMock2.MOCK_MODE, "true")
+        .put("http.port", port);
     DeploymentOptions options = new DeploymentOptions()
-        .setConfig(new JsonObject().put("http.port", port))
+        .setConfig(conf)
         .setWorker(true);
 
     vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
@@ -114,6 +119,7 @@ public class UsageDataProvidersIT {
         .thenReturn()
         .as(UsageDataProvider.class);
     assertThat(usageDataProvider.getLabel()).isEqualTo("Nature Sushi");
+    assertThat(usageDataProvider.getVendorName()).isEqualTo("Test Vendor");
     assertThat(usageDataProvider.getId()).isNotEmpty();
 
     given()

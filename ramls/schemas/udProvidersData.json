@@ -12,6 +12,9 @@
     "vendorId": {
       "type": "string"
     },
+    "vendorName": {
+      "type": "string"
+    },
     "platformId": {
       "type": "string"
     },
@@ -28,6 +31,9 @@
       "type": "object",
       "properties": {
         "id": {
+          "type": "string"
+        },
+        "name": {
           "type": "string"
         },
         "vendorCode": {
