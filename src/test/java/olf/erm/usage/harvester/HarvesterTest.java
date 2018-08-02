@@ -7,7 +7,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import java.io.IOException;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -25,23 +28,29 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 @RunWith(VertxUnitRunner.class)
 public class HarvesterTest {
 
+  private static final Logger LOG = Logger.getLogger(HarvesterTest.class);
+
   @Rule
   public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
   @Rule
   public Timeout timeoutRule = Timeout.seconds(5);
 
-  private static final Harvester harvester = new Harvester();
+  private static final Harvester harvester = new Harvester("", "/_/proxy/tenants",
+      "/counter-reports", "/usage-data-providers", "/aggregator-settings");
   private static final String tenantId = "diku";
-  private static final String tenantPath = "/_/proxy/tenants";
-  private static final String moduleId = "mod-erm-usage-0.0.1";
+
+  @Before
+  public void setup() {
+    harvester.setOkapiUrl(StringUtils.removeEnd(wireMockRule.url(""), "/"));
+  }
 
   @Test
   public void getTenantsBodyValid(TestContext context) {
-    final String path = "/getTenantsBodyValid";
-    stubFor(get(urlEqualTo(path)).willReturn(aResponse().withBodyFile("TenantsResponse200.json")));
+    stubFor(get(urlEqualTo(harvester.getTenantsPath()))
+        .willReturn(aResponse().withBodyFile("TenantsResponse200.json")));
 
     Async async = context.async();
-    harvester.getTenants(wireMockRule.url(path)).setHandler(ar -> {
+    harvester.getTenants().setHandler(ar -> {
       context.assertTrue(ar.succeeded());
       context.assertEquals(2, ar.result().size());
       context.assertEquals(tenantId, ar.result().get(0));
@@ -51,11 +60,10 @@ public class HarvesterTest {
 
   @Test
   public void getTenantsBodyInvalid(TestContext context) {
-    final String path = "/getTenantsBodyInvalid";
-    stubFor(get(urlEqualTo(path)).willReturn(aResponse().withBody("{ }")));
+    stubFor(get(urlEqualTo(harvester.getTenantsPath())).willReturn(aResponse().withBody("{ }")));
 
     Async async = context.async();
-    harvester.getTenants(wireMockRule.url(path)).setHandler(ar -> {
+    harvester.getTenants().setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("Error decoding"));
       async.complete();
@@ -64,11 +72,10 @@ public class HarvesterTest {
 
   @Test
   public void getTenantsBodyEmpty(TestContext context) {
-    final String path = "/getTenantsBodyEmpty";
-    stubFor(get(urlEqualTo(path)).willReturn(aResponse().withBody("[ ]")));
+    stubFor(get(urlEqualTo(harvester.getTenantsPath())).willReturn(aResponse().withBody("[ ]")));
 
     Async async = context.async();
-    harvester.getTenants(wireMockRule.url(path)).setHandler(ar -> {
+    harvester.getTenants().setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().equals("No tenants found."));
       async.complete();
@@ -77,11 +84,10 @@ public class HarvesterTest {
 
   @Test
   public void getTenantsResponseInvalid(TestContext context) {
-    final String path = "/getTenantsResponseInvalid";
-    stubFor(get(urlEqualTo(path)).willReturn(aResponse().withStatus(404)));
+    stubFor(get(urlEqualTo(harvester.getTenantsPath())).willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
-    harvester.getTenants(wireMockRule.url(path)).setHandler(ar -> {
+    harvester.getTenants().setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("404"));
       async.complete();
@@ -90,24 +96,23 @@ public class HarvesterTest {
 
   @Test
   public void getTenantsNoService(TestContext context) {
-    final String wireMockUrl = wireMockRule.url("/getTenantsNoService");
     wireMockRule.stop();
 
     Async async = context.async();
-    harvester.getTenants(wireMockUrl).setHandler(ar -> {
+    harvester.getTenants().setHandler(ar -> {
       context.assertTrue(ar.failed());
+      LOG.error(ar.cause());
       async.complete();
     });
   }
 
   @Test
   public void getTenantsWithFault(TestContext context) {
-    final String path = "/getTenantsWithFault";
-    stubFor(
-        get(urlEqualTo(path)).willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+    stubFor(get(urlEqualTo(harvester.getTenantsPath()))
+        .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
     Async async = context.async();
-    harvester.getTenants(wireMockRule.url(path)).setHandler(ar -> {
+    harvester.getTenants().setHandler(ar -> {
       context.assertTrue(ar.failed());
       async.complete();
     });
@@ -115,24 +120,25 @@ public class HarvesterTest {
 
   @Test
   public void hasEnabledModuleYes(TestContext context) {
-    final String path = tenantPath + "/" + tenantId + "/modules/" + moduleId;
-    stubFor(get(urlEqualTo(path))
-        .willReturn(aResponse().withBody("{ \"id\" : \"" + moduleId + "\" }")));
+    stubFor(get(urlEqualTo(
+        harvester.getTenantsPath() + "/" + tenantId + "/modules/" + harvester.getModuleId()))
+            .willReturn(aResponse().withBody("{ \"id\" : \"" + harvester.getModuleId() + "\" }")));
 
     Async async = context.async();
-    harvester.hasEnabledModule(wireMockRule.url(tenantPath), tenantId, moduleId).setHandler(ar -> {
-      context.assertTrue(ar.succeeded(), "Future failed.");
+    harvester.hasEnabledModule(tenantId).setHandler(ar -> {
+      context.assertTrue(ar.succeeded());
       async.complete();
     });
   }
 
   @Test
   public void hasEnabledModuleNo(TestContext context) {
-    final String path = tenantPath + "/" + tenantId + "/modules/" + moduleId;
-    stubFor(get(urlEqualTo(path)).willReturn(aResponse().withBody(moduleId)));
+    stubFor(get(urlEqualTo(
+        harvester.getTenantsPath() + "/" + tenantId + "/modules/" + harvester.getModuleId()))
+            .willReturn(aResponse().withBody(harvester.getModuleId())));
 
     Async async = context.async();
-    harvester.hasEnabledModule(wireMockRule.url(tenantPath), tenantId, moduleId).setHandler(ar -> {
+    harvester.hasEnabledModule(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("Error decoding"));
       async.complete();
@@ -141,11 +147,12 @@ public class HarvesterTest {
 
   @Test
   public void hasEnabledModuleResponseInvalid(TestContext context) {
-    final String path = tenantPath + "/" + tenantId + "/modules/" + moduleId;
-    stubFor(get(urlEqualTo(path)).willReturn(aResponse().withStatus(404)));
+    stubFor(get(urlEqualTo(
+        harvester.getTenantsPath() + "/" + tenantId + "/modules/" + harvester.getModuleId()))
+            .willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
-    harvester.hasEnabledModule(wireMockRule.url(tenantPath), tenantId, moduleId).setHandler(ar -> {
+    harvester.hasEnabledModule(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("404"));
       async.complete();
@@ -154,11 +161,10 @@ public class HarvesterTest {
 
   @Test
   public void hasEnabledModuleNoService(TestContext context) {
-    final String wireMockUrl = wireMockRule.url(tenantPath);
     wireMockRule.stop();
 
     Async async = context.async();
-    harvester.hasEnabledModule(wireMockUrl, tenantId, moduleId).setHandler(ar -> {
+    harvester.hasEnabledModule(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       async.complete();
     });
@@ -166,12 +172,11 @@ public class HarvesterTest {
 
   @Test
   public void getProvidersBodyValid(TestContext context) {
-    final String path = "/usage-data-providers";
-    stubFor(get(urlPathMatching(path))
+    stubFor(get(urlPathMatching(harvester.getProviderPath()))
         .willReturn(aResponse().withBodyFile("usage-data-providers.json")));
 
     Async async = context.async();
-    harvester.getProviders(wireMockRule.url(path), tenantId).setHandler(ar -> {
+    harvester.getProviders(tenantId).setHandler(ar -> {
       context.assertTrue(ar.succeeded());
       context.assertEquals(3, ar.result().getTotalRecords());
       async.complete();
@@ -180,11 +185,10 @@ public class HarvesterTest {
 
   @Test
   public void getProvidersBodyInvalid(TestContext context) {
-    final String path = "/usage-data-providers";
-    stubFor(get(urlPathMatching(path)).willReturn(aResponse().withBody("")));
+    stubFor(get(urlPathMatching(harvester.getProviderPath())).willReturn(aResponse().withBody("")));
 
     Async async = context.async();
-    harvester.getProviders(wireMockRule.url(path), tenantId).setHandler(ar -> {
+    harvester.getProviders(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("Error decoding"));
       async.complete();
@@ -193,11 +197,11 @@ public class HarvesterTest {
 
   @Test
   public void getProvidersResponseInvalid(TestContext context) {
-    final String path = "/usage-data-providers";
-    stubFor(get(urlPathMatching(path)).willReturn(aResponse().withStatus(404)));
+    stubFor(
+        get(urlPathMatching(harvester.getProviderPath())).willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
-    harvester.getProviders(wireMockRule.url(path), tenantId).setHandler(ar -> {
+    harvester.getProviders(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("404"));
       async.complete();
@@ -206,12 +210,12 @@ public class HarvesterTest {
 
   @Test
   public void getProvidersNoService(TestContext context) {
-    final String wireMockUrl = wireMockRule.url("/usage-data-providers");
     wireMockRule.stop();
 
     Async async = context.async();
-    harvester.getProviders(wireMockUrl, tenantId).setHandler(ar -> {
+    harvester.getProviders(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
+      LOG.error(ar.cause());
       async.complete();
     });
   }
@@ -222,12 +226,11 @@ public class HarvesterTest {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
-    final String path = "/aggregator-settings";
-    stubFor(get(urlEqualTo(path + "/" + provider.getAggregator().getId()))
+    stubFor(get(urlEqualTo(harvester.getAggregatorPath() + "/" + provider.getAggregator().getId()))
         .willReturn(aResponse().withBodyFile("aggregator-setting.json")));
 
     Async async = context.async();
-    harvester.getAggregatorSetting(wireMockRule.url(path), tenantId, provider).setHandler(ar -> {
+    harvester.getAggregatorSetting(tenantId, provider).setHandler(ar -> {
       context.assertTrue(ar.succeeded());
       context.assertTrue("Nationaler Statistikserver".equals(ar.result().getLabel()));
       async.complete();
@@ -246,7 +249,7 @@ public class HarvesterTest {
 
     provider1.setAggregator(null);
     Async async = context.async();
-    harvester.getAggregatorSetting("", tenantId, provider1).setHandler(ar -> {
+    harvester.getAggregatorSetting(tenantId, provider1).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.result() == null);
       context.assertTrue(ar.cause().getMessage().contains("no aggregator found"));
@@ -255,7 +258,7 @@ public class HarvesterTest {
 
     provider2.getAggregator().setId(null);
     Async async2 = context.async();
-    harvester.getAggregatorSetting("", tenantId, provider2).setHandler(ar -> {
+    harvester.getAggregatorSetting(tenantId, provider2).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.result() == null);
       context.assertTrue(ar.cause().getMessage().contains("no aggregator found"));
@@ -269,12 +272,11 @@ public class HarvesterTest {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
-    final String path = "/aggregator-settings";
-    stubFor(get(urlEqualTo(path + "/" + provider.getAggregator().getId()))
+    stubFor(get(urlEqualTo(harvester.getAggregatorPath() + "/" + provider.getAggregator().getId()))
         .willReturn(aResponse().withBody("garbage")));
 
     Async async = context.async();
-    harvester.getAggregatorSetting(wireMockRule.url(path), tenantId, provider).setHandler(ar -> {
+    harvester.getAggregatorSetting(tenantId, provider).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.result() == null);
       context.assertTrue(ar.cause().getMessage().contains("Error decoding"));
@@ -288,12 +290,12 @@ public class HarvesterTest {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
-    final String path = "/aggregator-settings";
-    stubFor(get(urlEqualTo(path + "/" + provider.getAggregator().getId())).willReturn(
-        aResponse().withBody("Aggregator settingObject does not exist").withStatus(404)));
+    stubFor(get(urlEqualTo(harvester.getAggregatorPath() + "/" + provider.getAggregator().getId()))
+        .willReturn(
+            aResponse().withBody("Aggregator settingObject does not exist").withStatus(404)));
 
     Async async = context.async();
-    harvester.getAggregatorSetting(wireMockRule.url(path), tenantId, provider).setHandler(ar -> {
+    harvester.getAggregatorSetting(tenantId, provider).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.result() == null);
       context.assertTrue(ar.cause().getMessage().contains("404"));
@@ -307,11 +309,10 @@ public class HarvesterTest {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
-    final String wireMockUrl = wireMockRule.url("/aggregator-settings");
     wireMockRule.stop();
 
     Async async = context.async();
-    harvester.getAggregatorSetting(wireMockUrl, tenantId, provider).setHandler(ar -> {
+    harvester.getAggregatorSetting(tenantId, provider).setHandler(ar -> {
       context.assertTrue(ar.failed());
       async.complete();
     });

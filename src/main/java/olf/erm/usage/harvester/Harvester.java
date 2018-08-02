@@ -28,8 +28,17 @@ public class Harvester {
   private static final String ERR_MSG_DECODE = "Error decoding response from %s, %s";
   private Vertx vertx = Vertx.vertx();
 
-  public Future<List<String>> getTenants(String url) {
+  private String okapiUrl;
+  private String tenantsPath;
+  private String reportsPath;
+  private String providerPath;
+  private String aggregatorPath;
+  private String moduleId = "mod-erm-usage-0.0.1";
+
+  public Future<List<String>> getTenants() {
     Future<List<String>> future = Future.future();
+
+    final String url = okapiUrl + tenantsPath;
     WebClient client = WebClient.create(vertx);
     client.getAbs(url).send(ar -> {
       client.close();
@@ -61,9 +70,9 @@ public class Harvester {
     return future;
   }
 
-  public Future<Void> hasEnabledModule(String url, String tenantId, String moduleId) {
+  public Future<Void> hasEnabledModule(String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
-    final String moduleUrl = url + "/" + tenantId + "/modules/" + moduleId;
+    final String moduleUrl = okapiUrl + tenantsPath + "/" + tenantId + "/modules/" + moduleId;
 
     Future<Void> future = Future.future();
     WebClient client = WebClient.create(vertx);
@@ -91,8 +100,9 @@ public class Harvester {
   }
 
   // TODO: handle limits > 30
-  public Future<UdProvidersDataCollection> getProviders(String url, String tenantId) {
+  public Future<UdProvidersDataCollection> getProviders(String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
+    final String url = okapiUrl + providerPath;
     LOG.info(logprefix + "getting providers");
     Future<UdProvidersDataCollection> future = Future.future();
 
@@ -125,7 +135,7 @@ public class Harvester {
     return future;
   }
 
-  public Future<AggregatorSetting> getAggregatorSetting(String url, String tenantId,
+  public Future<AggregatorSetting> getAggregatorSetting(String tenantId,
       UsageDataProvider provider) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     Future<AggregatorSetting> future = Future.future();
@@ -136,7 +146,7 @@ public class Harvester {
           .failedFuture(logprefix + "no aggregator found for provider " + provider.getLabel());
     }
 
-    final String aggrUrl = url + "/" + aggregator.getId();
+    final String aggrUrl = okapiUrl + aggregatorPath + "/" + aggregator.getId();
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.GET, aggrUrl)
         .putHeader(Constants.OKAPI_HEADER_TENANT, tenantId)
@@ -165,11 +175,11 @@ public class Harvester {
   }
 
 
-  public JsonObject createJsonObjectReport(String report, UsageDataProvider provider, String begin,
-      String end) {
+  public JsonObject createReportJsonObject(String reportData, String reportName,
+      UsageDataProvider provider, String begin, String end) {
     JsonObject cr = new JsonObject();
     cr.put("beginDate", begin);
-    cr.put("reportName", report);
+    cr.put("reportName", reportName);
     cr.put("platformId", provider.getPlatformId());
     cr.put("customerId", provider.getCustomerId());
     cr.put("release", provider.getReportRelease());
@@ -178,7 +188,7 @@ public class Harvester {
     cr.put("creationTime", LocalDateTime.now().toString()); // FIXME
     cr.put("endDate", end);
     cr.put("vendorId", provider.getVendorId());
-    cr.put("report", report);
+    cr.put("report", reportData);
     cr.put("id", UUID.randomUUID().toString());
     return cr;
   }
@@ -200,7 +210,7 @@ public class Harvester {
     // Complete aggrFuture if aggregator is not set.. aka skip it
     Future<AggregatorSetting> aggrFuture = Future.future();
     if (aggregator != null) {
-      aggrFuture = getAggregatorSetting(url + "/aggregator-settings", tenantId, provider);
+      aggrFuture = getAggregatorSetting(tenantId, provider);
     } else {
       aggrFuture.complete(null);
     }
@@ -239,15 +249,10 @@ public class Harvester {
   }
 
   public void run() {
-    String okapiUrl = "http://192.168.56.103:9130";
-    String tenantsUrl = okapiUrl + "/_/proxy/tenants";
-    String moduleId = "mod-erm-usage-0.0.1";
-    String providerPath = "/usage-data-providers";
-    getTenants(tenantsUrl).compose(tenants -> tenants.forEach(t -> {
-      hasEnabledModule(tenantsUrl, t, moduleId).compose(f -> {
-        getProviders(okapiUrl + providerPath, t)
-            .compose(providers -> providers.getUsageDataProviders()
-                .forEach(p -> fetchReports(okapiUrl, t, p)), handleErrorFuture());
+    getTenants().compose(tenants -> tenants.forEach(t -> {
+      hasEnabledModule(t).compose(f -> {
+        getProviders(t).compose(providers -> providers.getUsageDataProviders()
+            .forEach(p -> fetchReports(okapiUrl, t, p)), handleErrorFuture());
       }, handleErrorFuture());
     }), handleErrorFuture());
   }
@@ -256,7 +261,68 @@ public class Harvester {
     return Future.future().setHandler(ar -> LOG.error(ar.cause().getMessage()));
   }
 
+  public Harvester(String okapiUrl, String tenantsPath, String reportsPath, String providerPath,
+      String aggregatorPath) {
+    super();
+    this.okapiUrl = okapiUrl;
+    this.tenantsPath = tenantsPath;
+    this.reportsPath = reportsPath;
+    this.providerPath = providerPath;
+    this.aggregatorPath = aggregatorPath;
+  }
+
+
+
+  public String getOkapiUrl() {
+    return okapiUrl;
+  }
+
+  public void setOkapiUrl(String okapiUrl) {
+    this.okapiUrl = okapiUrl;
+  }
+
+  public String getTenantsPath() {
+    return tenantsPath;
+  }
+
+  public void setTenantsPath(String tenantsPath) {
+    this.tenantsPath = tenantsPath;
+  }
+
+  public String getReportsPath() {
+    return reportsPath;
+  }
+
+  public void setReportsPath(String reportsPath) {
+    this.reportsPath = reportsPath;
+  }
+
+  public String getProviderPath() {
+    return providerPath;
+  }
+
+  public void setProviderPath(String providerPath) {
+    this.providerPath = providerPath;
+  }
+
+  public String getModuleId() {
+    return moduleId;
+  }
+
+  public void setModuleId(String moduleId) {
+    this.moduleId = moduleId;
+  }
+
+  public String getAggregatorPath() {
+    return aggregatorPath;
+  }
+
+  public void setAggregatorPath(String aggregatorPath) {
+    this.aggregatorPath = aggregatorPath;
+  }
+
   public static void main(String[] args) {
-    new Harvester().run();
+    new Harvester("http://192.168.56.103:9130", "/_/proxy/tenants", "/counter-reports",
+        "/usage-data-providers", "/aggregator-settings").run();
   }
 }
