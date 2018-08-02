@@ -2,10 +2,15 @@ package olf.erm.usage.harvester;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -15,12 +20,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.gson.JsonSyntaxException;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -37,7 +45,17 @@ public class HarvesterTest {
 
   private static final Harvester harvester = new Harvester("", "/_/proxy/tenants",
       "/counter-reports", "/usage-data-providers", "/aggregator-settings");
+
   private static final String tenantId = "diku";
+
+  private final static JsonObject crJson = new JsonObject("{\n"
+      + "  \"beginDate\" : \"2016-03-01\",\n" + "  \"reportName\" : \"JR1\",\n"
+      + "  \"platformId\" : \"uuid-123456789\",\n" + "  \"customerId\" : \"12345def\",\n"
+      + "  \"release\" : 4,\n" + "  \"format\" : \"???\",\n"
+      + "  \"downloadTime\" : \"2018-08-01T15:04:05.967\",\n"
+      + "  \"creationTime\" : \"2018-08-01T15:04:06.539\",\n" + "  \"endDate\" : \"2016-03-31\",\n"
+      + "  \"vendorId\" : \"uuid-123456789\",\n" + "  \"report\" : \"reportdata\","
+      + "  \"id\" : \"d90bc588-1c7c-4b0c-879c-6e3f6c87c3a6\"\n" + "}");
 
   @Before
   public void setup() {
@@ -315,6 +333,45 @@ public class HarvesterTest {
     harvester.getAggregatorSetting(tenantId, provider).setHandler(ar -> {
       context.assertTrue(ar.failed());
       async.complete();
+    });
+  }
+
+  @Test
+  public void createReportJsonObject()
+      throws JsonParseException, JsonMappingException, IOException {
+    final UsageDataProvider provider = new ObjectMapper().readValue(Resources
+        .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
+        UsageDataProvider.class);
+
+    final String reportName = "JR1";
+    final String reportData = "testreport";
+    final String begin = "2018-01-01";
+    final String end = "2018-01-31";
+
+    JsonObject result =
+        harvester.createReportJsonObject(reportData, reportName, provider, begin, end);
+    assertTrue(result != null);
+    assertEquals(reportName, result.getString("reportName"));
+    assertEquals(reportData, result.getString("report"));
+    assertEquals(begin, result.getString("beginDate"));
+    assertEquals(end, result.getString("endDate"));
+    assertEquals(provider.getPlatformId(), result.getString("platformId"));
+    assertEquals(provider.getCustomerId(), result.getString("customerId"));
+  }
+
+  @Test
+  public void postReport(TestContext context) {
+    final String url = harvester.getReportsPath() + "/" + crJson.getString("id");
+    stubFor(post(urlEqualTo(url)).willReturn(aResponse().withStatus(201)));
+
+    Async async = context.async();
+    harvester.postReport(tenantId, crJson).setHandler(ar -> {
+      if (ar.succeeded()) {
+        async.complete();
+        verify(1, postRequestedFor(urlEqualTo(url)));
+      } else {
+        context.fail();
+      }
     });
   }
 }

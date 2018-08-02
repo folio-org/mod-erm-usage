@@ -15,9 +15,11 @@ import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 
@@ -225,9 +227,10 @@ public class Harvester {
     });
   }
 
-  public Future<Void> postReport(String url, String tenantId, JsonObject reportContent) {
+  public Future<HttpResponse<Buffer>> postReport(String tenantId, JsonObject reportContent) {
     final String logprefix = "Tenant: " + tenantId + ", ";
-    final Future<Void> future = Future.future();
+    final String url = okapiUrl + reportsPath + "/" + reportContent.getString("id");
+    final Future<HttpResponse<Buffer>> future = Future.future();
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.POST, url)
