@@ -367,8 +367,8 @@ public class HarvesterTest {
     Async async = context.async();
     harvester.postReport(tenantId, crJson).setHandler(ar -> {
       if (ar.succeeded()) {
+        verify(postRequestedFor(urlEqualTo(url)));
         async.complete();
-        verify(1, postRequestedFor(urlEqualTo(url)));
       } else {
         context.fail();
       }

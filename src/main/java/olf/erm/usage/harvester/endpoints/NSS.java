@@ -15,9 +15,9 @@ public class NSS implements ServiceEndpoint {
     String serviceUrl =
         (aggregator == null) ? provider.getServiceUrl() : aggregator.getServiceUrl();
     String apiKey = (aggregator == null) ? provider.getApiKey() : aggregator.getApiKey();
+    String vendorCode = (aggregator == null) ? "" : provider.getAggregator().getVendorCode();
     return String.format(url, serviceUrl, apiKey, provider.getRequestorId(),
-        provider.getCustomerId(), report, provider.getReportRelease(), begin, end,
-        provider.getAggregator().getVendorCode());
+        provider.getCustomerId(), report, provider.getReportRelease(), begin, end, vendorCode);
   }
 
   public NSS(UsageDataProvider provider, AggregatorSetting aggregator) {
