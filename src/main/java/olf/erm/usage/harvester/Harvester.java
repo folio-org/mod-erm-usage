@@ -176,7 +176,6 @@ public class Harvester {
     return future;
   }
 
-
   public JsonObject createReportJsonObject(String reportData, String reportName,
       UsageDataProvider provider, String begin, String end) {
     JsonObject cr = new JsonObject();
@@ -195,9 +194,7 @@ public class Harvester {
     return cr;
   }
 
-
-
-  public void fetchReports(String url, String tenantId, UsageDataProvider provider) {
+  public void fetchAndPostReports(String url, String tenantId, UsageDataProvider provider) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     LOG.info(logprefix + "processing provider: " + provider.getLabel());
 
@@ -217,11 +214,29 @@ public class Harvester {
       aggrFuture.complete(null);
     }
 
+    String begin = "2016-03-01";
+    String end = "2016-03-31";
+
     aggrFuture.compose(as -> {
       ServiceEndpoint sep = ServiceEndpoint.create(provider, as);
       if (sep != null) {
-        provider.getRequestedReports()
-            .forEach(r -> sep.fetchSingleReport(r, "2018-03-01", "2018-03-31"));
+        provider.getRequestedReports().forEach(r -> {
+          System.out.println(r);
+          sep.fetchSingleReport(r, begin, end).setHandler(ar -> {
+            if (ar.succeeded()) {
+              JsonObject crJson = createReportJsonObject(ar.result(), r, provider, begin, end);
+              postReport(tenantId, crJson).setHandler(ar2 -> {
+                if (ar.succeeded()) {
+                  LOG.info(ar2.result().statusCode());
+                } else {
+                  LOG.error(ar2.cause());
+                }
+              });
+            } else {
+              LOG.error(ar.cause().getMessage());
+            }
+          });
+        });
       }
       return Future.succeededFuture();
     });
@@ -229,8 +244,10 @@ public class Harvester {
 
   public Future<HttpResponse<Buffer>> postReport(String tenantId, JsonObject reportContent) {
     final String logprefix = "Tenant: " + tenantId + ", ";
-    final String url = okapiUrl + reportsPath + "/" + reportContent.getString("id");
+    final String url = okapiUrl + reportsPath;
     final Future<HttpResponse<Buffer>> future = Future.future();
+
+    LOG.info(logprefix + "posting report with data " + reportContent);
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.POST, url)
@@ -238,26 +255,55 @@ public class Harvester {
         .putHeader("accept", "application/json")
         .sendJsonObject(reportContent, ar -> {
           if (ar.succeeded()) {
+            // TODO: check for 201 created and 204 no content
             LOG.info(String.format(ERR_MSG_STATUS, ar.result().statusCode(),
                 ar.result().statusMessage(), url));
-            future.complete();
+            future.complete(ar.result());
           } else {
             LOG.error(ar.cause());
             future.fail(ar.cause());
           }
         });
 
-    LOG.info(logprefix + "posting report with data " + reportContent);
+    return future;
+  }
+
+  public Future<List<FetchItem>> getFetchList() {
+    Future<List<FetchItem>> future = Future.future();
+
+    getTenants().map(list -> {
+      System.out.println(list);
+      list.forEach(s -> hasEnabledModule(s).compose(v -> {
+        getProviders(s).map(r -> r.getUsageDataProviders()).map(udpList -> {
+          udpList.forEach(udp -> {
+            getAggregatorSetting(s, udp);
+          });
+          return Future.future();
+        });
+      }, Future.future()));
+      return Future.succeededFuture();
+    });
+
     return future;
   }
 
   public void run() {
-    getTenants().compose(tenants -> tenants.forEach(t -> {
-      hasEnabledModule(t).compose(f -> {
-        getProviders(t).compose(providers -> providers.getUsageDataProviders()
-            .forEach(p -> fetchReports(okapiUrl, t, p)), handleErrorFuture());
-      }, handleErrorFuture());
-    }), handleErrorFuture());
+    // getTenants().compose(tenants -> tenants.forEach(t -> {
+    // hasEnabledModule(t).compose(f -> {
+    // getProviders(t).compose(providers -> providers.getUsageDataProviders()
+    // .forEach(p -> fetchAndPostReports(okapiUrl, t, p)), handleErrorFuture());
+    // }, handleErrorFuture());
+    // }), handleErrorFuture());
+
+    getFetchList().setHandler(ar -> {
+      if (ar.succeeded()) {
+        ar.result().forEach(fi -> {
+          System.out.println(String.join(",", fi.reportType, fi.begin, fi.end));
+        });
+      } else {
+        LOG.error(ar.cause());
+      }
+    });
   }
 
   private Future<Object> handleErrorFuture() {
@@ -273,8 +319,6 @@ public class Harvester {
     this.providerPath = providerPath;
     this.aggregatorPath = aggregatorPath;
   }
-
-
 
   public String getOkapiUrl() {
     return okapiUrl;
