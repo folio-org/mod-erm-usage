@@ -7,7 +7,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -361,13 +360,13 @@ public class HarvesterTest {
 
   @Test
   public void postReport(TestContext context) {
-    final String url = harvester.getReportsPath() + "/" + crJson.getString("id");
+    final String url = harvester.getReportsPath();
     stubFor(post(urlEqualTo(url)).willReturn(aResponse().withStatus(201)));
 
     Async async = context.async();
     harvester.postReport(tenantId, crJson).setHandler(ar -> {
       if (ar.succeeded()) {
-        verify(postRequestedFor(urlEqualTo(url)));
+        wireMockRule.verify(postRequestedFor(urlEqualTo(url)));
         async.complete();
       } else {
         context.fail();
