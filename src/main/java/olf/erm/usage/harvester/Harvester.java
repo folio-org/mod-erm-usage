@@ -1,6 +1,7 @@
 package olf.erm.usage.harvester;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -214,41 +215,40 @@ public class Harvester {
     return sepFuture;
   }
 
-  public void fetchAndPostReports(String url, String tenantId, UsageDataProvider provider) {
+  public Future<List<FetchItem>> getFetchList(String tenantId, UsageDataProvider provider) {
     final String logprefix = "Tenant: " + tenantId + ", ";
-    LOG.info(logprefix + "processing provider: " + provider.getLabel());
 
     // check if harvesting status is 'active'
     if (!provider.getHarvestingStatus().equals(HarvestingStatus.ACTIVE)) {
       LOG.info(logprefix + "skipping " + provider.getLabel() + " as harvesting status is "
           + provider.getHarvestingStatus());
-      return;
+      return Future.failedFuture("Harvesting not active");
     }
 
-    String begin = "2016-03-01";
-    String end = "2016-03-31";
+    List<FetchItem> list = new ArrayList<>();
+    provider.getRequestedReports().forEach(r ->
+    // TODO: implement logic to determine the dates to be processed here
+    list.add(new FetchItem(r, "2016-03-01", "2016-03-31")));
+
+    return Future.succeededFuture(list);
+  }
+
+  public void fetchAndPostReports(String tenantId, UsageDataProvider provider) {
+    final String logprefix = "Tenant: " + tenantId + ", ";
+    LOG.info(logprefix + "processing provider: " + provider.getLabel());
 
     getServiceEndpoint(tenantId, provider).map(sep -> {
       if (sep != null) {
-        provider.getRequestedReports().forEach(r -> {
-          System.out.println(r);
-          sep.fetchSingleReport(r, begin, end).setHandler(ar -> {
-            if (ar.succeeded()) {
-              JsonObject crJson = createReportJsonObject(ar.result(), r, provider, begin, end);
-              postReport(tenantId, crJson).setHandler(ar2 -> {
-                if (ar.succeeded()) {
-                  LOG.info(ar2.result().statusCode());
-                } else {
-                  LOG.error(ar2.cause());
-                }
-              });
-            } else {
-              LOG.error(ar.cause().getMessage());
-            }
-          });
+        getFetchList(tenantId, provider).compose(list -> {
+          list.forEach(li -> sep.fetchSingleReport(li.reportType, li.begin, li.end).compose(rep -> {
+            JsonObject crJson =
+                createReportJsonObject(rep, li.reportType, provider, li.begin, li.end);
+            return postReport(tenantId, crJson);
+          }));
+          return Future.succeededFuture();
         });
       }
-      return Future.succeededFuture();
+      return Future.failedFuture("No ServiceEndpoint");
     });
   }
 
@@ -266,7 +266,7 @@ public class Harvester {
         .sendJsonObject(reportContent, ar -> {
           if (ar.succeeded()) {
             // TODO: check for 201 created and 204 no content
-            LOG.info(String.format(ERR_MSG_STATUS, ar.result().statusCode(),
+            LOG.info(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
                 ar.result().statusMessage(), url));
             future.complete(ar.result());
           } else {
@@ -279,12 +279,11 @@ public class Harvester {
   }
 
   public void run() {
-    getTenants().compose(tenants -> tenants.forEach(t -> {
-      hasEnabledModule(t).compose(f -> {
-        getProviders(t).compose(providers -> providers.getUsageDataProviders()
-            .forEach(p -> fetchAndPostReports(okapiUrl, t, p)), handleErrorFuture());
-      }, handleErrorFuture());
-    }), handleErrorFuture());
+    getTenants()
+        .compose(tenants -> tenants.forEach(t -> hasEnabledModule(t).compose(
+            f -> getProviders(t).compose(providers -> providers.getUsageDataProviders()
+                .forEach(p -> fetchAndPostReports(t, p)), handleErrorFuture()),
+            handleErrorFuture())), handleErrorFuture());
   }
 
   private Future<Object> handleErrorFuture() {
