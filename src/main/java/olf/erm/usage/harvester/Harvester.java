@@ -194,6 +194,26 @@ public class Harvester {
     return cr;
   }
 
+  public Future<ServiceEndpoint> getServiceEndpoint(String tenantId, UsageDataProvider provider) {
+    Future<AggregatorSetting> aggrFuture = Future.future();
+    Future<ServiceEndpoint> sepFuture = Future.future();
+
+    Aggregator aggregator = provider.getAggregator();
+    // Complete aggrFuture if aggregator is not set.. aka skip it
+    if (aggregator != null) {
+      aggrFuture = getAggregatorSetting(tenantId, provider);
+    } else {
+      aggrFuture.complete(null);
+    }
+
+    aggrFuture.compose(as -> {
+      ServiceEndpoint sep = ServiceEndpoint.create(provider, as);
+      sepFuture.complete(sep);
+    }, sepFuture);
+
+    return sepFuture;
+  }
+
   public void fetchAndPostReports(String url, String tenantId, UsageDataProvider provider) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     LOG.info(logprefix + "processing provider: " + provider.getLabel());
@@ -205,20 +225,10 @@ public class Harvester {
       return;
     }
 
-    Aggregator aggregator = provider.getAggregator();
-    // Complete aggrFuture if aggregator is not set.. aka skip it
-    Future<AggregatorSetting> aggrFuture = Future.future();
-    if (aggregator != null) {
-      aggrFuture = getAggregatorSetting(tenantId, provider);
-    } else {
-      aggrFuture.complete(null);
-    }
-
     String begin = "2016-03-01";
     String end = "2016-03-31";
 
-    aggrFuture.compose(as -> {
-      ServiceEndpoint sep = ServiceEndpoint.create(provider, as);
+    getServiceEndpoint(tenantId, provider).map(sep -> {
       if (sep != null) {
         provider.getRequestedReports().forEach(r -> {
           System.out.println(r);
