@@ -14,6 +14,7 @@ import org.folio.rest.jaxrs.model.UsageDataProvider.HarvestingStatus;
 import org.folio.rest.util.Constants;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -24,12 +25,11 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 
-public class Harvester {
+public class HarvesterVerticle extends AbstractVerticle {
 
-  private static final Logger LOG = Logger.getLogger(Harvester.class);
+  private static final Logger LOG = Logger.getLogger(HarvesterVerticle.class);
   private static final String ERR_MSG_STATUS = "Received status code %s, %s from %s";
   private static final String ERR_MSG_DECODE = "Error decoding response from %s, %s";
-  private Vertx vertx = Vertx.vertx();
 
   private String okapiUrl;
   private String tenantsPath;
@@ -290,8 +290,8 @@ public class Harvester {
     return Future.future().setHandler(ar -> LOG.error(ar.cause().getMessage()));
   }
 
-  public Harvester(String okapiUrl, String tenantsPath, String reportsPath, String providerPath,
-      String aggregatorPath) {
+  public HarvesterVerticle(String okapiUrl, String tenantsPath, String reportsPath,
+      String providerPath, String aggregatorPath) {
     super();
     this.okapiUrl = okapiUrl;
     this.tenantsPath = tenantsPath;
@@ -348,8 +348,20 @@ public class Harvester {
     this.aggregatorPath = aggregatorPath;
   }
 
+  /*
+   * quick deploy with main method
+   */
   public static void main(String[] args) {
-    new Harvester("http://192.168.56.103:9130", "/_/proxy/tenants", "/counter-reports",
-        "/usage-data-providers", "/aggregator-settings").run();
+    Vertx vertx = Vertx.vertx();
+    HarvesterVerticle harvester = new HarvesterVerticle("http://192.168.56.103:9130",
+        "/_/proxy/tenants", "/counter-reports", "/usage-data-providers", "/aggregator-settings");
+    vertx.deployVerticle(harvester, result -> {
+      if (result.succeeded()) {
+        LOG.info("Successfully deployed HarvesterVerticle");
+        harvester.run();
+      } else {
+        LOG.error("Failed to deploy HarvesterVerticle");
+      }
+    });
   }
 }

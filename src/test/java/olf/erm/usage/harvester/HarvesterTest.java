@@ -14,7 +14,9 @@ import java.io.IOException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -27,6 +29,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.gson.JsonSyntaxException;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -42,7 +45,7 @@ public class HarvesterTest {
   @Rule
   public Timeout timeoutRule = Timeout.seconds(5);
 
-  private static final Harvester harvester = new Harvester("", "/_/proxy/tenants",
+  private static final HarvesterVerticle harvester = new HarvesterVerticle("", "/_/proxy/tenants",
       "/counter-reports", "/usage-data-providers", "/aggregator-settings");
 
   private static final String tenantId = "diku";
@@ -55,6 +58,19 @@ public class HarvesterTest {
       + "  \"creationTime\" : \"2018-08-01T15:04:06.539\",\n" + "  \"endDate\" : \"2016-03-31\",\n"
       + "  \"vendorId\" : \"uuid-123456789\",\n" + "  \"report\" : \"reportdata\","
       + "  \"id\" : \"d90bc588-1c7c-4b0c-879c-6e3f6c87c3a6\"\n" + "}");
+
+  private static Vertx vertx;
+
+  @BeforeClass
+  public static void beforeClass(TestContext context) {
+    vertx = Vertx.vertx();
+    vertx.deployVerticle(harvester, context.asyncAssertSuccess());
+  }
+
+  @AfterClass
+  public static void afterClass(TestContext context) {
+    vertx.close(context.asyncAssertSuccess());
+  }
 
   @Before
   public void setup() {
@@ -367,6 +383,27 @@ public class HarvesterTest {
     harvester.postReport(tenantId, crJson).setHandler(ar -> {
       if (ar.succeeded()) {
         wireMockRule.verify(postRequestedFor(urlEqualTo(url)));
+        async.complete();
+      } else {
+        context.fail();
+      }
+    });
+  }
+
+  @Test
+  public void getServiceEndpoint(TestContext context)
+      throws JsonParseException, JsonMappingException, IOException {
+    final UsageDataProvider provider = new ObjectMapper().readValue(Resources
+        .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
+        UsageDataProvider.class);
+
+    stubFor(get(urlEqualTo(harvester.getAggregatorPath() + "/" + provider.getAggregator().getId()))
+        .willReturn(aResponse().withBodyFile("aggregator-setting.json")));
+
+    Async async = context.async();
+    harvester.getServiceEndpoint("diku", provider).setHandler(ar -> {
+      if (ar.succeeded()) {
+        context.assertTrue(ar.result() != null);
         async.complete();
       } else {
         context.fail();
