@@ -1,4 +1,4 @@
-package olf.erm.usage.harvester;
+package olf.erm.usage.harvester.endpoints;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -25,21 +25,18 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import olf.erm.usage.harvester.endpoints.NSS;
-import olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 
 @RunWith(VertxUnitRunner.class)
-public class ServiceEndpointTest {
+public class AbstractServiceEndpointTest {
 
-  @Rule
-  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
   @Rule
   public Timeout timeoutRule = Timeout.seconds(5);
   @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+  @Rule
   public RunTestOnContext ctx = new RunTestOnContext();
 
-  private static final Logger LOG = Logger.getLogger(ServiceEndpointTest.class);
-
+  private static final Logger LOG = Logger.getLogger(AbstractServiceEndpointTest.class);
   private UsageDataProvider provider;
   private AggregatorSetting aggregator;
 
@@ -154,24 +151,4 @@ public class ServiceEndpointTest {
     });
   }
 
-  @Test
-  public void createNSS(TestContext context) {
-    ServiceEndpoint sep =
-        ServiceEndpoint.create(ctx.vertx(), provider, aggregator.withServiceType("NSS"));
-    context.assertTrue(sep instanceof NSS);
-
-    ServiceEndpoint sep2 =
-        ServiceEndpoint.create(ctx.vertx(), provider.withServiceType("NSS"), null);
-    context.assertTrue(sep2 instanceof NSS);
-  }
-
-  @Test
-  public void createNoImpl(TestContext context) {
-    ServiceEndpoint sep =
-        ServiceEndpoint.create(ctx.vertx(), provider, aggregator.withServiceType(""));
-    context.assertTrue(sep == null);
-
-    ServiceEndpoint sep2 = ServiceEndpoint.create(ctx.vertx(), provider.withServiceType(""), null);
-    context.assertTrue(sep2 == null);
-  }
 }
