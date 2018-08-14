@@ -23,6 +23,7 @@ import com.google.common.io.Resources;
 import io.vertx.core.Future;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import olf.erm.usage.harvester.endpoints.NSS;
 import olf.erm.usage.harvester.endpoints.ServiceEndpoint;
@@ -34,6 +35,8 @@ public class ServiceEndpointTest {
   public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
   @Rule
   public Timeout timeoutRule = Timeout.seconds(5);
+  @Rule
+  public RunTestOnContext ctx = new RunTestOnContext();
 
   private static final Logger LOG = Logger.getLogger(ServiceEndpointTest.class);
 
@@ -59,7 +62,7 @@ public class ServiceEndpointTest {
       throws JsonParseException, JsonMappingException, IOException {
     final String endDate = "2016-03-31";
     final String beginDate = "2016-03-01";
-    final ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator);
+    final ServiceEndpoint sep = ServiceEndpoint.create(ctx.vertx(), provider, aggregator);
     final String url = sep.buildURL("JR1", beginDate, endDate);
 
     LOG.info("Creating stub for: " + url);
@@ -85,7 +88,7 @@ public class ServiceEndpointTest {
       throws JsonParseException, JsonMappingException, IOException {
     final String endDate = "2018-03-31";
     final String beginDate = "2018-03-01";
-    final ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator);
+    final ServiceEndpoint sep = ServiceEndpoint.create(ctx.vertx(), provider, aggregator);
     final String url = sep.buildURL("JR1", beginDate, endDate);
 
     LOG.info("Creating stub for: " + url);
@@ -110,7 +113,7 @@ public class ServiceEndpointTest {
       throws JsonParseException, JsonMappingException, IOException {
     final String endDate = "2018-03-31";
     final String beginDate = "2018-03-01";
-    final ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator);
+    final ServiceEndpoint sep = ServiceEndpoint.create(ctx.vertx(), provider, aggregator);
     final String url = sep.buildURL("JR1", beginDate, endDate);
 
     LOG.info("Creating stub for: " + url);
@@ -135,7 +138,7 @@ public class ServiceEndpointTest {
       throws JsonParseException, JsonMappingException, IOException {
     final String endDate = "2018-03-31";
     final String beginDate = "2018-03-01";
-    final ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator);
+    final ServiceEndpoint sep = ServiceEndpoint.create(ctx.vertx(), provider, aggregator);
 
     wireMockRule.stop();
 
@@ -153,19 +156,22 @@ public class ServiceEndpointTest {
 
   @Test
   public void createNSS(TestContext context) {
-    ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator.withServiceType("NSS"));
+    ServiceEndpoint sep =
+        ServiceEndpoint.create(ctx.vertx(), provider, aggregator.withServiceType("NSS"));
     context.assertTrue(sep instanceof NSS);
 
-    ServiceEndpoint sep2 = ServiceEndpoint.create(provider.withServiceType("NSS"), null);
+    ServiceEndpoint sep2 =
+        ServiceEndpoint.create(ctx.vertx(), provider.withServiceType("NSS"), null);
     context.assertTrue(sep2 instanceof NSS);
   }
 
   @Test
   public void createNoImpl(TestContext context) {
-    ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator.withServiceType(""));
+    ServiceEndpoint sep =
+        ServiceEndpoint.create(ctx.vertx(), provider, aggregator.withServiceType(""));
     context.assertTrue(sep == null);
 
-    ServiceEndpoint sep2 = ServiceEndpoint.create(provider.withServiceType(""), null);
+    ServiceEndpoint sep2 = ServiceEndpoint.create(ctx.vertx(), provider.withServiceType(""), null);
     context.assertTrue(sep2 == null);
   }
 }

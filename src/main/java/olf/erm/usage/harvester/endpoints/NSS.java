@@ -2,11 +2,13 @@ package olf.erm.usage.harvester.endpoints;
 
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
+import io.vertx.core.Vertx;
 
-public class NSS implements ServiceEndpoint {
+public class NSS extends AbstractServiceEndpoint {
 
-  private UsageDataProvider provider;
-  private AggregatorSetting aggregator;
+  public NSS(Vertx vertx, UsageDataProvider provider, AggregatorSetting aggregator) {
+    super(vertx, provider, aggregator);
+  }
 
   @Override
   public String buildURL(String report, String begin, String end) {
@@ -18,11 +20,6 @@ public class NSS implements ServiceEndpoint {
     String vendorCode = (aggregator == null) ? "" : provider.getAggregator().getVendorCode();
     return String.format(url, serviceUrl, apiKey, provider.getRequestorId(),
         provider.getCustomerId(), report, provider.getReportRelease(), begin, end, vendorCode);
-  }
-
-  public NSS(UsageDataProvider provider, AggregatorSetting aggregator) {
-    this.provider = provider;
-    this.aggregator = aggregator;
   }
 
   @Override
