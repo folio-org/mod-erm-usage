@@ -1,6 +1,6 @@
 {
   "id": "${artifactId}-${version}",
-  "name": "eUsage",
+  "name": "erm-usage",
   "provides": [
     {
       "id": "usage-data-providers",
@@ -247,9 +247,22 @@
       "description": "Delete an counter report"
     },
     {
-      "permissionName": "eusage.all",
-      "displayName": "eusage all",
-      "description": "All permissions for the mod-erm-usage module",
+      "permissionName": "ermusage.vendors.get",
+      "displayName": "ermusage vendors get",
+      "description": "Permissions to get vendors",
+      "subPermissions": [
+        "vendor.collection.get",
+        "vendor.item.get",
+        "contact_category.collection.get",
+        "contact_category.item.get",
+        "vendor_category.collection.get",
+        "vendor_category.item.get"
+      ]
+    },
+    {
+      "permissionName": "ermusage.all",
+      "displayName": "ermusage all",
+      "description": "All permissions for the mod-erm-usage module. An admin should get all permission, e.g. to edit aggregators.",
       "subPermissions": [
         "usagedataproviders.collection.get",
         "usagedataproviders.item.get",
@@ -265,8 +278,52 @@
         "counterreports.item.get",
         "counterreports.item.post",
         "counterreports.item.put",
-        "counterreports.item.delete"
-      ]
+        "counterreports.item.delete",
+        "ermusage.vendors.get"
+      ],
+      "visible": true
+    },
+    {
+      "permissionName": "ermusage.user",
+      "displayName": "ermusage user",
+      "description": "Permission set for a standard erm user. Cannot edit aggregator settings.",
+      "subPermissions": [
+        "usagedataproviders.collection.get",
+        "usagedataproviders.item.get",
+        "usagedataproviders.item.post",
+        "usagedataproviders.item.put",
+        "usagedataproviders.item.delete",
+        "aggregatorsettings.collection.get",
+        "aggregatorsettings.item.get",
+        "counterreports.collection.get",
+        "counterreports.item.get",
+        "counterreports.item.post",
+        "counterreports.item.put",
+        "counterreports.item.delete",
+        "ermusage.vendors.get"
+      ],
+      "visible": true
+    },
+    {
+      "permissionName": "ermusage.view",
+      "displayName": "ermusage view",
+      "description": "Permission set for a erm user that can just view but not edit any ressource.",
+      "subPermissions": [
+        "usagedataproviders.collection.get",
+        "usagedataproviders.item.get",
+        "aggregatorsettings.collection.get",
+        "aggregatorsettings.item.get",
+        "counterreports.collection.get",
+        "counterreports.item.get",
+        "ermusage.vendors.get"
+      ],
+      "visible": true
+    },
+    {
+      "permissionName": "module.erm-usage.enabled",
+      "displayName": "UI: ERM Usage enabled",
+      "description": "Base property to enable any access the ERM Usage module",
+      "visible": true
     }
   ],
   "launchDescriptor": {
