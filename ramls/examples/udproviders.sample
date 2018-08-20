@@ -17,5 +17,6 @@
   "requestorId": "1234abcd",
   "apiKey": "678iuoi",
   "requestorName": "Karla Kolumna",
-  "requestorMail": "kolumna@ub.uni-leipzig.de"
+  "requestorMail": "kolumna@ub.uni-leipzig.de",
+  "notes": "New customer ID since 2018-05-01"
 }

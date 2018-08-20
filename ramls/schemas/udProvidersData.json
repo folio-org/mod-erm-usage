@@ -69,6 +69,9 @@
     "requestorMail": {
       "type": "string"
     },
+    "notes": {
+      "type": "string"
+    },
     "createdDate": {
       "type": "string",
       "format": "date-time"
