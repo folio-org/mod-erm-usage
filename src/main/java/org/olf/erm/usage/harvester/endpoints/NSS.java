@@ -1,4 +1,4 @@
-package olf.erm.usage.harvester.endpoints;
+package org.olf.erm.usage.harvester.endpoints;
 
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.UsageDataProvider;

@@ -1,4 +1,4 @@
-package olf.erm.usage.harvester.endpoints;
+package org.olf.erm.usage.harvester.endpoints;
 
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.AggregatorSetting;

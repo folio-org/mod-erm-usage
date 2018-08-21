@@ -8,6 +8,8 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.olf.erm.usage.harvester.endpoints.NSS;
+import org.olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

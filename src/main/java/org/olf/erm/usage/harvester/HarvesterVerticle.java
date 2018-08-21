@@ -1,4 +1,4 @@
-package olf.erm.usage.harvester;
+package org.olf.erm.usage.harvester;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,6 +13,7 @@ import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HarvestingStatus;
 import org.folio.rest.util.Constants;
+import org.olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.vertx.core.AbstractVerticle;
@@ -23,7 +24,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
-import olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 
 public class HarvesterVerticle extends AbstractVerticle {
 

@@ -1,4 +1,4 @@
-package olf.erm.usage.harvester;
+package org.olf.erm.usage.harvester;
 
 public class FetchItem {
   String reportType;
