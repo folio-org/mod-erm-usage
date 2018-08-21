@@ -12,6 +12,7 @@
   <modules>
     <module>mod-erm-usage-server</module>
     <module>mod-erm-usage-client</module>
+    <module>mod-erm-usage-harvester</module>
   </modules>
 
   <properties>
