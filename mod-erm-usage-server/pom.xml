@@ -4,17 +4,18 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <groupId>org.olf</groupId>
   <artifactId>mod-erm-usage-server</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-  <groupId>org.olf</groupId>
-      <artifactId>mod-erm-usage</artifactId>
-      <version>0.0.1</version>
+    <groupId>org.olf</groupId>
+    <artifactId>mod-erm-usage</artifactId>
+    <version>0.0.1</version>
   </parent>
 
   <properties>
-    <!--  TODO: util path needed? -->
+    <!-- TODO: util path needed? -->
     <ramlfiles_util_path>${project.parent.basedir}/raml/raml-util</ramlfiles_util_path>
     <postgresrunner.port>5434</postgresrunner.port>
     <!-- Postgres port for Jenkins CI build environment https://issues.folio.org/browse/METADATA-10 -->
@@ -22,6 +23,11 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.folio</groupId>
+      <artifactId>domain-models-runtime</artifactId>
+      <version>${raml-module-builder.version}</version>
+    </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-core</artifactId>
@@ -276,8 +282,9 @@
         </executions>
       </plugin>
 
-      <!-- Replace the baseUri and the protocols in the RAMLs that have been copied to
-        apidocs directory so that they can be used via the local html api console. -->
+      <!-- Replace the baseUri and the protocols in the RAMLs that have been 
+        copied to apidocs directory so that they can be used via the local html api 
+        console. -->
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <version>1.8</version>
@@ -286,12 +293,14 @@
             <phase>prepare-package</phase>
             <configuration>
               <target>
-                <replace token="baseUri: http://github.com/org/folio/mod-users"
+                <replace
+                  token="baseUri: http://github.com/org/folio/mod-users"
                   value="baseUri: http://localhost:{http.port}"
                   dir="${basedir}/target/classes/apidocs/raml">
                   <include name="**/*.raml"/>
                 </replace>
-                <replace token="protocols: [ HTTPS ]" value="protocols: [ HTTP ]"
+                <replace token="protocols: [ HTTPS ]"
+                  value="protocols: [ HTTP ]"
                   dir="${basedir}/target/classes/apidocs/raml">
                   <include name="**/*.raml"/>
                 </replace>
@@ -375,7 +384,7 @@
           </execution>
         </executions>
       </plugin>
-      
+
     </plugins>
   </build>
 </project>

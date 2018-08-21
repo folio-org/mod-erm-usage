@@ -4,6 +4,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <groupId>org.olf</groupId>
   <artifactId>mod-erm-usage-client</artifactId>
   <packaging>jar</packaging>
 
@@ -13,8 +14,18 @@
     <version>0.0.1</version>
   </parent>
 
+  <dependencies>
+    <dependency>
+      <groupId>org.folio</groupId>
+      <artifactId>domain-models-api-interfaces</artifactId>
+      <version>${raml-module-builder.version}</version>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
   <build>
     <plugins>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
@@ -87,7 +98,36 @@
           </execution>
         </executions>
       </plugin>
-      
+
+      <!-- include VertxUtils.class into target -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.1.1</version>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.folio</groupId>
+                  <artifactId>domain-models-runtime</artifactId>
+                  <version>${raml-module-builder.version}</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                  <includes>org/folio/rest/tools/utils/VertxUtils.class</includes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.0</version>

@@ -35,19 +35,11 @@
   </repositories>
 
   <dependencies>
-
-    <dependency>
-      <groupId>org.folio</groupId>
-      <artifactId>domain-models-runtime</artifactId>
-      <version>${raml-module-builder.version}</version>
-    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.12</version>
-      <optional>true</optional>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 </project>
