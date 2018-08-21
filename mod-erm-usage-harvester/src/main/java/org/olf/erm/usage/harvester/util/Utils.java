@@ -1,4 +1,4 @@
-package org.olf.erm.usage.harvester;
+package org.olf.erm.usage.harvester.util;
 
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.CounterReportDataDataCollection;

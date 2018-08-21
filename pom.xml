@@ -20,9 +20,10 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    
+
     <raml-module-builder.version>19.1.1</raml-module-builder.version>
-     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
+    <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
+    <vertx.version>3.5.1</vertx.version>
   </properties>
 
   <repositories>
@@ -34,12 +35,19 @@
   </repositories>
 
   <dependencies>
-  
-  <dependency>
+
+    <dependency>
       <groupId>org.folio</groupId>
       <artifactId>domain-models-runtime</artifactId>
       <version>${raml-module-builder.version}</version>
     </dependency>
-  
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <optional>true</optional>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 </project>

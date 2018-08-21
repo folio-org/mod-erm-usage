@@ -1,4 +1,4 @@
-package olf.erm.usage.harvester.endpoints;
+package org.olf.erm.usage.harvester.endpoints;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;

@@ -1,4 +1,4 @@
-package olf.erm.usage.harvester.endpoints;
+package org.olf.erm.usage.harvester.endpoints;
 
 import java.io.File;
 import java.io.IOException;

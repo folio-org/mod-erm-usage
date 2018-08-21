@@ -12,7 +12,6 @@ import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HarvestingStatus;
-import org.folio.rest.util.Constants;
 import org.olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -111,7 +110,7 @@ public class HarvesterVerticle extends AbstractVerticle {
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.GET, url)
-        .putHeader(Constants.OKAPI_HEADER_TENANT, tenantId)
+        .putHeader("x-okapi-tenant", tenantId)
         .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
         .setQueryParam("limit", "30")
         .setQueryParam("offset", "0")
@@ -152,7 +151,7 @@ public class HarvesterVerticle extends AbstractVerticle {
     final String aggrUrl = okapiUrl + aggregatorPath + "/" + aggregator.getId();
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.GET, aggrUrl)
-        .putHeader(Constants.OKAPI_HEADER_TENANT, tenantId)
+        .putHeader("x-okapi-tenant", tenantId)
         .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
         .send(ar -> {
           client.close();
@@ -261,7 +260,7 @@ public class HarvesterVerticle extends AbstractVerticle {
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.POST, url)
-        .putHeader(Constants.OKAPI_HEADER_TENANT, tenantId)
+        .putHeader("x-okapi-tenant", tenantId)
         .putHeader("accept", "application/json")
         .sendJsonObject(reportContent, ar -> {
           if (ar.succeeded()) {

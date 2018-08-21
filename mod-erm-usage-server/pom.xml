@@ -14,8 +14,6 @@
   </parent>
 
   <properties>
-    <vertx.version>3.5.1</vertx.version>
-   
     <!--  TODO: util path needed? -->
     <ramlfiles_util_path>${project.parent.basedir}/raml/raml-util</ramlfiles_util_path>
     <postgresrunner.port>5434</postgresrunner.port>
@@ -24,12 +22,6 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <optional>true</optional>
-    </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-core</artifactId>
