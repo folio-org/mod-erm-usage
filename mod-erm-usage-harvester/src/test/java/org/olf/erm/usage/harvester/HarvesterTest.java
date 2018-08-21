@@ -11,7 +11,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import java.io.IOException;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.junit.After;
@@ -20,7 +20,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
-import org.olf.erm.usage.harvester.HarvesterVerticle;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,7 +27,6 @@ import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
-import com.google.gson.JsonSyntaxException;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -260,7 +258,7 @@ public class HarvesterTest {
 
   @Test
   public void getAggregatorSettingsBodyValid(TestContext context)
-      throws JsonSyntaxException, IOException {
+      throws JsonParseException, JsonMappingException, IOException {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
@@ -277,7 +275,7 @@ public class HarvesterTest {
 
   @Test
   public void getAggregatorSettingsBodyValidNoAggregator(TestContext context)
-      throws JsonSyntaxException, IOException {
+      throws JsonParseException, JsonMappingException, IOException {
     final UsageDataProvider provider1 = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
@@ -306,7 +304,7 @@ public class HarvesterTest {
 
   @Test
   public void getAggregatorSettingsBodyInvalid(TestContext context)
-      throws JsonSyntaxException, IOException {
+      throws JsonParseException, JsonMappingException, IOException {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
@@ -324,7 +322,7 @@ public class HarvesterTest {
 
   @Test
   public void getAggregatorSettingsResponseInvalid(TestContext context)
-      throws JsonSyntaxException, IOException {
+      throws JsonParseException, JsonMappingException, IOException {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
@@ -343,7 +341,7 @@ public class HarvesterTest {
 
   @Test
   public void getAggregatorSettingsNoService(TestContext context)
-      throws JsonSyntaxException, IOException {
+      throws JsonParseException, JsonMappingException, IOException {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
