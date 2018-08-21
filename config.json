@@ -1,0 +1,8 @@
+{
+  "okapiUrl": "http://192.168.56.103:9130",
+  "tenantsPath": "/_/proxy/tenants",
+  "reportsPath": "/counter-reports",
+  "providerPath": "/usage-data-providers",
+  "aggregatorPath": "/aggregator-settings",
+  "moduleId": "mod-erm-usage-0.0.1"
+}
