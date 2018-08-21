@@ -1,4 +1,4 @@
-package olf.erm.usage.harvester;
+package org.olf.erm.usage.harvester;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -14,9 +14,8 @@ import java.io.IOException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -29,6 +28,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.google.gson.JsonSyntaxException;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
@@ -45,8 +45,7 @@ public class HarvesterTest {
   @Rule
   public Timeout timeoutRule = Timeout.seconds(5);
 
-  private static final HarvesterVerticle harvester = new HarvesterVerticle("", "/_/proxy/tenants",
-      "/counter-reports", "/usage-data-providers", "/aggregator-settings");
+  private static final HarvesterVerticle harvester = new HarvesterVerticle();
 
   private static final String tenantId = "diku";
 
@@ -59,22 +58,27 @@ public class HarvesterTest {
       + "  \"vendorId\" : \"uuid-123456789\",\n" + "  \"report\" : \"reportdata\","
       + "  \"id\" : \"d90bc588-1c7c-4b0c-879c-6e3f6c87c3a6\"\n" + "}");
 
+  private static final String deployCfg = "{\n" + "  \"okapiUrl\": \"http://localhost\",\n"
+      + "  \"tenantsPath\": \"/_/proxy/tenants\",\n" + "  \"reportsPath\": \"/counter-reports\",\n"
+      + "  \"providerPath\": \"/usage-data-providers\",\n"
+      + "  \"aggregatorPath\": \"/aggregator-settings\",\n"
+      + "  \"moduleId\": \"mod-erm-usage-0.0.1\"\n" + "}";
+
   private static Vertx vertx;
 
-  @BeforeClass
-  public static void beforeClass(TestContext context) {
-    vertx = Vertx.vertx();
-    vertx.deployVerticle(harvester, context.asyncAssertSuccess());
-  }
-
-  @AfterClass
-  public static void afterClass(TestContext context) {
-    vertx.close(context.asyncAssertSuccess());
-  }
-
   @Before
-  public void setup() {
-    harvester.setOkapiUrl(StringUtils.removeEnd(wireMockRule.url(""), "/"));
+  public void setup(TestContext context) {
+    vertx = Vertx.vertx();
+    JsonObject cfg = new JsonObject(deployCfg);
+    cfg.put("okapiUrl", StringUtils.removeEnd(wireMockRule.url(""), "/"));
+    cfg.put("testing", true);
+    vertx.deployVerticle(harvester, new DeploymentOptions().setConfig(cfg),
+        context.asyncAssertSuccess());
+  }
+
+  @After
+  public void after(TestContext context) {
+    vertx.close(context.asyncAssertSuccess());
   }
 
   @Test

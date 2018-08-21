@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
@@ -16,7 +17,6 @@ import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
@@ -36,7 +36,7 @@ public class HarvesterVerticle extends AbstractVerticle {
   private String reportsPath;
   private String providerPath;
   private String aggregatorPath;
-  private String moduleId = "mod-erm-usage-0.0.1";
+  private String moduleId;
 
   public Future<List<String>> getTenants() {
     Future<List<String>> future = Future.future();
@@ -290,16 +290,6 @@ public class HarvesterVerticle extends AbstractVerticle {
     return Future.future().setHandler(ar -> LOG.error(ar.cause().getMessage()));
   }
 
-  public HarvesterVerticle(String okapiUrl, String tenantsPath, String reportsPath,
-      String providerPath, String aggregatorPath) {
-    super();
-    this.okapiUrl = okapiUrl;
-    this.tenantsPath = tenantsPath;
-    this.reportsPath = reportsPath;
-    this.providerPath = providerPath;
-    this.aggregatorPath = aggregatorPath;
-  }
-
   public String getOkapiUrl() {
     return okapiUrl;
   }
@@ -348,20 +338,26 @@ public class HarvesterVerticle extends AbstractVerticle {
     this.aggregatorPath = aggregatorPath;
   }
 
-  /*
-   * quick deploy with main method
-   */
-  public static void main(String[] args) {
-    Vertx vertx = Vertx.vertx();
-    HarvesterVerticle harvester = new HarvesterVerticle("http://192.168.56.103:9130",
-        "/_/proxy/tenants", "/counter-reports", "/usage-data-providers", "/aggregator-settings");
-    vertx.deployVerticle(harvester, result -> {
-      if (result.succeeded()) {
-        LOG.info("Successfully deployed HarvesterVerticle");
-        harvester.run();
-      } else {
-        LOG.error("Failed to deploy HarvesterVerticle");
+  @Override
+  public void start(Future<Void> startFuture) throws Exception {
+    // read configuration and setup class variables
+    okapiUrl = config().getString("okapiUrl");
+    tenantsPath = config().getString("tenantsPath");
+    reportsPath = config().getString("reportsPath");
+    providerPath = config().getString("providerPath");
+    aggregatorPath = config().getString("aggregatorPath");
+    moduleId = config().getString("moduleId");
+
+    if (StringUtils.isAnyBlank(okapiUrl, tenantsPath, reportsPath, providerPath, aggregatorPath,
+        moduleId)) {
+      startFuture.fail("No or incomplete configuration found. Use -conf argument");
+    } else {
+      startFuture.complete();
+
+      // only start processing if not in test
+      if (!config().getBoolean("testing", false)) {
+        run();
       }
-    });
+    }
   }
 }
