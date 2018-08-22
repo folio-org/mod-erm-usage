@@ -4,7 +4,7 @@
 
   <groupId>org.olf</groupId>
   <artifactId>mod-erm-usage</artifactId>
-  <version>0.0.2</version>
+  <version>0.0.3-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -59,7 +59,7 @@
 
   <scm>
     <developerConnection>scm:git:git@git.sc.uni-leipzig.de:ubl/amsl/mod-erm-usage.git</developerConnection>
-    <tag>v0.0.2</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <distributionManagement>
