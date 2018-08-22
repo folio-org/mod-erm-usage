@@ -1,21 +1,50 @@
 # mod-erm-usage
 
-Copyright (C) 2016-2018 The Open Library Foundation
+Copyright (C) 2018 The Open Library Foundation
 
 This software is distributed under the terms of the Apache License,
 Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
 
-## Introduction
 
-Module to provide usage data management for FOLIO systems.
+# Installation
 
-## Additional information
+```
+git clone ...
+cd mod-erm-usage
+mvn clean install
+```
 
-The [raml-module-builder](https://github.com/folio-org/raml-module-builder) framework.
+# Run
 
-Other [modules](http://dev.folio.org/source-code/#server-side).
+### `mod-erm-usage-server`
+```
+cd mod-erm-usage-server
+env \
+DB_USERNAME=folio_admin \
+DB_PASSWORD=folio_admin \
+DB_HOST=localhost \
+DB_PORT=5432 \
+DB_DATABASE=okapi_modules \
+java -jar target/mod-erm-usage-server-fat.jar
+```
 
-See project [MODERM](https://issues.folio.org/browse/MODERM)
-at the [FOLIO issue tracker](http://dev.folio.org/community/guide-issues).
+### `mod-erm-usage-harvester`
 
-Other FOLIO Developer documentation is at [dev.folio.org](http://dev.folio.org/)
+```
+cd mod-erm-usage-harvester
+java -jar target/mod-erm-usage-harvester-fat.jar -conf target/config.json
+```
+
+configuration via json file:
+```json
+{
+  "okapiUrl": "http://localhost:9130",
+  "tenantsPath": "/_/proxy/tenants",
+  "reportsPath": "/counter-reports",
+  "providerPath": "/usage-data-providers",
+  "aggregatorPath": "/aggregator-settings",
+  "moduleId": "mod-erm-usage-harvester-0.0.2-SNAPSHOT"
+}
+```
+
+
