@@ -1,0 +1,19 @@
+{
+  "id": "${artifactId}-${version}",
+  "name": "erm-usage",
+  "launchDescriptor": {
+    "dockerImage": "${artifactId}:${version}",
+    "dockerArgs": {
+      "HostConfig": {
+        "PortBindings": {
+          "8081/tcp": [
+            {
+              "HostPort": "%p"
+            }
+          ]
+        }
+      }
+    },
+    "dockerPull": false
+  }
+}
