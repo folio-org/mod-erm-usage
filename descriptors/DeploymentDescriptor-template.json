@@ -1,7 +1,0 @@
-{
-  "srvcId": "${artifactId}-${version}",
-  "nodeId": "localhost",
-  "descriptor": {
-    "exec": "java -jar ../mod-erm-usage/target/mod-erm-usage-fat.jar -Dhttp.port=%p"
-  }
-}
