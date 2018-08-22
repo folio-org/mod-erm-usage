@@ -6,7 +6,7 @@
 
   <groupId>org.olf</groupId>
   <artifactId>mod-erm-usage</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.2-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -32,6 +32,11 @@
       <name>FOLIO Maven repository</name>
       <url>https://repository.folio.org/repository/maven-folio</url>
     </repository>
+    <repository>
+      <id>ubl-nexus</id>
+      <name>ubl-nexus-releases</name>
+      <url>https://services.ub.uni-leipzig.de/nexus/repository/maven-releases</url>
+    </repository>
   </repositories>
 
   <dependencies>
@@ -42,4 +47,33 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>2.5.3</version>
+        <configuration>
+          <localCheckout>true</localCheckout>
+          <pushChanges>false</pushChanges>
+          <autoVersionSubmodules>true</autoVersionSubmodules>
+          <tagNameFormat>v@{project.version}</tagNameFormat>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <scm>
+    <developerConnection>scm:git:git@git.sc.uni-leipzig.de:ubl/amsl/mod-erm-usage.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <distributionManagement>
+    <repository>
+      <id>ubl-nexus</id>
+      <url>https://services.ub.uni-leipzig.de/nexus/repository/maven-releases/</url>
+    </repository>
+  </distributionManagement>
+
 </project>
