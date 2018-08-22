@@ -32,11 +32,6 @@
       <name>FOLIO Maven repository</name>
       <url>https://repository.folio.org/repository/maven-folio</url>
     </repository>
-    <repository>
-      <id>ubl-nexus</id>
-      <name>ubl-nexus-releases</name>
-      <url>https://services.ub.uni-leipzig.de/nexus/repository/maven-releases</url>
-    </repository>
   </repositories>
 
   <dependencies>

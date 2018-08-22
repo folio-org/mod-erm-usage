@@ -222,7 +222,7 @@
               <outputDirectory>${project.build.directory}</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${project.parent.basedir}/descriptors</directory>
+                  <directory>${project.basedir}/descriptors</directory>
                   <include>*Descriptor-template.json</include>
                   <filtering>true</filtering>
                 </resource>
