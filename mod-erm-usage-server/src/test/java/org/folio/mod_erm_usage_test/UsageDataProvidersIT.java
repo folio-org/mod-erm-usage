@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
+import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
@@ -40,6 +41,8 @@ public class UsageDataProvidersIT {
   private static int port;
   private static UsageDataProvider udprovider;
   private static UsageDataProvider udproviderChanged;
+  private static UsageDataProvider udprovider2;
+  private static AggregatorSetting aggregator;
 
   @Rule
   public Timeout timeout = Timeout.seconds(10);
@@ -56,6 +59,12 @@ public class UsageDataProvidersIT {
       udproviderChanged = Json.decodeValue(udproviderStr, UsageDataProvider.class)
           .withLabel("CHANGED")
           .withRequestorMail("CHANGED@ub.uni-leipzig.de");
+      String aggregatorStr =
+          new String(Files.readAllBytes(Paths.get("../ramls/examples/aggregatorsettings.sample")));
+      aggregator = Json.decodeValue(aggregatorStr, AggregatorSetting.class);
+      String udprovider2Str =
+          new String(Files.readAllBytes(Paths.get("../ramls/examples/udproviders.sample")));
+      udprovider2 = Json.decodeValue(udprovider2Str, UsageDataProvider.class);
     } catch (IOException ex) {
       context.fail(ex);
     }
@@ -101,8 +110,62 @@ public class UsageDataProvidersIT {
   }
 
   @Test
+  public void checkThatWeCanAddAProviderWithAggregatorSettings() {
+    // POST provider with aggregator, should fail
+    given().body(Json.encode(udprovider2))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(500);
+
+    // POST aggregator first
+    given().body(Json.encode(aggregator))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post("/aggregator-settings")
+        .then()
+        .statusCode(201);
+
+    // POST provider then
+    given().body(Json.encode(udprovider2))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201);
+
+    // GET provider
+    given().header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + "/" + udprovider2.getId())
+        .then()
+        .statusCode(200)
+        .body("id", equalTo(udprovider2.getId()))
+        .body("label", equalTo(udprovider2.getLabel()));
+
+    // DELETE both
+    given().header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(BASE_URI + "/" + udprovider2.getId())
+        .then()
+        .statusCode(204);
+    given().header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete("/aggregator-settings/" + aggregator.getId())
+        .then()
+        .statusCode(204);
+  }
+
+  @Test
   public void checkThatWeCanAddGetPutAndDeleteUsageDataProviders() {
-    // POST
+    // POST provider without aggregator
     given().body(Json.encode(udprovider))
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
