@@ -5,6 +5,7 @@
       "label": "Data provider with aggregator",
       "vendorId": "uuid-123456789",
       "platformId": "uuid-123456789",
+      "harvestingStart": "2018-01",
       "harvestingStatus": "active",
       "aggregator": {
         "id": "4c66b956-23a8-4418-aef6-1c35dcdaccc4",
@@ -26,6 +27,7 @@
       "label": "Data provider without aggregator",
       "vendorId": "uuid-123456789",
       "platformId": "uuid-123456789",
+      "harvestingStart": "2018-01",
       "harvestingStatus": "active",
       "serviceType": "Sushi",
       "serviceUrl": "http://myvendor.com",

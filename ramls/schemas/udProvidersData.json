@@ -17,6 +17,12 @@
       "type": "string",
       "description": "Id of the reports content’s platform, linked via uuid from ERM app."
     },
+    "harvestingStart": {
+      "type": "string"
+    },
+    "harvestingEnd": {
+      "type": "string"
+    },
     "harvestingStatus": {
       "type": "string",
       "enum": [
@@ -94,7 +100,8 @@
     "label",
     "vendorId",
     "platformId",
-    "harvestingActive",
+    "harvestingStart",
+    "harvestingStatus",
     "reportRelease",
     "requestedReports",
     "customerId",
