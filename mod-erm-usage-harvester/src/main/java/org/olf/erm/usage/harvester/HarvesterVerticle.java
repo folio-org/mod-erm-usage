@@ -301,48 +301,24 @@ public class HarvesterVerticle extends AbstractVerticle {
     return okapiUrl;
   }
 
-  public void setOkapiUrl(String okapiUrl) {
-    this.okapiUrl = okapiUrl;
-  }
-
   public String getTenantsPath() {
     return tenantsPath;
-  }
-
-  public void setTenantsPath(String tenantsPath) {
-    this.tenantsPath = tenantsPath;
   }
 
   public String getReportsPath() {
     return reportsPath;
   }
 
-  public void setReportsPath(String reportsPath) {
-    this.reportsPath = reportsPath;
-  }
-
   public String getProviderPath() {
     return providerPath;
-  }
-
-  public void setProviderPath(String providerPath) {
-    this.providerPath = providerPath;
   }
 
   public String getModuleId() {
     return moduleId;
   }
 
-  public void setModuleId(String moduleId) {
-    this.moduleId = moduleId;
-  }
-
   public String getAggregatorPath() {
     return aggregatorPath;
-  }
-
-  public void setAggregatorPath(String aggregatorPath) {
-    this.aggregatorPath = aggregatorPath;
   }
 
   @Override
