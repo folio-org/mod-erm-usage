@@ -245,8 +245,9 @@ public class HarvesterVerticle extends AbstractVerticle {
             LocalDate parse = LocalDate.parse(li.begin);
             YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
             JsonObject crJson = createReportJsonObject(rep, li.reportType, provider, month);
-            return postReport(tenantId, crJson);
-          }));
+            postReport(tenantId, crJson);
+          }, handleErrorFuture("Tenant: " + tenantId + ", Provider: " + provider.getLabel() + ", "
+              + li.toString() + ", ")));
           return Future.succeededFuture();
         });
       }
@@ -289,7 +290,11 @@ public class HarvesterVerticle extends AbstractVerticle {
   }
 
   private Future<Object> handleErrorFuture() {
-    return Future.future().setHandler(ar -> LOG.error(ar.cause().getMessage()));
+    return handleErrorFuture("");
+  }
+
+  private Future<Object> handleErrorFuture(String logPrefix) {
+    return Future.future().setHandler(ar -> LOG.error(logPrefix + ar.cause().getMessage()));
   }
 
   public String getOkapiUrl() {
