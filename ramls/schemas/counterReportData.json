@@ -20,13 +20,9 @@
     "reportName": {
       "type": "string"
     },
-    "beginDate": {
+    "yearMonth": {
       "type": "string",
-      "format": "date-time"
-    },
-    "endDate": {
-      "type": "string",
-      "format": "date-time"
+      "format": "date-month"
     },
     "customerId": {
       "type": "string"
@@ -58,8 +54,7 @@
     "creationTime",
     "release",
     "reportName",
-    "beginDate",
-    "endDate",
+    "yearMonth",
     "customerId",
     "vendorId",
     "platformId",

@@ -18,10 +18,12 @@
       "description": "Id of the reports content’s platform, linked via uuid from ERM app."
     },
     "harvestingStart": {
-      "type": "string"
+      "type": "string",
+      "format": "date-month"
     },
     "harvestingEnd": {
-      "type": "string"
+      "type": "string",
+      "format": "date-month"
     },
     "harvestingStatus": {
       "type": "string",
