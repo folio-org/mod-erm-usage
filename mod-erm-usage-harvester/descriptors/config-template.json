@@ -4,5 +4,5 @@
   "reportsPath": "/counter-reports",
   "providerPath": "/usage-data-providers",
   "aggregatorPath": "/aggregator-settings",
-  "moduleId": "${project.artifactId}-${project.version}"
+  "moduleId": "${parent.artifactId}-server-${project.version}"
 }
