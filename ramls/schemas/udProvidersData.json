@@ -10,10 +10,12 @@
       "type": "string"
     },
     "vendorId": {
-      "type": "string"
+      "type": "string",
+      "description": "Id of the the reports content’s vendor, linked via uuid from vendor app."
     },
     "platformId": {
-      "type": "string"
+      "type": "string",
+      "description": "Id of the reports content’s platform, linked via uuid from ERM app."
     },
     "harvestingStatus": {
       "type": "string",
@@ -26,12 +28,15 @@
     },
     "aggregator": {
       "type": "object",
+      "description": "Defined if statistics are harvested via aggregator",
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "description": "Id of aggregator, linking of an aggregator predefined by an admin in the app settings"
         },
         "vendorCode": {
-          "type": "string"
+          "type": "string",
+          "description": "Code used by the aggregator to identify the vendor (e. g. platform parameter at National Statistic Server)"
         }
       },
       "required": [
@@ -39,13 +44,16 @@
       ]
     },
     "serviceType": {
-      "type": "string"
+      "type": "string",
+      "description": "Type of SUSHI service (i.e. SUSHI/SUSHI-Lite) for direct harvesting. If an aggregator is used for harvesting, serviceType is not specified."
     },
     "serviceUrl": {
-      "type": "string"
+      "type": "string",
+      "description": "Direct SUSHI service URL used by the vendor. If an aggregator is used for harvesting, serviceUrl is not specified, the aggregator’s service URL saved in the settings will be used for harvesting."
     },
     "reportRelease": {
-      "type": "integer"
+      "type": "integer",
+      "description": "Specifies the counter report version."
     },
     "requestedReports": {
       "type": "array",
