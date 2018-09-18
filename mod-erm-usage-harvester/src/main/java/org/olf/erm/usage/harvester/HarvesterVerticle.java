@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
+import org.folio.rest.jaxrs.model.CounterReportDataDataCollection;
 import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HarvestingStatus;
@@ -215,6 +216,36 @@ public class HarvesterVerticle extends AbstractVerticle {
     return sepFuture;
   }
 
+  public Future<List<YearMonth>> getAvailableReports(String tenantId, String vendorId,
+      YearMonth start, YearMonth end) {
+    Future<List<YearMonth>> future = Future.future();
+    WebClient client = WebClient.create(vertx);
+
+    String queryStr = String.format("(vendorId=%s AND yearMonth>=%s AND yearMonth<=%s)", vendorId,
+        start.toString(), end.toString());
+    client.getAbs(okapiUrl + reportsPath)
+        .putHeader("x-okapi-tenant", tenantId)
+        .putHeader("accept", "application/json,text/plain")
+        .setQueryParam("query", queryStr)
+        .send(ar -> {
+          if (ar.succeeded()) {
+            // TODO: catch decode exception
+            CounterReportDataDataCollection result =
+                ar.result().bodyAsJson(CounterReportDataDataCollection.class);
+            List<YearMonth> availableMonths = new ArrayList<>();
+            result.getCounterReports().forEach(r -> {
+              // TODO: catch parse exception
+              availableMonths.add(YearMonth.parse(r.getYearMonth()));
+            });
+            future.complete(availableMonths);
+          } else {
+            future.fail(ar.cause());
+          }
+        });
+
+    return future;
+  }
+
   public Future<List<FetchItem>> getFetchList(String tenantId, UsageDataProvider provider) {
     final String logprefix = "Tenant: " + tenantId + ", ";
 
@@ -226,9 +257,25 @@ public class HarvesterVerticle extends AbstractVerticle {
     }
 
     List<FetchItem> list = new ArrayList<>();
-    provider.getRequestedReports().forEach(r ->
-    // TODO: implement logic to determine the dates to be processed here
-    list.add(new FetchItem(r, "2016-03-01", "2016-03-31")));
+    List<YearMonth> yearMonths =
+        DateUtil.getYearMonths(provider.getHarvestingStart(), provider.getHarvestingEnd());
+
+    // only process months we dont have reports for
+    getAvailableReports(tenantId, provider.getVendorId(),
+        DateUtil.getStartMonth(provider.getHarvestingStart()),
+        DateUtil.getEndMonth(provider.getHarvestingEnd())).setHandler(ar -> {
+          if (ar.succeeded()) {
+            List<YearMonth> availableMonths = ar.result();
+            yearMonths.removeAll(availableMonths);
+            provider.getRequestedReports()
+                .forEach(r -> yearMonths.forEach(
+                    // FIXME: String or LocalDate?
+                    ym -> list.add(
+                        new FetchItem(r, ym.atDay(1).toString(), ym.atEndOfMonth().toString()))));
+          } else {
+            LOG.error("unable to get existing reports. aborting.");
+          }
+        });
 
     return Future.succeededFuture(list);
   }
