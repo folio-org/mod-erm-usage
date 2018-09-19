@@ -10,6 +10,9 @@
       "type": "string",
       "format": "date-time"
     },
+    "failedAttempts": {
+      "type": "integer"
+    },
     "creationTime": {
       "type": "string",
       "format": "date-time"
@@ -51,15 +54,12 @@
   "required": [
     "id",
     "downloadTime",
-    "creationTime",
     "release",
     "reportName",
     "yearMonth",
     "customerId",
     "vendorId",
-    "platformId",
-    "format",
-    "report"
+    "platformId"
   ],
   "additionalProperties": false
 }

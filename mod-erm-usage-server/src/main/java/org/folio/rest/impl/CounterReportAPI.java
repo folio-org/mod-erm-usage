@@ -49,10 +49,10 @@ public class CounterReportAPI implements CounterReportsResource {
         .setOffset(new Offset(offset));
   }
 
-  @Override
   @Validate
-  public void getCounterReports(String query, String orderBy, Order order, int offset, int limit,
-      String lang, Map<String, String> okapiHeaders,
+  @Override
+  public void getCounterReports(boolean tiny, String query, String orderBy, Order order, int offset,
+      int limit, String lang, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) throws Exception {
     logger.debug("Getting counter reports");
     try {
@@ -62,7 +62,9 @@ public class CounterReportAPI implements CounterReportsResource {
             TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
         logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
         logger.debug("tenantId = " + tenantId);
-        String[] fieldList = {"*"};
+
+        String field = (tiny) ? "jsonb - 'report' AS jsonb" : "*";
+        String[] fieldList = {field};
         try {
           PostgresClient.getInstance(vertxContext.owner(), tenantId)
               .get(TABLE_NAME_COUNTER_REPORTS, CounterReport.class, fieldList, cql, true, false,

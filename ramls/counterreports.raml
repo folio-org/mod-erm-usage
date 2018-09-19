@@ -44,6 +44,11 @@ resourceTypes:
       orderable: {fieldsList: "field A, field B"},
       pageable
     ]
+    queryParameters:
+        tiny:
+            type: boolean
+            required: false
+            default: false
     description: Get all reports
   post:
     is: [validate]
