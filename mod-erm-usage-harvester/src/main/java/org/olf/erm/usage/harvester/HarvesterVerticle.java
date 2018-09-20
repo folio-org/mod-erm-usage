@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+import org.folio.rest.client.UsageDataProvidersClient;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.CounterReportDataDataCollection;
@@ -227,6 +228,7 @@ public class HarvesterVerticle extends AbstractVerticle {
         .putHeader("x-okapi-tenant", tenantId)
         .putHeader("accept", "application/json,text/plain")
         .setQueryParam("query", queryStr)
+        .setQueryParam("tiny", "true")
         .send(ar -> {
           if (ar.succeeded()) {
             // TODO: catch decode exception
@@ -235,7 +237,9 @@ public class HarvesterVerticle extends AbstractVerticle {
             List<YearMonth> availableMonths = new ArrayList<>();
             result.getCounterReports().forEach(r -> {
               // TODO: catch parse exception
-              availableMonths.add(YearMonth.parse(r.getYearMonth()));
+              // TODO: check r.getDownloadTime() and value of r.getFailedAttempts()
+              if (r.getFailedAttempts() == null)
+                availableMonths.add(YearMonth.parse(r.getYearMonth()));
             });
             future.complete(availableMonths);
           } else {
@@ -256,7 +260,8 @@ public class HarvesterVerticle extends AbstractVerticle {
       return Future.failedFuture("Harvesting not active");
     }
 
-    List<FetchItem> list = new ArrayList<>();
+    Future<List<FetchItem>> future = Future.future();
+
     List<YearMonth> yearMonths =
         DateUtil.getYearMonths(provider.getHarvestingStart(), provider.getHarvestingEnd());
 
@@ -266,18 +271,22 @@ public class HarvesterVerticle extends AbstractVerticle {
         DateUtil.getEndMonth(provider.getHarvestingEnd())).setHandler(ar -> {
           if (ar.succeeded()) {
             List<YearMonth> availableMonths = ar.result();
+            List<FetchItem> missingMonths = new ArrayList<>();
+
             yearMonths.removeAll(availableMonths);
             provider.getRequestedReports()
                 .forEach(r -> yearMonths.forEach(
                     // FIXME: String or LocalDate?
-                    ym -> list.add(
+                    ym -> missingMonths.add(
                         new FetchItem(r, ym.atDay(1).toString(), ym.atEndOfMonth().toString()))));
+            future.complete(missingMonths);
           } else {
             LOG.error("unable to get existing reports. aborting.");
+            future.fail(ar.cause());
           }
         });
 
-    return Future.succeededFuture(list);
+    return future;
   }
 
   public void fetchAndPostReports(String tenantId, UsageDataProvider provider) {
@@ -287,11 +296,13 @@ public class HarvesterVerticle extends AbstractVerticle {
     getServiceEndpoint(tenantId, provider).map(sep -> {
       if (sep != null) {
         getFetchList(tenantId, provider).compose(list -> {
-          list.forEach(li -> sep.fetchSingleReport(li.reportType, li.begin, li.end).compose(rep -> {
+          list.forEach(li -> sep.fetchSingleReport(li.reportType, li.begin, li.end).compose(reportData -> {
+            // fetchSingleReport completes successful, we got a valid report
             // FIXME: Fix me
             LocalDate parse = LocalDate.parse(li.begin);
             YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
-            JsonObject crJson = createReportJsonObject(rep, li.reportType, provider, month);
+            
+            JsonObject crJson = createReportJsonObject(reportData, li.reportType, provider, month);
             postReport(tenantId, crJson);
           }, handleErrorFuture("Tenant: " + tenantId + ", Provider: " + provider.getLabel() + ", "
               + li.toString() + ", ")));
