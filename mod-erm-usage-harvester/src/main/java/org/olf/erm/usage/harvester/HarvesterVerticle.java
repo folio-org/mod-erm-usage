@@ -9,9 +9,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
-import org.folio.rest.client.UsageDataProvidersClient;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
+import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReportDataDataCollection;
 import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
@@ -296,16 +296,18 @@ public class HarvesterVerticle extends AbstractVerticle {
     getServiceEndpoint(tenantId, provider).map(sep -> {
       if (sep != null) {
         getFetchList(tenantId, provider).compose(list -> {
-          list.forEach(li -> sep.fetchSingleReport(li.reportType, li.begin, li.end).compose(reportData -> {
-            // fetchSingleReport completes successful, we got a valid report
-            // FIXME: Fix me
-            LocalDate parse = LocalDate.parse(li.begin);
-            YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
-            
-            JsonObject crJson = createReportJsonObject(reportData, li.reportType, provider, month);
-            postReport(tenantId, crJson);
-          }, handleErrorFuture("Tenant: " + tenantId + ", Provider: " + provider.getLabel() + ", "
-              + li.toString() + ", ")));
+          list.forEach(
+              li -> sep.fetchSingleReport(li.reportType, li.begin, li.end).compose(reportData -> {
+                // fetchSingleReport completes successful, we got a valid report
+                // FIXME: Fix me
+                LocalDate parse = LocalDate.parse(li.begin);
+                YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
+
+                JsonObject crJson =
+                    createReportJsonObject(reportData, li.reportType, provider, month);
+                postReport(tenantId, crJson);
+              }, handleErrorFuture("Tenant: " + tenantId + ", Provider: " + provider.getLabel()
+                  + ", " + li.toString() + ", ")));
           return Future.succeededFuture();
         });
       }
@@ -336,6 +338,36 @@ public class HarvesterVerticle extends AbstractVerticle {
           }
         });
 
+    return future;
+  }
+
+  public Future<CounterReport> getReport(String tenantId, String vendorId, String reportName,
+      YearMonth month, boolean tiny) {
+    WebClient client = WebClient.create(vertx);
+    Future<CounterReport> future = Future.future();
+    String queryStr = String.format("(vendorId=%s AND yearMonth=%s AND reportName=%s)", vendorId,
+        month, reportName);
+    client.getAbs(okapiUrl + reportsPath)
+        .putHeader("x-okapi-tenant", tenantId)
+        .putHeader("accept", "application/json")
+        .setQueryParam("query", queryStr)
+        .setQueryParam("tiny", String.valueOf(tiny))
+        .send(handler -> {
+          if (handler.succeeded()) {
+            if (handler.result().statusCode() == 200) {
+              CounterReportDataDataCollection collection =
+                  handler.result().bodyAsJson(CounterReportDataDataCollection.class);
+              if (collection.getCounterReports().size() == 1)
+                future.complete(collection.getCounterReports().get(0));
+              else
+                future.fail("Expected 1 result, but got " + collection.getCounterReports().size());
+            } else {
+              future.complete(null);
+            }
+          } else {
+            future.fail(handler.cause());
+          }
+        });
     return future;
   }
 
