@@ -21,6 +21,7 @@ import org.olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
@@ -220,13 +221,15 @@ public class HarvesterVerticle extends AbstractVerticle {
     return sepFuture;
   }
 
-  public Future<List<YearMonth>> getAvailableReports(String tenantId, String vendorId,
+  public Future<List<YearMonth>> getValidMonths(String tenantId, String vendorId, String reportName,
       YearMonth start, YearMonth end) {
     Future<List<YearMonth>> future = Future.future();
     WebClient client = WebClient.create(vertx);
 
-    String queryStr = String.format("(vendorId=%s AND yearMonth>=%s AND yearMonth<=%s)", vendorId,
-        start.toString(), end.toString());
+    // TODO: report="" or NOT failedAttempts=""
+    String queryStr = String.format(
+        "(vendorId=%s AND report=\"\" AND reportName=%s AND yearMonth>=%s AND yearMonth<=%s)",
+        vendorId, reportName, start.toString(), end.toString());
     client.getAbs(okapiUrl + reportsPath)
         .putHeader("x-okapi-tenant", tenantId)
         .putHeader("accept", "application/json,text/plain")
@@ -265,29 +268,32 @@ public class HarvesterVerticle extends AbstractVerticle {
 
     Future<List<FetchItem>> future = Future.future();
 
-    List<YearMonth> yearMonths =
-        DateUtil.getYearMonths(provider.getHarvestingStart(), provider.getHarvestingEnd());
+    YearMonth startMonth = DateUtil.getStartMonth(provider.getHarvestingStart());
+    YearMonth endMonth = DateUtil.getEndMonth(provider.getHarvestingEnd());
 
-    // only process months we dont have reports for
-    getAvailableReports(tenantId, provider.getVendorId(),
-        DateUtil.getStartMonth(provider.getHarvestingStart()),
-        DateUtil.getEndMonth(provider.getHarvestingEnd())).setHandler(ar -> {
-          if (ar.succeeded()) {
-            List<YearMonth> availableMonths = ar.result();
-            List<FetchItem> missingMonths = new ArrayList<>();
+    List<FetchItem> fetchList = new ArrayList<>();
 
-            yearMonths.removeAll(availableMonths);
-            provider.getRequestedReports()
-                .forEach(r -> yearMonths.forEach(
-                    // FIXME: String or LocalDate?
-                    ym -> missingMonths.add(
-                        new FetchItem(r, ym.atDay(1).toString(), ym.atEndOfMonth().toString()))));
-            future.complete(missingMonths);
-          } else {
-            LOG.error("unable to get existing reports. aborting.");
-            future.fail(ar.cause());
-          }
-        });
+    @SuppressWarnings("rawtypes")
+    List<Future> futures = new ArrayList<>();
+    provider.getRequestedReports().forEach(reportName -> {
+      futures.add(getValidMonths(tenantId, provider.getVendorId(), reportName, startMonth, endMonth)
+          .map(list -> {
+            List<YearMonth> arrayList =
+                DateUtil.getYearMonths(provider.getHarvestingStart(), provider.getHarvestingEnd());
+            arrayList.removeAll(list);
+            arrayList.forEach(li -> fetchList.add(
+                new FetchItem(reportName, li.atDay(1).toString(), li.atEndOfMonth().toString())));
+            return Future.succeededFuture();
+          }));
+    });
+
+    CompositeFuture.all(futures).setHandler(ar -> {
+      if (ar.succeeded()) {
+        future.complete(fetchList);
+      } else {
+        future.fail(ar.cause());
+      }
+    });
 
     return future;
   }
@@ -316,11 +322,6 @@ public class HarvesterVerticle extends AbstractVerticle {
       }
       return Future.failedFuture("No ServiceEndpoint");
     });
-  }
-
-  public void updateReportData(CounterReport report, UsageDataProvider provider, String data) {
-    if (report == null)
-      report = new CounterReport().withId(UUID.randomUUID().toString());
   }
 
   public Future<HttpResponse<Buffer>> postReport(String tenantId, CounterReport report) {
