@@ -1,7 +1,8 @@
 package org.olf.erm.usage.harvester;
 
+import java.sql.Date;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -180,20 +181,22 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
-  public JsonObject createReportJsonObject(String reportData, String reportName,
+  public CounterReport createCounterReport(String reportData, String reportName,
       UsageDataProvider provider, YearMonth yearMonth) {
-    JsonObject cr = new JsonObject();
-    cr.put("yearMonth", yearMonth.toString());
-    cr.put("reportName", reportName);
-    cr.put("platformId", provider.getPlatformId());
-    cr.put("customerId", provider.getCustomerId());
-    cr.put("release", provider.getReportRelease());
-    cr.put("format", "???"); // FIXME
-    cr.put("downloadTime", LocalDateTime.now().toString()); // FIXME
-    cr.put("creationTime", LocalDateTime.now().toString()); // FIXME
-    cr.put("vendorId", provider.getVendorId());
-    cr.put("report", reportData);
-    cr.put("id", UUID.randomUUID().toString());
+    CounterReport cr = new CounterReport();
+    cr.setId(UUID.randomUUID().toString());
+    cr.setYearMonth(yearMonth.toString());
+    cr.setReportName(reportName);
+    cr.setPlatformId(provider.getPlatformId());
+    cr.setCustomerId(provider.getCustomerId());
+    cr.setRelease(provider.getReportRelease().toString()); // TODO: update release to be a integer
+    cr.setDownloadTime(Date.from(Instant.now())); // FIXME
+    cr.setCreationTime(Date.from(Instant.now())); // FIXME
+    cr.setVendorId(provider.getVendorId());
+    if (reportData != null) {
+      cr.setFormat("???"); // FIXME
+      cr.setReport(reportData);
+    }
     return cr;
   }
 
@@ -303,9 +306,9 @@ public class HarvesterVerticle extends AbstractVerticle {
                 LocalDate parse = LocalDate.parse(li.begin);
                 YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
 
-                JsonObject crJson =
-                    createReportJsonObject(reportData, li.reportType, provider, month);
-                postReport(tenantId, crJson);
+                CounterReport report =
+                    createCounterReport(reportData, li.reportType, provider, month);
+                postReport(tenantId, report);
               }, handleErrorFuture("Tenant: " + tenantId + ", Provider: " + provider.getLabel()
                   + ", " + li.toString() + ", ")));
           return Future.succeededFuture();
@@ -315,18 +318,23 @@ public class HarvesterVerticle extends AbstractVerticle {
     });
   }
 
-  public Future<HttpResponse<Buffer>> postReport(String tenantId, JsonObject reportContent) {
+  public void updateReportData(CounterReport report, UsageDataProvider provider, String data) {
+    if (report == null)
+      report = new CounterReport().withId(UUID.randomUUID().toString());
+  }
+
+  public Future<HttpResponse<Buffer>> postReport(String tenantId, CounterReport report) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     final String url = okapiUrl + reportsPath;
     final Future<HttpResponse<Buffer>> future = Future.future();
 
-    LOG.info(logprefix + "posting report with data " + reportContent);
+    LOG.info(logprefix + "posting report with data " + report);
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.POST, url)
         .putHeader("x-okapi-tenant", tenantId)
         .putHeader("accept", "application/json")
-        .sendJsonObject(reportContent, ar -> {
+        .sendJsonObject(JsonObject.mapFrom(report), ar -> {
           if (ar.succeeded()) {
             // TODO: check for 201 created and 204 no content
             LOG.info(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),

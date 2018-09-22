@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.time.YearMonth;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.junit.After;
 import org.junit.Before;
@@ -30,6 +31,7 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -365,14 +367,14 @@ public class HarvesterTest {
     final String reportData = "testreport";
     final YearMonth yearMonth = YearMonth.of(2018, 01);
 
-    JsonObject result =
-        harvester.createReportJsonObject(reportData, reportName, provider, yearMonth);
+    CounterReport result =
+        harvester.createCounterReport(reportData, reportName, provider, yearMonth);
     assertTrue(result != null);
-    assertEquals(reportName, result.getString("reportName"));
-    assertEquals(reportData, result.getString("report"));
-    assertEquals(yearMonth.toString(), result.getString("yearMonth"));
-    assertEquals(provider.getPlatformId(), result.getString("platformId"));
-    assertEquals(provider.getCustomerId(), result.getString("customerId"));
+    assertEquals(reportName, result.getReportName());
+    assertEquals(reportData, result.getReport());
+    assertEquals(yearMonth.toString(), result.getYearMonth());
+    assertEquals(provider.getPlatformId(), result.getPlatformId());
+    assertEquals(provider.getCustomerId(), result.getCustomerId());
   }
 
   @Test
@@ -381,14 +383,15 @@ public class HarvesterTest {
     stubFor(post(urlEqualTo(url)).willReturn(aResponse().withStatus(201)));
 
     Async async = context.async();
-    harvester.postReport(tenantId, crJson).setHandler(ar -> {
-      if (ar.succeeded()) {
-        wireMockRule.verify(postRequestedFor(urlEqualTo(url)));
-        async.complete();
-      } else {
-        context.fail();
-      }
-    });
+    harvester.postReport(tenantId, Json.decodeValue(crJson.toString(), CounterReport.class))
+        .setHandler(ar -> {
+          if (ar.succeeded()) {
+            wireMockRule.verify(postRequestedFor(urlEqualTo(url)));
+            async.complete();
+          } else {
+            context.fail();
+          }
+        });
   }
 
   @Test
