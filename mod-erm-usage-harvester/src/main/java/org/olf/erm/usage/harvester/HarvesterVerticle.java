@@ -197,6 +197,8 @@ public class HarvesterVerticle extends AbstractVerticle {
     if (reportData != null) {
       cr.setFormat("???"); // FIXME
       cr.setReport(reportData);
+    } else {
+      cr.setFailedAttempts(1);
     }
     return cr;
   }
@@ -314,7 +316,7 @@ public class HarvesterVerticle extends AbstractVerticle {
 
                 CounterReport report =
                     createCounterReport(reportData, li.reportType, provider, month);
-                postReport(tenantId, report);
+                postReport2(tenantId, report);
               }, handleErrorFuture("Tenant: " + tenantId + ", Provider: " + provider.getLabel()
                   + ", " + li.toString() + ", ")));
           return Future.succeededFuture();
@@ -324,7 +326,28 @@ public class HarvesterVerticle extends AbstractVerticle {
     });
   }
 
-  public Future<HttpResponse<Buffer>> postReport(String tenantId, CounterReport report) {
+  // TODO: handle failed POST/PUT
+  public Future<HttpResponse<Buffer>> postReport2(String tenantId, CounterReport report) {
+    return getReport(tenantId, report.getVendorId(), report.getReportName(), report.getYearMonth(),
+        true).compose(existing -> {
+          if (existing == null) { // no report found
+            // POST the report
+            return postReport(HttpMethod.POST, tenantId, report);
+          } else { // existing report found
+            // put the report with changed attributes
+            Integer failedAttempts = report.getFailedAttempts();
+            if (failedAttempts == null) {
+              report.setFailedAttempts(1);
+            } else {
+              report.setFailedAttempts(failedAttempts++);
+            }
+            return postReport(HttpMethod.PUT, tenantId, report);
+          }
+        });
+  }
+
+  public Future<HttpResponse<Buffer>> postReport(HttpMethod method, String tenantId,
+      CounterReport report) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     final String url = okapiUrl + reportsPath;
     final Future<HttpResponse<Buffer>> future = Future.future();
@@ -332,12 +355,11 @@ public class HarvesterVerticle extends AbstractVerticle {
     LOG.info(logprefix + "posting report with data " + report);
 
     WebClient client = WebClient.create(vertx);
-    client.requestAbs(HttpMethod.POST, url)
+    client.requestAbs(method, url)
         .putHeader("x-okapi-tenant", tenantId)
         .putHeader("accept", "application/json")
         .sendJsonObject(JsonObject.mapFrom(report), ar -> {
           if (ar.succeeded()) {
-            // TODO: check for 201 created and 204 no content
             LOG.info(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
                 ar.result().statusMessage(), url));
             future.complete(ar.result());
@@ -350,8 +372,11 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
+  /**
+   * completes with the found report or null if none is found fails otherwise
+   */
   public Future<CounterReport> getReport(String tenantId, String vendorId, String reportName,
-      YearMonth month, boolean tiny) {
+      String month, boolean tiny) {
     WebClient client = WebClient.create(vertx);
     Future<CounterReport> future = Future.future();
     String queryStr = String.format("(vendorId=%s AND yearMonth=%s AND reportName=%s)", vendorId,

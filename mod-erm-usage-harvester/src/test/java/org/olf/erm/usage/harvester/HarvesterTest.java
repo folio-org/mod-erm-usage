@@ -383,7 +383,7 @@ public class HarvesterTest {
     stubFor(post(urlEqualTo(url)).willReturn(aResponse().withStatus(201)));
 
     Async async = context.async();
-    harvester.postReport(tenantId, Json.decodeValue(crJson.toString(), CounterReport.class))
+    harvester.postReport2(tenantId, Json.decodeValue(crJson.toString(), CounterReport.class))
         .setHandler(ar -> {
           if (ar.succeeded()) {
             wireMockRule.verify(postRequestedFor(urlEqualTo(url)));
