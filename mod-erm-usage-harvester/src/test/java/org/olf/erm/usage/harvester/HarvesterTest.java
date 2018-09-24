@@ -4,8 +4,11 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.Assert.assertEquals;
@@ -378,8 +381,10 @@ public class HarvesterTest {
   }
 
   @Test
-  public void postReport(TestContext context) {
+  public void postReportNoExisting(TestContext context) {
     final String url = harvester.getReportsPath();
+    stubFor(get(urlPathEqualTo(url))
+        .willReturn(aResponse().withStatus(200).withBodyFile("counter-reports-empty.json")));
     stubFor(post(urlEqualTo(url)).willReturn(aResponse().withStatus(201)));
 
     Async async = context.async();
@@ -389,7 +394,26 @@ public class HarvesterTest {
             wireMockRule.verify(postRequestedFor(urlEqualTo(url)));
             async.complete();
           } else {
-            context.fail();
+            context.fail(ar.cause());
+          }
+        });
+  }
+
+  @Test
+  public void postReportExisting(TestContext context) {
+    final String url = harvester.getReportsPath();
+    stubFor(get(urlPathEqualTo(url))
+        .willReturn(aResponse().withStatus(200).withBodyFile("counter-reports-one.json")));
+    stubFor(put(urlEqualTo(url)).willReturn(aResponse().withStatus(201)));
+
+    Async async = context.async();
+    harvester.postReport2(tenantId, Json.decodeValue(crJson.toString(), CounterReport.class))
+        .setHandler(ar -> {
+          if (ar.succeeded()) {
+            wireMockRule.verify(putRequestedFor(urlEqualTo(url)));
+            async.complete();
+          } else {
+            context.fail(ar.cause());
           }
         });
   }

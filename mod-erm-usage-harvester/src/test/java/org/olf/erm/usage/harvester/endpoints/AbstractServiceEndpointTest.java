@@ -15,7 +15,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
-import org.olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -97,11 +96,10 @@ public class AbstractServiceEndpointTest {
     Future<String> fetchSingleReport = sep.fetchSingleReport("JR1", beginDate, endDate);
     fetchSingleReport.setHandler(ar -> {
       if (ar.succeeded()) {
-        context.fail();
-      } else {
-        context.assertTrue(ar.failed());
-        context.assertTrue(ar.cause().getMessage().contains("Report not valid"));
+        context.assertTrue(ar.result() == null);
         async.complete();
+      } else {
+        context.fail();
       }
     });
   }

@@ -348,6 +348,9 @@ public class HarvesterVerticle extends AbstractVerticle {
 
   public Future<HttpResponse<Buffer>> postReport(HttpMethod method, String tenantId,
       CounterReport report) {
+    if (!method.equals(HttpMethod.POST) && !method.equals(HttpMethod.PUT)) {
+      return Future.failedFuture("HttpMethod not supported");
+    }
     final String logprefix = "Tenant: " + tenantId + ", ";
     final String url = okapiUrl + reportsPath;
     final Future<HttpResponse<Buffer>> future = Future.future();
@@ -394,7 +397,7 @@ public class HarvesterVerticle extends AbstractVerticle {
               if (collection.getCounterReports().size() == 1)
                 future.complete(collection.getCounterReports().get(0));
               else
-                future.fail("Expected 1 result, but got " + collection.getCounterReports().size());
+                future.complete(null);
             } else {
               future.complete(null);
             }
