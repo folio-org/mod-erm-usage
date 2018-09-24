@@ -316,7 +316,7 @@ public class HarvesterVerticle extends AbstractVerticle {
 
                 CounterReport report =
                     createCounterReport(reportData, li.reportType, provider, month);
-                postReport2(tenantId, report);
+                postReport(tenantId, report);
               }, handleErrorFuture("Tenant: " + tenantId + ", Provider: " + provider.getLabel()
                   + ", " + li.toString() + ", ")));
           return Future.succeededFuture();
@@ -327,12 +327,12 @@ public class HarvesterVerticle extends AbstractVerticle {
   }
 
   // TODO: handle failed POST/PUT
-  public Future<HttpResponse<Buffer>> postReport2(String tenantId, CounterReport report) {
+  public Future<HttpResponse<Buffer>> postReport(String tenantId, CounterReport report) {
     return getReport(tenantId, report.getVendorId(), report.getReportName(), report.getYearMonth(),
         true).compose(existing -> {
           if (existing == null) { // no report found
             // POST the report
-            return postReport(HttpMethod.POST, tenantId, report);
+            return sendReportRequest(HttpMethod.POST, tenantId, report);
           } else { // existing report found
             // put the report with changed attributes
             Integer failedAttempts = report.getFailedAttempts();
@@ -341,12 +341,12 @@ public class HarvesterVerticle extends AbstractVerticle {
             } else {
               report.setFailedAttempts(failedAttempts++);
             }
-            return postReport(HttpMethod.PUT, tenantId, report);
+            return sendReportRequest(HttpMethod.PUT, tenantId, report);
           }
         });
   }
 
-  public Future<HttpResponse<Buffer>> postReport(HttpMethod method, String tenantId,
+  public Future<HttpResponse<Buffer>> sendReportRequest(HttpMethod method, String tenantId,
       CounterReport report) {
     if (!method.equals(HttpMethod.POST) && !method.equals(HttpMethod.PUT)) {
       return Future.failedFuture("HttpMethod not supported");
