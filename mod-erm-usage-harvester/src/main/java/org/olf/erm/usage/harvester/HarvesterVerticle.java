@@ -335,12 +335,13 @@ public class HarvesterVerticle extends AbstractVerticle {
             return sendReportRequest(HttpMethod.POST, tenantId, report);
           } else { // existing report found
             // put the report with changed attributes
-            Integer failedAttempts = report.getFailedAttempts();
+            Integer failedAttempts = existing.getFailedAttempts();
             if (failedAttempts == null) {
               report.setFailedAttempts(1);
             } else {
-              report.setFailedAttempts(failedAttempts++);
+              report.setFailedAttempts(++failedAttempts);
             }
+            report.setId(existing.getId());
             return sendReportRequest(HttpMethod.PUT, tenantId, report);
           }
         });
@@ -348,19 +349,23 @@ public class HarvesterVerticle extends AbstractVerticle {
 
   public Future<HttpResponse<Buffer>> sendReportRequest(HttpMethod method, String tenantId,
       CounterReport report) {
+    final String logprefix = "Tenant: " + tenantId + ", ";
+    String urlTmp = okapiUrl + reportsPath;
     if (!method.equals(HttpMethod.POST) && !method.equals(HttpMethod.PUT)) {
       return Future.failedFuture("HttpMethod not supported");
+    } else if (method.equals(HttpMethod.PUT)) {
+      urlTmp += "/" + report.getId();
     }
-    final String logprefix = "Tenant: " + tenantId + ", ";
-    final String url = okapiUrl + reportsPath;
+    final String url = urlTmp;
+
     final Future<HttpResponse<Buffer>> future = Future.future();
 
-    LOG.info(logprefix + "posting report with data " + report);
+    LOG.info(logprefix + "posting report with id " + report.getId());
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(method, url)
         .putHeader("x-okapi-tenant", tenantId)
-        .putHeader("accept", "application/json")
+        .putHeader("accept", "application/json,text/plain")
         .sendJsonObject(JsonObject.mapFrom(report), ar -> {
           if (ar.succeeded()) {
             LOG.info(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
