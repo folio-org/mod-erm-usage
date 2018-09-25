@@ -217,7 +217,7 @@ public class HarvesterTest {
         .willReturn(aResponse().withBodyFile("usage-data-providers.json")));
 
     Async async = context.async();
-    harvester.getProviders(tenantId).setHandler(ar -> {
+    harvester.getActiveProviders(tenantId).setHandler(ar -> {
       context.assertTrue(ar.succeeded());
       context.assertEquals(3, ar.result().getTotalRecords());
       async.complete();
@@ -229,7 +229,7 @@ public class HarvesterTest {
     stubFor(get(urlPathMatching(harvester.getProviderPath())).willReturn(aResponse().withBody("")));
 
     Async async = context.async();
-    harvester.getProviders(tenantId).setHandler(ar -> {
+    harvester.getActiveProviders(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("Error decoding"));
       async.complete();
@@ -242,7 +242,7 @@ public class HarvesterTest {
         get(urlPathMatching(harvester.getProviderPath())).willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
-    harvester.getProviders(tenantId).setHandler(ar -> {
+    harvester.getActiveProviders(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("404"));
       async.complete();
@@ -254,7 +254,7 @@ public class HarvesterTest {
     wireMockRule.stop();
 
     Async async = context.async();
-    harvester.getProviders(tenantId).setHandler(ar -> {
+    harvester.getActiveProviders(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       LOG.error(ar.cause());
       async.complete();
@@ -402,15 +402,16 @@ public class HarvesterTest {
   @Test
   public void postReportExisting(TestContext context) {
     final String url = harvester.getReportsPath();
+    final String urlId = url + "/43d7e87c-fb32-4ce2-81f9-11fe75c29bbb";
     stubFor(get(urlPathEqualTo(url))
         .willReturn(aResponse().withStatus(200).withBodyFile("counter-reports-one.json")));
-    stubFor(put(urlEqualTo(url)).willReturn(aResponse().withStatus(201)));
+    stubFor(put(urlEqualTo(urlId)).willReturn(aResponse().withStatus(201)));
 
     Async async = context.async();
     harvester.postReport(tenantId, Json.decodeValue(crJson.toString(), CounterReport.class))
         .setHandler(ar -> {
           if (ar.succeeded()) {
-            wireMockRule.verify(putRequestedFor(urlEqualTo(url)));
+            wireMockRule.verify(putRequestedFor(urlEqualTo(urlId)));
             async.complete();
           } else {
             context.fail(ar.cause());

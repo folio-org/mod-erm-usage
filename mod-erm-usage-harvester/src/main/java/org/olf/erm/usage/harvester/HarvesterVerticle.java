@@ -101,6 +101,7 @@ public class HarvesterVerticle extends AbstractVerticle {
         }
         LOG.info(logprefix + "module enabled: " + hasUsageModule);
       } else {
+        LOG.error(ar.cause());
         future.fail(ar.cause());
       }
     });
@@ -108,18 +109,21 @@ public class HarvesterVerticle extends AbstractVerticle {
   }
 
   // TODO: handle limits > 30
-  public Future<UdProvidersDataCollection> getProviders(String tenantId) {
+  public Future<UdProvidersDataCollection> getActiveProviders(String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     final String url = okapiUrl + providerPath;
+    final String queryStr = String.format("(harvestingStatus=%s)", HarvestingStatus.ACTIVE);
     LOG.info(logprefix + "getting providers");
+
     Future<UdProvidersDataCollection> future = Future.future();
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.GET, url)
         .putHeader("x-okapi-tenant", tenantId)
-        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
+        .putHeader("accept", "application/json,text/plain")
         .setQueryParam("limit", "30")
         .setQueryParam("offset", "0")
+        .setQueryParam("query", queryStr)
         .send(ar -> {
           client.close();
           if (ar.succeeded()) {
@@ -416,7 +420,7 @@ public class HarvesterVerticle extends AbstractVerticle {
   public void run() {
     getTenants()
         .compose(tenants -> tenants.forEach(t -> hasEnabledModule(t).compose(
-            f -> getProviders(t).compose(providers -> providers.getUsageDataProviders()
+            f -> getActiveProviders(t).compose(providers -> providers.getUsageDataProviders()
                 .forEach(p -> fetchAndPostReports(t, p)), handleErrorFuture()),
             handleErrorFuture())), handleErrorFuture());
   }
