@@ -69,6 +69,12 @@ public class HarvesterTest {
       + "  \"moduleId\": \"mod-erm-usage-0.0.1\"\n" + "}";
 
   private static Vertx vertx;
+  private String okapiUrl;
+  private String tenantsPath;
+  private String reportsPath;
+  private String providerPath;
+  private String aggregatorPath;
+  private String moduleId;
 
   @Before
   public void setup(TestContext context) {
@@ -78,6 +84,13 @@ public class HarvesterTest {
     cfg.put("testing", true);
     vertx.deployVerticle(harvester, new DeploymentOptions().setConfig(cfg),
         context.asyncAssertSuccess());
+
+    okapiUrl = harvester.config().getString("okapiUrl");
+    tenantsPath = harvester.config().getString("tenantsPath");
+    reportsPath = harvester.config().getString("reportsPath");
+    providerPath = harvester.config().getString("providerPath");
+    aggregatorPath = harvester.config().getString("aggregatorPath");
+    moduleId = harvester.config().getString("moduleId");
   }
 
   @After
@@ -87,7 +100,7 @@ public class HarvesterTest {
 
   @Test
   public void getTenantsBodyValid(TestContext context) {
-    stubFor(get(urlEqualTo(harvester.getTenantsPath()))
+    stubFor(get(urlEqualTo(tenantsPath))
         .willReturn(aResponse().withBodyFile("TenantsResponse200.json")));
 
     Async async = context.async();
@@ -101,7 +114,7 @@ public class HarvesterTest {
 
   @Test
   public void getTenantsBodyInvalid(TestContext context) {
-    stubFor(get(urlEqualTo(harvester.getTenantsPath())).willReturn(aResponse().withBody("{ }")));
+    stubFor(get(urlEqualTo(tenantsPath)).willReturn(aResponse().withBody("{ }")));
 
     Async async = context.async();
     harvester.getTenants().setHandler(ar -> {
@@ -113,7 +126,7 @@ public class HarvesterTest {
 
   @Test
   public void getTenantsBodyEmpty(TestContext context) {
-    stubFor(get(urlEqualTo(harvester.getTenantsPath())).willReturn(aResponse().withBody("[ ]")));
+    stubFor(get(urlEqualTo(tenantsPath)).willReturn(aResponse().withBody("[ ]")));
 
     Async async = context.async();
     harvester.getTenants().setHandler(ar -> {
@@ -125,7 +138,7 @@ public class HarvesterTest {
 
   @Test
   public void getTenantsResponseInvalid(TestContext context) {
-    stubFor(get(urlEqualTo(harvester.getTenantsPath())).willReturn(aResponse().withStatus(404)));
+    stubFor(get(urlEqualTo(tenantsPath)).willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
     harvester.getTenants().setHandler(ar -> {
@@ -149,7 +162,7 @@ public class HarvesterTest {
 
   @Test
   public void getTenantsWithFault(TestContext context) {
-    stubFor(get(urlEqualTo(harvester.getTenantsPath()))
+    stubFor(get(urlEqualTo(tenantsPath))
         .willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
 
     Async async = context.async();
@@ -161,9 +174,8 @@ public class HarvesterTest {
 
   @Test
   public void hasEnabledModuleYes(TestContext context) {
-    stubFor(get(urlEqualTo(
-        harvester.getTenantsPath() + "/" + tenantId + "/modules/" + harvester.getModuleId()))
-            .willReturn(aResponse().withBody("{ \"id\" : \"" + harvester.getModuleId() + "\" }")));
+    stubFor(get(urlEqualTo(tenantsPath + "/" + tenantId + "/modules/" + moduleId))
+        .willReturn(aResponse().withBody("{ \"id\" : \"" + moduleId + "\" }")));
 
     Async async = context.async();
     harvester.hasEnabledModule(tenantId).setHandler(ar -> {
@@ -174,9 +186,8 @@ public class HarvesterTest {
 
   @Test
   public void hasEnabledModuleNo(TestContext context) {
-    stubFor(get(urlEqualTo(
-        harvester.getTenantsPath() + "/" + tenantId + "/modules/" + harvester.getModuleId()))
-            .willReturn(aResponse().withBody(harvester.getModuleId())));
+    stubFor(get(urlEqualTo(tenantsPath + "/" + tenantId + "/modules/" + moduleId))
+        .willReturn(aResponse().withBody(moduleId)));
 
     Async async = context.async();
     harvester.hasEnabledModule(tenantId).setHandler(ar -> {
@@ -188,9 +199,8 @@ public class HarvesterTest {
 
   @Test
   public void hasEnabledModuleResponseInvalid(TestContext context) {
-    stubFor(get(urlEqualTo(
-        harvester.getTenantsPath() + "/" + tenantId + "/modules/" + harvester.getModuleId()))
-            .willReturn(aResponse().withStatus(404)));
+    stubFor(get(urlEqualTo(tenantsPath + "/" + tenantId + "/modules/" + moduleId))
+        .willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
     harvester.hasEnabledModule(tenantId).setHandler(ar -> {
@@ -213,7 +223,7 @@ public class HarvesterTest {
 
   @Test
   public void getProvidersBodyValid(TestContext context) {
-    stubFor(get(urlPathMatching(harvester.getProviderPath()))
+    stubFor(get(urlPathMatching(providerPath))
         .willReturn(aResponse().withBodyFile("usage-data-providers.json")));
 
     Async async = context.async();
@@ -226,7 +236,7 @@ public class HarvesterTest {
 
   @Test
   public void getProvidersBodyInvalid(TestContext context) {
-    stubFor(get(urlPathMatching(harvester.getProviderPath())).willReturn(aResponse().withBody("")));
+    stubFor(get(urlPathMatching(providerPath)).willReturn(aResponse().withBody("")));
 
     Async async = context.async();
     harvester.getActiveProviders(tenantId).setHandler(ar -> {
@@ -238,8 +248,7 @@ public class HarvesterTest {
 
   @Test
   public void getProvidersResponseInvalid(TestContext context) {
-    stubFor(
-        get(urlPathMatching(harvester.getProviderPath())).willReturn(aResponse().withStatus(404)));
+    stubFor(get(urlPathMatching(providerPath)).willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
     harvester.getActiveProviders(tenantId).setHandler(ar -> {
@@ -267,7 +276,7 @@ public class HarvesterTest {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
-    stubFor(get(urlEqualTo(harvester.getAggregatorPath() + "/" + provider.getAggregator().getId()))
+    stubFor(get(urlEqualTo(aggregatorPath + "/" + provider.getAggregator().getId()))
         .willReturn(aResponse().withBodyFile("aggregator-setting.json")));
 
     Async async = context.async();
@@ -313,7 +322,7 @@ public class HarvesterTest {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
-    stubFor(get(urlEqualTo(harvester.getAggregatorPath() + "/" + provider.getAggregator().getId()))
+    stubFor(get(urlEqualTo(aggregatorPath + "/" + provider.getAggregator().getId()))
         .willReturn(aResponse().withBody("garbage")));
 
     Async async = context.async();
@@ -331,9 +340,8 @@ public class HarvesterTest {
     final UsageDataProvider provider = new ObjectMapper().readValue(Resources
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
-    stubFor(get(urlEqualTo(harvester.getAggregatorPath() + "/" + provider.getAggregator().getId()))
-        .willReturn(
-            aResponse().withBody("Aggregator settingObject does not exist").withStatus(404)));
+    stubFor(get(urlEqualTo(aggregatorPath + "/" + provider.getAggregator().getId())).willReturn(
+        aResponse().withBody("Aggregator settingObject does not exist").withStatus(404)));
 
     Async async = context.async();
     harvester.getAggregatorSetting(tenantId, provider).setHandler(ar -> {
@@ -382,7 +390,7 @@ public class HarvesterTest {
 
   @Test
   public void postReportNoExisting(TestContext context) {
-    final String url = harvester.getReportsPath();
+    final String url = reportsPath;
     stubFor(get(urlPathEqualTo(url))
         .willReturn(aResponse().withStatus(200).withBodyFile("counter-reports-empty.json")));
     stubFor(post(urlEqualTo(url)).willReturn(aResponse().withStatus(201)));
@@ -401,7 +409,7 @@ public class HarvesterTest {
 
   @Test
   public void postReportExisting(TestContext context) {
-    final String url = harvester.getReportsPath();
+    final String url = reportsPath;
     final String urlId = url + "/43d7e87c-fb32-4ce2-81f9-11fe75c29bbb";
     stubFor(get(urlPathEqualTo(url))
         .willReturn(aResponse().withStatus(200).withBodyFile("counter-reports-one.json")));
@@ -426,7 +434,7 @@ public class HarvesterTest {
         .toString(Resources.getResource("__files/usage-data-provider.json"), Charsets.UTF_8),
         UsageDataProvider.class);
 
-    stubFor(get(urlEqualTo(harvester.getAggregatorPath() + "/" + provider.getAggregator().getId()))
+    stubFor(get(urlEqualTo(aggregatorPath + "/" + provider.getAggregator().getId()))
         .willReturn(aResponse().withBodyFile("aggregator-setting.json")));
 
     Async async = context.async();

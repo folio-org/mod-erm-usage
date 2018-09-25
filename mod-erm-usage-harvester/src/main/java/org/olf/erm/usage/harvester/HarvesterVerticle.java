@@ -78,11 +78,11 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
-  public Future<Void> hasEnabledModule(String tenantId) {
+  public Future<String> hasEnabledModule(String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     final String moduleUrl = okapiUrl + tenantsPath + "/" + tenantId + "/modules/" + moduleId;
 
-    Future<Void> future = Future.future();
+    Future<String> future = Future.future();
     WebClient client = WebClient.create(vertx);
     client.getAbs(moduleUrl).send(ar -> {
       client.close();
@@ -91,7 +91,7 @@ public class HarvesterVerticle extends AbstractVerticle {
         if (ar.result().statusCode() == 200) {
           try {
             hasUsageModule = ar.result().bodyAsJsonObject().getString("id").equals(moduleId);
-            future.complete();
+            future.complete(tenantId);
           } catch (Exception e) {
             future.fail(logprefix + String.format(ERR_MSG_DECODE, moduleUrl, e.getMessage()));
           }
@@ -431,30 +431,6 @@ public class HarvesterVerticle extends AbstractVerticle {
 
   private Future<Object> handleErrorFuture(String logPrefix) {
     return Future.future().setHandler(ar -> LOG.error(logPrefix + ar.cause().getMessage()));
-  }
-
-  public String getOkapiUrl() {
-    return okapiUrl;
-  }
-
-  public String getTenantsPath() {
-    return tenantsPath;
-  }
-
-  public String getReportsPath() {
-    return reportsPath;
-  }
-
-  public String getProviderPath() {
-    return providerPath;
-  }
-
-  public String getModuleId() {
-    return moduleId;
-  }
-
-  public String getAggregatorPath() {
-    return aggregatorPath;
   }
 
   @Override
