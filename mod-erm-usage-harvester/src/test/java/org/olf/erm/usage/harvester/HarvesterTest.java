@@ -178,7 +178,7 @@ public class HarvesterTest {
         .willReturn(aResponse().withBody("{ \"id\" : \"" + moduleId + "\" }")));
 
     Async async = context.async();
-    harvester.hasEnabledModule(tenantId).setHandler(ar -> {
+    harvester.hasEnabledUsageModule(tenantId).setHandler(ar -> {
       context.assertTrue(ar.succeeded());
       async.complete();
     });
@@ -190,7 +190,7 @@ public class HarvesterTest {
         .willReturn(aResponse().withBody(moduleId)));
 
     Async async = context.async();
-    harvester.hasEnabledModule(tenantId).setHandler(ar -> {
+    harvester.hasEnabledUsageModule(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("Error decoding"));
       async.complete();
@@ -203,7 +203,7 @@ public class HarvesterTest {
         .willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
-    harvester.hasEnabledModule(tenantId).setHandler(ar -> {
+    harvester.hasEnabledUsageModule(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("404"));
       async.complete();
@@ -215,7 +215,7 @@ public class HarvesterTest {
     wireMockRule.stop();
 
     Async async = context.async();
-    harvester.hasEnabledModule(tenantId).setHandler(ar -> {
+    harvester.hasEnabledUsageModule(tenantId).setHandler(ar -> {
       context.assertTrue(ar.failed());
       async.complete();
     });

@@ -78,7 +78,7 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
-  public Future<String> hasEnabledModule(String tenantId) {
+  public Future<String> hasEnabledUsageModule(String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     final String moduleUrl = okapiUrl + tenantsPath + "/" + tenantId + "/modules/" + moduleId;
 
@@ -418,11 +418,25 @@ public class HarvesterVerticle extends AbstractVerticle {
   }
 
   public void run() {
-    getTenants()
-        .compose(tenants -> tenants.forEach(t -> hasEnabledModule(t).compose(
-            f -> getActiveProviders(t).compose(providers -> providers.getUsageDataProviders()
-                .forEach(p -> fetchAndPostReports(t, p)), handleErrorFuture()),
-            handleErrorFuture())), handleErrorFuture());
+
+    this.getTenants().setHandler(ar -> {
+      if (ar.succeeded()) {
+        List<String> tenantList = ar.result();
+        tenantList.forEach(tenant -> {
+          this.hasEnabledUsageModule(tenant).compose(this::getActiveProviders).compose(udColl -> {
+            udColl.getUsageDataProviders()
+                .forEach(provider -> this.fetchAndPostReports(tenant, provider));
+            return Future.succeededFuture();
+          }).setHandler(h -> {
+            if (h.failed())
+              LOG.error(h.cause());
+          });
+        });
+      } else {
+        LOG.error("Failed to get tenants: " + ar.cause());
+      }
+    });
+
   }
 
   private Future<Object> handleErrorFuture() {
