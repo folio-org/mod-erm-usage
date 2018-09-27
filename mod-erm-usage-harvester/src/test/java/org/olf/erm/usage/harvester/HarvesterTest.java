@@ -83,14 +83,14 @@ public class HarvesterTest {
     cfg.put("okapiUrl", StringUtils.removeEnd(wireMockRule.url(""), "/"));
     cfg.put("testing", true);
     vertx.deployVerticle(harvester, new DeploymentOptions().setConfig(cfg),
-        context.asyncAssertSuccess());
-
-    okapiUrl = harvester.config().getString("okapiUrl");
-    tenantsPath = harvester.config().getString("tenantsPath");
-    reportsPath = harvester.config().getString("reportsPath");
-    providerPath = harvester.config().getString("providerPath");
-    aggregatorPath = harvester.config().getString("aggregatorPath");
-    moduleId = harvester.config().getString("moduleId");
+        context.asyncAssertSuccess(h -> {
+          okapiUrl = harvester.config().getString("okapiUrl");
+          tenantsPath = harvester.config().getString("tenantsPath");
+          reportsPath = harvester.config().getString("reportsPath");
+          providerPath = harvester.config().getString("providerPath");
+          aggregatorPath = harvester.config().getString("aggregatorPath");
+          moduleId = harvester.config().getString("moduleId");
+        }));
   }
 
   @After
