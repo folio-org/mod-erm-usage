@@ -55,15 +55,11 @@ public class HarvesterVerticle extends AbstractVerticle {
           JsonArray jsonArray;
           try {
             jsonArray = ar.result().bodyAsJsonArray();
-            if (!jsonArray.isEmpty()) {
-              List<String> tenants = jsonArray.stream()
-                  .map(o -> ((JsonObject) o).getString("id"))
-                  .collect(Collectors.toList());
-              LOG.info("Found tenants: " + tenants);
-              future.complete(tenants);
-            } else {
-              future.fail("No tenants found.");
-            }
+            List<String> tenants = jsonArray.stream()
+                .map(o -> ((JsonObject) o).getString("id"))
+                .collect(Collectors.toList());
+            LOG.info("Found tenants: " + tenants);
+            future.complete(tenants);
           } catch (Exception e) {
             future.fail(String.format(ERR_MSG_DECODE, url, e.getMessage()));
           }
@@ -78,30 +74,30 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
-  public Future<String> hasEnabledUsageModule(String tenantId) {
+  public Future<Boolean> hasEnabledUsageModule(String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     final String moduleUrl = okapiUrl + tenantsPath + "/" + tenantId + "/modules/" + moduleId;
 
-    Future<String> future = Future.future();
+    Future<Boolean> future = Future.future();
     WebClient client = WebClient.create(vertx);
     client.getAbs(moduleUrl).send(ar -> {
       client.close();
       if (ar.succeeded()) {
-        Boolean hasUsageModule = false;
         if (ar.result().statusCode() == 200) {
           try {
-            hasUsageModule = ar.result().bodyAsJsonObject().getString("id").equals(moduleId);
-            future.complete(tenantId);
+            future.complete(ar.result().bodyAsJsonObject().getString("id").equals(moduleId));
           } catch (Exception e) {
             future.fail(logprefix + String.format(ERR_MSG_DECODE, moduleUrl, e.getMessage()));
           }
+        } else if (ar.result().statusCode() == 404) {
+          future.complete(false);
         } else {
           future.fail(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
               ar.result().statusMessage(), moduleUrl));
         }
-        LOG.info(logprefix + "module enabled: " + hasUsageModule);
+        // LOG.info(logprefix + "module enabled: " + hasUsageModule);
       } else {
-        LOG.error(ar.cause());
+        // LOG.error(ar.cause());
         future.fail(ar.cause());
       }
     });
@@ -422,10 +418,19 @@ public class HarvesterVerticle extends AbstractVerticle {
     this.getTenants().setHandler(ar -> {
       if (ar.succeeded()) {
         List<String> tenantList = ar.result();
-        tenantList.forEach(tenant -> {
-          this.hasEnabledUsageModule(tenant).compose(this::getActiveProviders).compose(udColl -> {
-            udColl.getUsageDataProviders()
-                .forEach(provider -> this.fetchAndPostReports(tenant, provider));
+        tenantList.forEach(t -> {
+          this.hasEnabledUsageModule(t).map(en -> {
+            if (en) {
+              this.getActiveProviders(t).map(providers -> {
+                providers.getUsageDataProviders().forEach(p -> this.fetchAndPostReports(t, p));
+                return null;
+              }).setHandler(h -> {
+                if (h.failed())
+                  LOG.error("Tenant " + t + ": failed to get providers: " + h.cause());
+              });
+            } else {
+              LOG.info("Tenant " + t + ": not enabled");
+            }
             return Future.succeededFuture();
           }).setHandler(h -> {
             if (h.failed())

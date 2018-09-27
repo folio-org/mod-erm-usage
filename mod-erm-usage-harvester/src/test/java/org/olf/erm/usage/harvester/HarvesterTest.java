@@ -130,8 +130,8 @@ public class HarvesterTest {
 
     Async async = context.async();
     harvester.getTenants().setHandler(ar -> {
-      context.assertTrue(ar.failed());
-      context.assertTrue(ar.cause().getMessage().equals("No tenants found."));
+      context.assertTrue(ar.succeeded());
+      context.assertTrue(ar.result().isEmpty());
       async.complete();
     });
   }
