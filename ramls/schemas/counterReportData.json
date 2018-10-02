@@ -10,6 +10,9 @@
       "type": "string",
       "format": "date-time"
     },
+    "failedAttempts": {
+      "type": "integer"
+    },
     "creationTime": {
       "type": "string",
       "format": "date-time"
@@ -20,13 +23,9 @@
     "reportName": {
       "type": "string"
     },
-    "beginDate": {
+    "yearMonth": {
       "type": "string",
-      "format": "date-time"
-    },
-    "endDate": {
-      "type": "string",
-      "format": "date-time"
+      "format": "date-month"
     },
     "customerId": {
       "type": "string"
@@ -55,16 +54,12 @@
   "required": [
     "id",
     "downloadTime",
-    "creationTime",
     "release",
     "reportName",
-    "beginDate",
-    "endDate",
+    "yearMonth",
     "customerId",
     "vendorId",
-    "platformId",
-    "format",
-    "report"
+    "platformId"
   ],
   "additionalProperties": false
 }

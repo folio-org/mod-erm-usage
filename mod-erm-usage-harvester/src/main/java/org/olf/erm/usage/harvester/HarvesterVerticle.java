@@ -1,6 +1,8 @@
 package org.olf.erm.usage.harvester;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -177,9 +179,9 @@ public class HarvesterVerticle extends AbstractVerticle {
   }
 
   public JsonObject createReportJsonObject(String reportData, String reportName,
-      UsageDataProvider provider, String begin, String end) {
+      UsageDataProvider provider, YearMonth yearMonth) {
     JsonObject cr = new JsonObject();
-    cr.put("beginDate", begin);
+    cr.put("yearMonth", yearMonth.toString());
     cr.put("reportName", reportName);
     cr.put("platformId", provider.getPlatformId());
     cr.put("customerId", provider.getCustomerId());
@@ -187,7 +189,6 @@ public class HarvesterVerticle extends AbstractVerticle {
     cr.put("format", "???"); // FIXME
     cr.put("downloadTime", LocalDateTime.now().toString()); // FIXME
     cr.put("creationTime", LocalDateTime.now().toString()); // FIXME
-    cr.put("endDate", end);
     cr.put("vendorId", provider.getVendorId());
     cr.put("report", reportData);
     cr.put("id", UUID.randomUUID().toString());
@@ -240,8 +241,10 @@ public class HarvesterVerticle extends AbstractVerticle {
       if (sep != null) {
         getFetchList(tenantId, provider).compose(list -> {
           list.forEach(li -> sep.fetchSingleReport(li.reportType, li.begin, li.end).compose(rep -> {
-            JsonObject crJson =
-                createReportJsonObject(rep, li.reportType, provider, li.begin, li.end);
+            // FIXME: Fix me
+            LocalDate parse = LocalDate.parse(li.begin);
+            YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
+            JsonObject crJson = createReportJsonObject(rep, li.reportType, provider, month);
             return postReport(tenantId, crJson);
           }));
           return Future.succeededFuture();

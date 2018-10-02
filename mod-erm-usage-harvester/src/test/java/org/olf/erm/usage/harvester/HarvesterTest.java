@@ -11,6 +11,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import java.io.IOException;
+import java.time.YearMonth;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
@@ -48,12 +49,11 @@ public class HarvesterTest {
 
   private static final String tenantId = "diku";
 
-  private final static JsonObject crJson = new JsonObject("{\n"
-      + "  \"beginDate\" : \"2016-03-01\",\n" + "  \"reportName\" : \"JR1\",\n"
-      + "  \"platformId\" : \"uuid-123456789\",\n" + "  \"customerId\" : \"12345def\",\n"
-      + "  \"release\" : 4,\n" + "  \"format\" : \"???\",\n"
+  private final static JsonObject crJson = new JsonObject("{\n" + "  \"yearMonth\" : \"2016-03\",\n"
+      + "  \"reportName\" : \"JR1\",\n" + "  \"platformId\" : \"uuid-123456789\",\n"
+      + "  \"customerId\" : \"12345def\",\n" + "  \"release\" : 4,\n" + "  \"format\" : \"???\",\n"
       + "  \"downloadTime\" : \"2018-08-01T15:04:05.967\",\n"
-      + "  \"creationTime\" : \"2018-08-01T15:04:06.539\",\n" + "  \"endDate\" : \"2016-03-31\",\n"
+      + "  \"creationTime\" : \"2018-08-01T15:04:06.539\",\n"
       + "  \"vendorId\" : \"uuid-123456789\",\n" + "  \"report\" : \"reportdata\","
       + "  \"id\" : \"d90bc588-1c7c-4b0c-879c-6e3f6c87c3a6\"\n" + "}");
 
@@ -363,16 +363,14 @@ public class HarvesterTest {
 
     final String reportName = "JR1";
     final String reportData = "testreport";
-    final String begin = "2018-01-01";
-    final String end = "2018-01-31";
+    final YearMonth yearMonth = YearMonth.of(2018, 01);
 
     JsonObject result =
-        harvester.createReportJsonObject(reportData, reportName, provider, begin, end);
+        harvester.createReportJsonObject(reportData, reportName, provider, yearMonth);
     assertTrue(result != null);
     assertEquals(reportName, result.getString("reportName"));
     assertEquals(reportData, result.getString("report"));
-    assertEquals(begin, result.getString("beginDate"));
-    assertEquals(end, result.getString("endDate"));
+    assertEquals(yearMonth.toString(), result.getString("yearMonth"));
     assertEquals(provider.getPlatformId(), result.getString("platformId"));
     assertEquals(provider.getCustomerId(), result.getString("customerId"));
   }

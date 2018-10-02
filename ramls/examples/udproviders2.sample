@@ -1,0 +1,17 @@
+{
+  "id": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd72",
+  "label": "Data provider without aggregator",
+  "vendorId": "uuid-123456789",
+  "platformId": "uuid-123456789",
+  "harvestingStart": "2018-01",
+  "harvestingStatus": "active",
+  "serviceType": "Sushi",
+  "serviceUrl": "http://myvendor.com",
+  "reportRelease": 4,
+  "requestedReports": ["JR1", "TR1"],
+  "customerId": "12345def",
+  "requestorId": "1234abcd",
+  "apiKey": "678iuoi",
+  "requestorName": "Karla Kolumna",
+  "requestorMail": "kolumna@ub.uni-leipzig.de"
+}
