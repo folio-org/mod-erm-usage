@@ -1,7 +1,8 @@
 package org.olf.erm.usage.harvester;
 
+import java.sql.Date;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +12,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
+import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.CounterReportDataDataCollection;
 import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HarvestingStatus;
@@ -18,6 +21,7 @@ import org.olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
@@ -51,15 +55,11 @@ public class HarvesterVerticle extends AbstractVerticle {
           JsonArray jsonArray;
           try {
             jsonArray = ar.result().bodyAsJsonArray();
-            if (!jsonArray.isEmpty()) {
-              List<String> tenants = jsonArray.stream()
-                  .map(o -> ((JsonObject) o).getString("id"))
-                  .collect(Collectors.toList());
-              LOG.info("Found tenants: " + tenants);
-              future.complete(tenants);
-            } else {
-              future.fail("No tenants found.");
-            }
+            List<String> tenants = jsonArray.stream()
+                .map(o -> ((JsonObject) o).getString("id"))
+                .collect(Collectors.toList());
+            LOG.info("Found tenants: " + tenants);
+            future.complete(tenants);
           } catch (Exception e) {
             future.fail(String.format(ERR_MSG_DECODE, url, e.getMessage()));
           }
@@ -74,29 +74,30 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
-  public Future<Void> hasEnabledModule(String tenantId) {
+  public Future<Boolean> hasEnabledUsageModule(String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     final String moduleUrl = okapiUrl + tenantsPath + "/" + tenantId + "/modules/" + moduleId;
 
-    Future<Void> future = Future.future();
+    Future<Boolean> future = Future.future();
     WebClient client = WebClient.create(vertx);
     client.getAbs(moduleUrl).send(ar -> {
       client.close();
       if (ar.succeeded()) {
-        Boolean hasUsageModule = false;
         if (ar.result().statusCode() == 200) {
           try {
-            hasUsageModule = ar.result().bodyAsJsonObject().getString("id").equals(moduleId);
-            future.complete();
+            future.complete(ar.result().bodyAsJsonObject().getString("id").equals(moduleId));
           } catch (Exception e) {
             future.fail(logprefix + String.format(ERR_MSG_DECODE, moduleUrl, e.getMessage()));
           }
+        } else if (ar.result().statusCode() == 404) {
+          future.complete(false);
         } else {
           future.fail(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
               ar.result().statusMessage(), moduleUrl));
         }
-        LOG.info(logprefix + "module enabled: " + hasUsageModule);
+        // LOG.info(logprefix + "module enabled: " + hasUsageModule);
       } else {
+        // LOG.error(ar.cause());
         future.fail(ar.cause());
       }
     });
@@ -104,18 +105,21 @@ public class HarvesterVerticle extends AbstractVerticle {
   }
 
   // TODO: handle limits > 30
-  public Future<UdProvidersDataCollection> getProviders(String tenantId) {
+  public Future<UdProvidersDataCollection> getActiveProviders(String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     final String url = okapiUrl + providerPath;
+    final String queryStr = String.format("(harvestingStatus=%s)", HarvestingStatus.ACTIVE);
     LOG.info(logprefix + "getting providers");
+
     Future<UdProvidersDataCollection> future = Future.future();
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.GET, url)
         .putHeader("x-okapi-tenant", tenantId)
-        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
+        .putHeader("accept", "application/json,text/plain")
         .setQueryParam("limit", "30")
         .setQueryParam("offset", "0")
+        .setQueryParam("query", queryStr)
         .send(ar -> {
           client.close();
           if (ar.succeeded()) {
@@ -178,20 +182,24 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
-  public JsonObject createReportJsonObject(String reportData, String reportName,
+  public CounterReport createCounterReport(String reportData, String reportName,
       UsageDataProvider provider, YearMonth yearMonth) {
-    JsonObject cr = new JsonObject();
-    cr.put("yearMonth", yearMonth.toString());
-    cr.put("reportName", reportName);
-    cr.put("platformId", provider.getPlatformId());
-    cr.put("customerId", provider.getCustomerId());
-    cr.put("release", provider.getReportRelease());
-    cr.put("format", "???"); // FIXME
-    cr.put("downloadTime", LocalDateTime.now().toString()); // FIXME
-    cr.put("creationTime", LocalDateTime.now().toString()); // FIXME
-    cr.put("vendorId", provider.getVendorId());
-    cr.put("report", reportData);
-    cr.put("id", UUID.randomUUID().toString());
+    CounterReport cr = new CounterReport();
+    cr.setId(UUID.randomUUID().toString());
+    cr.setYearMonth(yearMonth.toString());
+    cr.setReportName(reportName);
+    cr.setPlatformId(provider.getPlatformId());
+    cr.setCustomerId(provider.getCustomerId());
+    cr.setRelease(provider.getReportRelease().toString()); // TODO: update release to be a integer
+    cr.setDownloadTime(Date.from(Instant.now())); // FIXME
+    cr.setCreationTime(Date.from(Instant.now())); // FIXME
+    cr.setVendorId(provider.getVendorId());
+    if (reportData != null) {
+      cr.setFormat("???"); // FIXME
+      cr.setReport(reportData);
+    } else {
+      cr.setFailedAttempts(1);
+    }
     return cr;
   }
 
@@ -215,6 +223,41 @@ public class HarvesterVerticle extends AbstractVerticle {
     return sepFuture;
   }
 
+  public Future<List<YearMonth>> getValidMonths(String tenantId, String vendorId, String reportName,
+      YearMonth start, YearMonth end) {
+    Future<List<YearMonth>> future = Future.future();
+    WebClient client = WebClient.create(vertx);
+
+    // TODO: report="" or NOT failedAttempts=""
+    String queryStr = String.format(
+        "(vendorId=%s AND report=\"\" AND reportName=%s AND yearMonth>=%s AND yearMonth<=%s)",
+        vendorId, reportName, start.toString(), end.toString());
+    client.getAbs(okapiUrl + reportsPath)
+        .putHeader("x-okapi-tenant", tenantId)
+        .putHeader("accept", "application/json,text/plain")
+        .setQueryParam("query", queryStr)
+        .setQueryParam("tiny", "true")
+        .send(ar -> {
+          if (ar.succeeded()) {
+            // TODO: catch decode exception
+            CounterReportDataDataCollection result =
+                ar.result().bodyAsJson(CounterReportDataDataCollection.class);
+            List<YearMonth> availableMonths = new ArrayList<>();
+            result.getCounterReports().forEach(r -> {
+              // TODO: catch parse exception
+              // TODO: check r.getDownloadTime() and value of r.getFailedAttempts()
+              if (r.getFailedAttempts() == null)
+                availableMonths.add(YearMonth.parse(r.getYearMonth()));
+            });
+            future.complete(availableMonths);
+          } else {
+            future.fail(ar.cause());
+          }
+        });
+
+    return future;
+  }
+
   public Future<List<FetchItem>> getFetchList(String tenantId, UsageDataProvider provider) {
     final String logprefix = "Tenant: " + tenantId + ", ";
 
@@ -225,12 +268,36 @@ public class HarvesterVerticle extends AbstractVerticle {
       return Future.failedFuture("Harvesting not active");
     }
 
-    List<FetchItem> list = new ArrayList<>();
-    provider.getRequestedReports().forEach(r ->
-    // TODO: implement logic to determine the dates to be processed here
-    list.add(new FetchItem(r, "2016-03-01", "2016-03-31")));
+    Future<List<FetchItem>> future = Future.future();
 
-    return Future.succeededFuture(list);
+    YearMonth startMonth = DateUtil.getStartMonth(provider.getHarvestingStart());
+    YearMonth endMonth = DateUtil.getEndMonth(provider.getHarvestingEnd());
+
+    List<FetchItem> fetchList = new ArrayList<>();
+
+    @SuppressWarnings("rawtypes")
+    List<Future> futures = new ArrayList<>();
+    provider.getRequestedReports().forEach(reportName -> {
+      futures.add(getValidMonths(tenantId, provider.getVendorId(), reportName, startMonth, endMonth)
+          .map(list -> {
+            List<YearMonth> arrayList =
+                DateUtil.getYearMonths(provider.getHarvestingStart(), provider.getHarvestingEnd());
+            arrayList.removeAll(list);
+            arrayList.forEach(li -> fetchList.add(
+                new FetchItem(reportName, li.atDay(1).toString(), li.atEndOfMonth().toString())));
+            return Future.succeededFuture();
+          }));
+    });
+
+    CompositeFuture.all(futures).setHandler(ar -> {
+      if (ar.succeeded()) {
+        future.complete(fetchList);
+      } else {
+        future.fail(ar.cause());
+      }
+    });
+
+    return future;
   }
 
   public void fetchAndPostReports(String tenantId, UsageDataProvider provider) {
@@ -240,13 +307,18 @@ public class HarvesterVerticle extends AbstractVerticle {
     getServiceEndpoint(tenantId, provider).map(sep -> {
       if (sep != null) {
         getFetchList(tenantId, provider).compose(list -> {
-          list.forEach(li -> sep.fetchSingleReport(li.reportType, li.begin, li.end).compose(rep -> {
-            // FIXME: Fix me
-            LocalDate parse = LocalDate.parse(li.begin);
-            YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
-            JsonObject crJson = createReportJsonObject(rep, li.reportType, provider, month);
-            return postReport(tenantId, crJson);
-          }));
+          list.forEach(
+              li -> sep.fetchSingleReport(li.reportType, li.begin, li.end).compose(reportData -> {
+                // fetchSingleReport completes successful, we got a valid report
+                // FIXME: Fix me
+                LocalDate parse = LocalDate.parse(li.begin);
+                YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
+
+                CounterReport report =
+                    createCounterReport(reportData, li.reportType, provider, month);
+                postReport(tenantId, report);
+              }, handleErrorFuture("Tenant: " + tenantId + ", Provider: " + provider.getLabel()
+                  + ", " + li.toString() + ", ")));
           return Future.succeededFuture();
         });
       }
@@ -254,20 +326,48 @@ public class HarvesterVerticle extends AbstractVerticle {
     });
   }
 
-  public Future<HttpResponse<Buffer>> postReport(String tenantId, JsonObject reportContent) {
+  // TODO: handle failed POST/PUT
+  public Future<HttpResponse<Buffer>> postReport(String tenantId, CounterReport report) {
+    return getReport(tenantId, report.getVendorId(), report.getReportName(), report.getYearMonth(),
+        true).compose(existing -> {
+          if (existing == null) { // no report found
+            // POST the report
+            return sendReportRequest(HttpMethod.POST, tenantId, report);
+          } else { // existing report found
+            // put the report with changed attributes
+            Integer failedAttempts = existing.getFailedAttempts();
+            if (failedAttempts == null) {
+              report.setFailedAttempts(1);
+            } else {
+              report.setFailedAttempts(++failedAttempts);
+            }
+            report.setId(existing.getId());
+            return sendReportRequest(HttpMethod.PUT, tenantId, report);
+          }
+        });
+  }
+
+  public Future<HttpResponse<Buffer>> sendReportRequest(HttpMethod method, String tenantId,
+      CounterReport report) {
     final String logprefix = "Tenant: " + tenantId + ", ";
-    final String url = okapiUrl + reportsPath;
+    String urlTmp = okapiUrl + reportsPath;
+    if (!method.equals(HttpMethod.POST) && !method.equals(HttpMethod.PUT)) {
+      return Future.failedFuture("HttpMethod not supported");
+    } else if (method.equals(HttpMethod.PUT)) {
+      urlTmp += "/" + report.getId();
+    }
+    final String url = urlTmp;
+
     final Future<HttpResponse<Buffer>> future = Future.future();
 
-    LOG.info(logprefix + "posting report with data " + reportContent);
+    LOG.info(logprefix + "posting report with id " + report.getId());
 
     WebClient client = WebClient.create(vertx);
-    client.requestAbs(HttpMethod.POST, url)
+    client.requestAbs(method, url)
         .putHeader("x-okapi-tenant", tenantId)
-        .putHeader("accept", "application/json")
-        .sendJsonObject(reportContent, ar -> {
+        .putHeader("accept", "application/json,text/plain")
+        .sendJsonObject(JsonObject.mapFrom(report), ar -> {
           if (ar.succeeded()) {
-            // TODO: check for 201 created and 204 no content
             LOG.info(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
                 ar.result().statusMessage(), url));
             future.complete(ar.result());
@@ -280,64 +380,76 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
+  /**
+   * completes with the found report or null if none is found fails otherwise
+   */
+  public Future<CounterReport> getReport(String tenantId, String vendorId, String reportName,
+      String month, boolean tiny) {
+    WebClient client = WebClient.create(vertx);
+    Future<CounterReport> future = Future.future();
+    String queryStr = String.format("(vendorId=%s AND yearMonth=%s AND reportName=%s)", vendorId,
+        month, reportName);
+    client.getAbs(okapiUrl + reportsPath)
+        .putHeader("x-okapi-tenant", tenantId)
+        .putHeader("accept", "application/json")
+        .setQueryParam("query", queryStr)
+        .setQueryParam("tiny", String.valueOf(tiny))
+        .send(handler -> {
+          if (handler.succeeded()) {
+            if (handler.result().statusCode() == 200) {
+              CounterReportDataDataCollection collection =
+                  handler.result().bodyAsJson(CounterReportDataDataCollection.class);
+              if (collection.getCounterReports().size() == 1)
+                future.complete(collection.getCounterReports().get(0));
+              else
+                future.complete(null);
+            } else {
+              future.complete(null);
+            }
+          } else {
+            future.fail(handler.cause());
+          }
+        });
+    return future;
+  }
+
   public void run() {
-    getTenants()
-        .compose(tenants -> tenants.forEach(t -> hasEnabledModule(t).compose(
-            f -> getProviders(t).compose(providers -> providers.getUsageDataProviders()
-                .forEach(p -> fetchAndPostReports(t, p)), handleErrorFuture()),
-            handleErrorFuture())), handleErrorFuture());
+
+    this.getTenants().setHandler(ar -> {
+      if (ar.succeeded()) {
+        List<String> tenantList = ar.result();
+        tenantList.forEach(t -> {
+          this.hasEnabledUsageModule(t).map(en -> {
+            if (en) {
+              this.getActiveProviders(t).map(providers -> {
+                providers.getUsageDataProviders().forEach(p -> this.fetchAndPostReports(t, p));
+                return null;
+              }).setHandler(h -> {
+                if (h.failed())
+                  LOG.error("Tenant " + t + ": failed to get providers: " + h.cause());
+              });
+            } else {
+              LOG.info("Tenant " + t + ": not enabled");
+            }
+            return Future.succeededFuture();
+          }).setHandler(h -> {
+            if (h.failed())
+              LOG.error(h.cause());
+          });
+        });
+      } else {
+        LOG.error("Failed to get tenants: " + ar.cause());
+      }
+    });
+
   }
 
   private Future<Object> handleErrorFuture() {
-    return Future.future().setHandler(ar -> LOG.error(ar.cause().getMessage()));
+    return handleErrorFuture("");
   }
 
-  public String getOkapiUrl() {
-    return okapiUrl;
-  }
-
-  public void setOkapiUrl(String okapiUrl) {
-    this.okapiUrl = okapiUrl;
-  }
-
-  public String getTenantsPath() {
-    return tenantsPath;
-  }
-
-  public void setTenantsPath(String tenantsPath) {
-    this.tenantsPath = tenantsPath;
-  }
-
-  public String getReportsPath() {
-    return reportsPath;
-  }
-
-  public void setReportsPath(String reportsPath) {
-    this.reportsPath = reportsPath;
-  }
-
-  public String getProviderPath() {
-    return providerPath;
-  }
-
-  public void setProviderPath(String providerPath) {
-    this.providerPath = providerPath;
-  }
-
-  public String getModuleId() {
-    return moduleId;
-  }
-
-  public void setModuleId(String moduleId) {
-    this.moduleId = moduleId;
-  }
-
-  public String getAggregatorPath() {
-    return aggregatorPath;
-  }
-
-  public void setAggregatorPath(String aggregatorPath) {
-    this.aggregatorPath = aggregatorPath;
+  private Future<Object> handleErrorFuture(String logPrefix) {
+    return Future.future().setHandler(ar -> LOG.error(logPrefix + ar.cause().getMessage()));
   }
 
   @Override
