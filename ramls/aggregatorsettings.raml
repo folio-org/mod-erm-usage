@@ -8,12 +8,9 @@ documentation:
     content: This documents the API calls that can be made to query and manage aggregator settings
 
 types:
-  aggregatorSettingsData: !include schemas/aggregatorSettingsData.json
-  aggregatorSettingsDataCollection: !include ./schemas/aggregatorSettingsDataCollection.json
+  aggregatorSetting: !include schemas/aggregatorsetting.json
+  aggregatorSettings: !include ./schemas/aggregatorsettings.json
   errors: !include ./raml-util/schemas/errors.schema
-  error: !include ./raml-util/schemas/error.schema
-  parameters: !include ./raml-util/schemas/parameters.schema
-  ../metadata: !include ./raml-util/schemas/metadata.schema
 
 traits:
   orderable: !include ./raml-util/traits/orderable.raml
@@ -25,8 +22,6 @@ traits:
 resourceTypes:
   collection: !include ./raml-util/rtypes/collection.raml
   collection-item: !include ./raml-util/rtypes/item-collection.raml
-  get-only: !include ./raml-util/rtypes/get-only.raml
-  post-empty-body: !include ./raml-util/rtypes/post-empty-body.raml
 
 /aggregator-settings:
   displayName: Aggregator Settings
@@ -34,8 +29,8 @@ resourceTypes:
     collection:
       exampleCollection: !include ./examples/aggregatorsettings_collection.sample
       exampleItem: !include ./examples/aggregatorsettings.sample
-      schemaCollection: aggregatorSettingsDataCollection
-      schemaItem: aggregatorSettingsData
+      schemaCollection: aggregatorSettings
+      schemaItem: aggregatorSetting
   get:
     is: [
       searchable: {description: "", example: "active=true sortBy username"},
@@ -50,7 +45,7 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include ./examples/aggregatorsettings.sample
-        schema: aggregatorSettingsData
+        schema: aggregatorSetting
     get:
       description: Get one aggregator setting identified by id
     delete:

@@ -4,10 +4,10 @@
   "properties": {
     "aggregatorSettings": {
       "type": "array",
-      "id": "aggregatorSettingsData",
+      "id": "aggregatorsettings",
       "items": {
         "type": "object",
-        "$ref": "aggregatorSettingsData.json"
+        "$ref": "aggregatorsetting.json"
       }
     },
     "totalRecords": {
