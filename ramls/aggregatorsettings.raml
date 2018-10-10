@@ -1,4 +1,4 @@
-#%RAML 0.8
+#%RAML 1.0
 title: Aggregator Settings
 version: v1
 baseUri: http://localhost/mod-erm-usage
@@ -7,28 +7,26 @@ documentation:
   - title: mod-erm-usage API
     content: This documents the API calls that can be made to query and manage aggregator settings
 
-schemas:
-  - aggregatorSettingsData.json: !include schemas/aggregatorSettingsData.json
-  - aggregatorSettingsDataCollection: !include ./schemas/aggregatorSettingsDataCollection.json
-  - errors: !include ./raml-util/schemas/errors.schema
-  - error.schema: !include ./raml-util/schemas/error.schema
-  - parameters.schema: !include ./raml-util/schemas/parameters.schema
-  - ../metadata.schema: !include ./raml-util/schemas/metadata.schema
+types:
+  aggregatorSettingsData: !include schemas/aggregatorSettingsData.json
+  aggregatorSettingsDataCollection: !include ./schemas/aggregatorSettingsDataCollection.json
+  errors: !include ./raml-util/schemas/errors.schema
+  error: !include ./raml-util/schemas/error.schema
+  parameters: !include ./raml-util/schemas/parameters.schema
+  ../metadata: !include ./raml-util/schemas/metadata.schema
 
 traits:
-  - secured: !include ./raml-util/traits/auth.raml
-  - orderable: !include ./raml-util/traits/orderable.raml
-  - pageable: !include ./raml-util/traits/pageable.raml
-  - searchable: !include ./raml-util/traits/searchable.raml
-  - language: !include ./raml-util/traits/language.raml
-  - validate: !include ./raml-util/traits/validation.raml
-  - facets: !include ./raml-util/traits/facets.raml
+  orderable: !include ./raml-util/traits/orderable.raml
+  pageable: !include ./raml-util/traits/pageable.raml
+  searchable: !include ./raml-util/traits/searchable.raml
+  language: !include ./raml-util/traits/language.raml
+  validate: !include ./raml-util/traits/validation.raml
 
 resourceTypes:
-  - collection: !include ./raml-util/rtypes/collection.raml
-  - collection-item: !include ./raml-util/rtypes/item-collection.raml
-  - get-only: !include ./raml-util/rtypes/get-only.raml
-  - post-empty-body: !include ./raml-util/rtypes/post-empty-body.raml
+  collection: !include ./raml-util/rtypes/collection.raml
+  collection-item: !include ./raml-util/rtypes/item-collection.raml
+  get-only: !include ./raml-util/rtypes/get-only.raml
+  post-empty-body: !include ./raml-util/rtypes/post-empty-body.raml
 
 /aggregator-settings:
   displayName: Aggregator Settings
@@ -37,7 +35,7 @@ resourceTypes:
       exampleCollection: !include ./examples/aggregatorsettings_collection.sample
       exampleItem: !include ./examples/aggregatorsettings.sample
       schemaCollection: aggregatorSettingsDataCollection
-      schemaItem: aggregatorSettingsData.json
+      schemaItem: aggregatorSettingsData
   get:
     is: [
       searchable: {description: "", example: "active=true sortBy username"},
@@ -52,7 +50,7 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include ./examples/aggregatorsettings.sample
-        schema: aggregatorSettingsData.json
+        schema: aggregatorSettingsData
     get:
       description: Get one aggregator setting identified by id
     delete:
