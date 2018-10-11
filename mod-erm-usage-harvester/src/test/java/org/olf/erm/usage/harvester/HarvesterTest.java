@@ -204,8 +204,8 @@ public class HarvesterTest {
 
     Async async = context.async();
     harvester.hasEnabledUsageModule(tenantId).setHandler(ar -> {
-      context.assertTrue(ar.failed());
-      context.assertTrue(ar.cause().getMessage().contains("404"));
+      context.assertTrue(ar.succeeded());
+      context.assertTrue(ar.result() == false);
       async.complete();
     });
   }

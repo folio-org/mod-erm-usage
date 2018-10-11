@@ -333,18 +333,15 @@ public class HarvesterVerticle extends AbstractVerticle {
           if (existing == null) { // no report found
             // POST the report
             return sendReportRequest(HttpMethod.POST, tenantId, report);
-          } else { // existing report found
-            // put the report with changed attributes
-            Integer failedAttempts = existing.getFailedAttempts();
-            if (failedAttempts == null) {
-              report.setFailedAttempts(1);
-            } else {
-              report.setFailedAttempts(++failedAttempts);
+          } else {
+            if (report.getFailedAttempts() != null) {
+              report.setFailedAttempts(existing.getFailedAttempts() + 1);
             }
             report.setId(existing.getId());
             return sendReportRequest(HttpMethod.PUT, tenantId, report);
           }
         });
+
   }
 
   public Future<HttpResponse<Buffer>> sendReportRequest(HttpMethod method, String tenantId,
