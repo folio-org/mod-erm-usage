@@ -7,7 +7,7 @@
       "id": "udProvidersData",
       "items": {
         "type": "object",
-        "$ref": "udProvidersData.json"
+        "$ref": "udprovider.json"
       }
     },
     "totalRecords": {

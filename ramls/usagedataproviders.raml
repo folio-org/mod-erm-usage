@@ -8,12 +8,9 @@ documentation:
     content: This documents the API calls that can be made to query and manage usage data providers
 
 types:
-  udProvidersData: !include schemas/udProvidersData.json
-  udProvidersDataCollection: !include ./schemas/udProvidersDataCollection.json
+  usageDataProvider: !include schemas/udprovider.json
+  usageDataProviders: !include ./schemas/udproviders.json
   errors: !include ./raml-util/schemas/errors.schema
-  error: !include ./raml-util/schemas/error.schema
-  parameters: !include ./raml-util/schemas/parameters.schema
-  ../metadata: !include ./raml-util/schemas/metadata.schema
 
 traits:
   orderable: !include ./raml-util/traits/orderable.raml
@@ -25,8 +22,6 @@ traits:
 resourceTypes:
   collection: !include ./raml-util/rtypes/collection.raml
   collection-item: !include ./raml-util/rtypes/item-collection.raml
-  get-only: !include ./raml-util/rtypes/get-only.raml
-  post-empty-body: !include ./raml-util/rtypes/post-empty-body.raml
 
 /usage-data-providers:
   displayName: Usage Data Providers
@@ -34,8 +29,8 @@ resourceTypes:
     collection:
       exampleCollection: !include ./examples/udproviders_collection.sample
       exampleItem: !include ./examples/udproviders.sample
-      schemaCollection: udProvidersDataCollection
-      schemaItem: udProvidersData
+      schemaCollection: usageDataProviders
+      schemaItem: usageDataProvider
   get:
     is: [
       searchable: {description: "", example: "active=true sortBy username"},
@@ -50,7 +45,7 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include ./examples/udproviders.sample
-        schema: udProvidersData
+        schema: usageDataProvider
     get:
       description: Get one usage data provider identified by id
     delete:
