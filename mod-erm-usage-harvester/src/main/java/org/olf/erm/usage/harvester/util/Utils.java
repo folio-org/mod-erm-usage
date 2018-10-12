@@ -1,7 +1,7 @@
 package org.olf.erm.usage.harvester.util;
 
 import org.apache.log4j.Logger;
-import org.folio.rest.jaxrs.model.CounterReportDataDataCollection;
+import org.folio.rest.jaxrs.model.CounterReports;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.client.WebClient;
@@ -19,8 +19,7 @@ public class Utils {
         .addQueryParam("limit", String.valueOf(i))
         .send(ar -> {
           if (ar.succeeded()) {
-            CounterReportDataDataCollection reportsCollection =
-                ar.result().bodyAsJson(CounterReportDataDataCollection.class);
+            CounterReports reportsCollection = ar.result().bodyAsJson(CounterReports.class);
             reportsCollection.getCounterReports()
                 .forEach(r -> client.requestAbs(HttpMethod.DELETE, url + "/" + r.getId())
                     .putHeader("x-okapi-tenant", "diku")
