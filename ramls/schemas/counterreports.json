@@ -7,7 +7,7 @@
       "id": "counterReportData",
       "items": {
         "type": "object",
-        "$ref": "counterReportData.json"
+        "$ref": "counterreport.json"
       }
     },
     "totalRecords": {

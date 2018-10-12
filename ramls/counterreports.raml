@@ -8,12 +8,9 @@ documentation:
     content: This documents the API calls that can be made to query and manage counter reports
 
 types:
-  counterReportData: !include ./schemas/counterReportData.json
-  counterReportDataCollection: !include ./schemas/counterReportDataCollection.json
+  counterReport: !include ./schemas/counterreport.json
+  counterReports: !include ./schemas/counterreports.json
   errors: !include ./raml-util/schemas/errors.schema
-  error: !include ./raml-util/schemas/error.schema
-  parameters: !include ./raml-util/schemas/parameters.schema
-  ../metadata: !include ./raml-util/schemas/metadata.schema
 
 traits:
   orderable: !include ./raml-util/traits/orderable.raml
@@ -25,8 +22,6 @@ traits:
 resourceTypes:
   collection: !include ./raml-util/rtypes/collection.raml
   collection-item: !include ./raml-util/rtypes/item-collection.raml
-  get-only: !include ./raml-util/rtypes/get-only.raml
-  post-empty-body: !include ./raml-util/rtypes/post-empty-body.raml
 
 /counter-reports:
   displayName: Counter Reports
@@ -34,8 +29,8 @@ resourceTypes:
     collection:
       exampleCollection: !include ./examples/counterreport_collection.sample
       exampleItem: !include ./examples/counterreport.sample
-      schemaCollection: counterReportDataCollection
-      schemaItem: counterReportData
+      schemaCollection: counterReports
+      schemaItem: counterReport
   get:
     is: [
       searchable: {description: "", example: "active=true sortBy username"},
@@ -55,7 +50,7 @@ resourceTypes:
     type:
       collection-item:
         exampleItem: !include ./examples/counterreport.sample
-        schema: counterReportData
+        schema: counterReport
     get:
       description: Get one report identified by id
     delete:
