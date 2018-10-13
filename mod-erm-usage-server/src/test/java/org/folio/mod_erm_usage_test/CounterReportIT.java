@@ -215,7 +215,7 @@ public class CounterReportIT {
   @Test
   public void checkThatInvalidCounterReportIsNotPosted() {
     CounterReport invalidReport =
-        Json.decodeValue(Json.encode(report), CounterReport.class).withId(null);
+        Json.decodeValue(Json.encode(report), CounterReport.class).withYearMonth(null);
     given().body(Json.encode(invalidReport))
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)

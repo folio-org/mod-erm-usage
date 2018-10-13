@@ -98,7 +98,6 @@
     }
   },
   "required": [
-    "id",
     "label",
     "vendorId",
     "platformId",

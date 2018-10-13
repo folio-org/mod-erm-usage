@@ -52,7 +52,6 @@
     }
   },
   "required": [
-    "id",
     "downloadTime",
     "release",
     "reportName",

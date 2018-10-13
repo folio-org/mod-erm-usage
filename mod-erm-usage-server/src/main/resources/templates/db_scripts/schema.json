@@ -3,7 +3,7 @@
   "tables": [
     {
       "tableName": "aggregator_settings",
-      "generateId": false,
+      "generateId": true,
       "fromModuleVersion": "1.0",
       "populateJsonWithId": true,
       "pkColumnName": "_id",
@@ -17,7 +17,7 @@
     },
     {
       "tableName": "usage_data_providers",
-      "generateId": false,
+      "generateId": true,
       "fromModuleVersion": "1.0",
       "populateJsonWithId": true,
       "pkColumnName": "_id",
@@ -38,7 +38,7 @@
     },
     {
       "tableName": "counter_reports",
-      "generateId": false,
+      "generateId": true,
       "fromModuleVersion": "1.0",
       "populateJsonWithId": true,
       "pkColumnName": "_id",
