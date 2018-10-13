@@ -354,15 +354,6 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
                               PutAggregatorSettingsByIdResponse.respond400WithTextPlain(
                                   "Label " + entity.getLabel() + " is already in use")));
                         } else {
-                          Date createdDate = null;
-                          Date now = new Date();
-                          if (aggregatorSettingList.size() > 0) {
-                            createdDate = aggregatorSettingList.get(0).getCreatedDate();
-                          } else {
-                            createdDate = now;
-                          }
-                          entity.setUpdatedDate(now);
-                          entity.setCreatedDate(createdDate);
                           try {
                             PostgresClient.getInstance(vertxContext.owner(), tenantId)
                                 .update(TABLE_NAME_AGGREGATOR_SETTINGS, entity, id, putReply -> {

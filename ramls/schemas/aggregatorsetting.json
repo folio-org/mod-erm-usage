@@ -58,13 +58,11 @@
         "configMail"
       ]
     },
-    "createdDate": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updatedDate": {
-      "type": "string",
-      "format": "date-time"
+    "metadata": {
+      "description": "Metadata about creation and changes, provided by the server (client should not provide)",
+      "type": "object",
+      "$ref": "../raml-util/schemas/metadata.schema",
+      "readonly": true
     }
   },
   "required": [
