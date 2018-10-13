@@ -2,11 +2,14 @@ package org.folio.mod_erm_usage_test;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.UUID;
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
+import org.folio.rest.jaxrs.model.AggregatorSettings;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
@@ -14,11 +17,16 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import com.google.common.net.HttpHeaders;
+import com.google.common.net.MediaType;
 import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.builder.RequestSpecBuilder;
+import com.jayway.restassured.filter.log.RequestLoggingFilter;
+import com.jayway.restassured.filter.log.ResponseLoggingFilter;
 import com.jayway.restassured.parsing.Parser;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -28,16 +36,33 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 @RunWith(VertxUnitRunner.class)
 public class AggregatorSettingsIT {
 
-  public static final String APPLICATION_JSON = "application/json";
-  public static final String BASE_URI = "/aggregator-settings";
+  private static final String BASE_URI = "/aggregator-settings";
   private static final String TENANT = "diku";
+  private static final String QUERY_PARAM = "query";
   private static Vertx vertx;
   private static int port;
+
+  private static String aggregatorSettingSampleString;
+  private static AggregatorSetting aggregatorSettingSample;
+  private static AggregatorSetting aggregatorSettingSampleModified;
+
   @Rule
   public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void setUp(TestContext context) {
+    try {
+      aggregatorSettingSampleString =
+          new String(Files.readAllBytes(Paths.get("../ramls/examples/aggregatorsettings.sample")));
+      aggregatorSettingSample =
+          Json.decodeValue(aggregatorSettingSampleString, AggregatorSetting.class);
+      aggregatorSettingSampleModified =
+          Json.decodeValue(aggregatorSettingSampleString, AggregatorSetting.class)
+              .withLabel("changed label");
+    } catch (Exception ex) {
+      context.fail(ex);
+    }
+
     vertx = Vertx.vertx();
     try {
       PostgresClient.setIsEmbedded(true);
@@ -52,10 +77,16 @@ public class AggregatorSettingsIT {
     port = NetworkUtils.nextFreePort();
 
     RestAssured.baseURI = "http://localhost";
+    RestAssured.basePath = BASE_URI;
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
+    RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
+    RestAssured.requestSpecification =
+        new RequestSpecBuilder().addHeader(XOkapiHeaders.TENANT, TENANT)
+            .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
+            .build();
 
-    TenantClient tenantClient = new TenantClient("localhost", port, "diku", "diku");
+    TenantClient tenantClient = new TenantClient("localhost", port, TENANT, TENANT);
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
 
@@ -80,146 +111,147 @@ public class AggregatorSettingsIT {
   }
 
   @Test
-  public void checkThatWeCanAddGetPutAndDeleteAggregatorSettings() {
-
-    AggregatorSetting aggSetting = given()
-        .body("{\n" + " \"id\": \"debb8412-3cd9-4dc6-8390-5e71b017c24e\",\n"
-            + " \"label\": \"Nationaler Statistikserver\",\n" + " \"username\": \"TestUser\",\n"
-            + " \"password\": \"TestPassword\",\n" + " \"apiKey\": \"132Test456ApiKey\",\n"
-            + " \"serviceUrl\": \"https://sushi.redi-bw.de\",\n" + " \"accountConfig\": {\n"
-            + "   \"configType\": \"Manual\",\n" + "   \"configMail\": \"ab@counter-stats.com\",\n"
-            + "   \"displayContact\": [\n" + "     \"Counter Aggregator Contact\",\n"
-            + "     \"Tel: +49 1234 - 9876\"\n" + "   ]\n" + "  }\n" + "}")
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .request()
-        .post(BASE_URI)
-        .thenReturn()
-        .as(AggregatorSetting.class);
-    assertThat(aggSetting.getLabel()).isEqualTo("Nationaler Statistikserver");
-    assertThat(aggSetting.getId()).isNotEmpty();
-
-    given().header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .when()
-        .get(BASE_URI + "/" + aggSetting.getId())
+  public void checkThatWeCanPostGetPutAndDelete() {
+    // POST & GET
+    AggregatorSetting postResponse = given().body(aggregatorSettingSample)
+        .post()
         .then()
-        .contentType(ContentType.JSON)
-        .statusCode(200)
-        .body("id", equalTo(aggSetting.getId()))
-        .body("label", equalTo(aggSetting.getLabel()));
+        .statusCode(201)
+        .extract()
+        .as(AggregatorSetting.class);
+    assertThat(postResponse).isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
 
-    given()
-        .body("{\n" + " \"id\": \"debb8412-3cd9-4dc6-8390-5e71b017c24e\",\n"
-            + " \"label\": \"Nationaler Statistikserver CHANGED\",\n"
-            + " \"username\": \"TestUser\",\n" + " \"password\": \"TestPassword\",\n"
-            + " \"apiKey\": \"132Test456ApiKey\",\n"
-            + " \"serviceUrl\": \"https://sushi.redi-bw.CHANGED\",\n" + " \"accountConfig\": {\n"
-            + "  \"configType\": \"Manual\",\n" + "  \"configMail\": \"ab@counter-stats.com\",\n"
-            + "  \"displayContact\": [\n" + "   \"Counter Aggregator Contact\",\n"
-            + "   \"Tel: +49 1234 - 9876\"\n" + "  ]\n" + " }\n" + "}")
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .request()
-        .put(BASE_URI + "/" + aggSetting.getId())
+    AggregatorSettings ass;
+    ass = given().get().then().statusCode(200).extract().as(AggregatorSettings.class);
+    assertThat(ass.getTotalRecords()).isEqualTo(1);
+    assertThat(ass.getAggregatorSettings().get(0))
+        .isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
+
+    // PUT & GET
+    given().body(aggregatorSettingSampleModified)
+        .put(aggregatorSettingSample.getId())
         .then()
         .statusCode(204);
 
-    AggregatorSetting changed = given().header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .request()
-        .get(BASE_URI + "/" + aggSetting.getId())
-        .thenReturn()
-        .as(AggregatorSetting.class);
-    assertThat(changed.getId()).isEqualTo(aggSetting.getId());
-    assertThat(changed.getLabel()).isEqualTo("Nationaler Statistikserver CHANGED");
-    assertThat(changed.getServiceUrl()).isEqualTo("https://sushi.redi-bw.CHANGED");
+    ass = given().get().then().statusCode(200).extract().as(AggregatorSettings.class);
+    assertThat(ass.getTotalRecords()).isEqualTo(1);
+    assertThat(ass.getAggregatorSettings().get(0))
+        .isEqualToComparingFieldByFieldRecursively(aggregatorSettingSampleModified);
 
-    given().header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .when()
-        .delete(BASE_URI + "/" + aggSetting.getId())
-        .then()
-        .statusCode(204);
+    // DELETE & GET
+    given().delete(aggregatorSettingSample.getId()).then().statusCode(204);
 
-    given().header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .when()
-        .get(BASE_URI + "/" + aggSetting.getId())
-        .then()
-        .statusCode(404);
+    ass = given().get().then().statusCode(200).extract().as(AggregatorSettings.class);
+    assertThat(ass.getTotalRecords()).isEqualTo(0);
+    assertThat(ass.getAggregatorSettings()).isEmpty();
   }
 
   @Test
-  public void checkThatWeCanSearchByCQL() throws UnsupportedEncodingException {
-    AggregatorSetting aggSetting = given()
-        .body("{\n" + " \"id\": \"decd9dd8-ffdf-489a-bebd-38e0cb3c4948\",\n"
-            + " \"label\": \"Test Aggregator\",\n" + " \"username\": \"TestUser\",\n"
-            + " \"password\": \"TestPassword\",\n" + " \"apiKey\": \"132Test456ApiKey\",\n"
-            + " \"serviceUrl\": \"https://sushi.redi-bw.de\",\n" + " \"accountConfig\": {\n"
-            + "  \"configType\": \"Manual\",\n" + "  \"configMail\": \"ab@counter-stats.com\",\n"
-            + "  \"displayContact\": [\n" + "   \"Counter Aggregator Contact\",\n"
-            + "   \"Tel: +49 1234 - 9876\"\n" + "  ]\n" + " }\n" + "}")
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .request()
-        .post(BASE_URI)
-        .thenReturn()
-        .as(AggregatorSetting.class);
-    assertThat(aggSetting.getLabel()).isEqualTo("Test Aggregator");
-    assertThat(aggSetting.getId()).isNotEmpty();
-
-    String cqlLabel = "?query=(label=\"Test Aggr*\")";
-    given().header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .when()
-        .get(BASE_URI + cqlLabel)
+  public void checkThatWeCanSearchByCQL() {
+    String location = given().body(aggregatorSettingSample)
+        .post()
         .then()
-        .contentType(ContentType.JSON)
-        .statusCode(200)
-        .body("aggregatorSettings.size()", equalTo(1))
-        .body("aggregatorSettings[0].id", equalTo(aggSetting.getId()))
-        .body("aggregatorSettings[0].label", equalTo(aggSetting.getLabel()));
+        .statusCode(201)
+        .extract()
+        .header(HttpHeaders.LOCATION);
 
-    String cqlConfigType = "?query=(accountConfig.configType=\"Manual\")";
-    given().header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .when()
-        .get(BASE_URI + cqlConfigType)
+    AggregatorSettings as = given().param(QUERY_PARAM, "(label=*Digital*)")
+        .get()
         .then()
-        .contentType(ContentType.JSON)
         .statusCode(200)
-        .body("aggregatorSettings.size()", equalTo(1))
-        .body("aggregatorSettings[0].id", equalTo(aggSetting.getId()))
-        .body("aggregatorSettings[0].label", equalTo(aggSetting.getLabel()));
+        .extract()
+        .as(AggregatorSettings.class);
+    assertThat(as.getTotalRecords()).isEqualTo(1);
+    assertThat(as.getAggregatorSettings().get(0))
+        .isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
+
+    as = given().param(QUERY_PARAM, "(accountConfig.configType=Manual)")
+        .get()
+        .then()
+        .statusCode(200)
+        .extract()
+        .as(AggregatorSettings.class);
+    assertThat(as.getTotalRecords()).isEqualTo(1);
+    assertThat(as.getAggregatorSettings().get(0))
+        .isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
+
+    as = given().param(QUERY_PARAM, "(label=somelabelthatsnotpresent)")
+        .get()
+        .then()
+        .statusCode(200)
+        .extract()
+        .as(AggregatorSettings.class);
+    assertThat(as.getTotalRecords()).isEqualTo(0);
+    assertThat(as.getAggregatorSettings()).isEmpty();
+
+    given().basePath("").delete(location).then().statusCode(204);
   }
 
   @Test
-  public void checkThatInvalidAggregatorSettingsIsNotPosted() {
-    given()
-        .body("{\n" + " \"id\": \"fb7f9f78-6fff-4492-8312-455f2e043175\",\n"
-            + " \"username\": \"TestUser\",\n" + " \"password\": \"TestPassword\",\n"
-            + " \"apiKey\": \"132Test456ApiKey\",\n"
-            + " \"serviceUrl\": \"https://sushi.redi-bw.de\",\n" + " \"accountConfig\": {\n"
-            + "  \"configType\": \"Manual\",\n" + "  \"configMail\": \"ab@counter-stats.com\",\n"
-            + "  \"displayContact\": [\n" + "   \"Counter Aggregator Contact\",\n"
-            + "   \"Tel: +49 1234 - 9876\"\n" + "  ]\n" + " }\n" + "}")
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .request()
-        .post(BASE_URI)
-        .then()
-        .statusCode(422);
+  public void checkThatInvalidAggregatorSettingIsNotPosted() {
+    AggregatorSetting withoutLabel =
+        Json.decodeValue(aggregatorSettingSampleString, AggregatorSetting.class).withLabel(null);
+
+    given().body(withoutLabel).post().then().statusCode(422);
+    AggregatorSettings as = given().get().then().extract().as(AggregatorSettings.class);
+    assertThat(as.getTotalRecords()).isEqualTo(0);
   }
 
+  @Test
+  public void checkThatIdIsGeneratedOnPost() {
+    AggregatorSetting withoutId =
+        Json.decodeValue(aggregatorSettingSampleString, AggregatorSetting.class).withId(null);
+    String location = given().body(withoutId)
+        .post()
+        .then()
+        .statusCode(201)
+        .extract()
+        .header(HttpHeaders.LOCATION);
+    given().basePath("").delete(location).then().statusCode(204);
+  }
+
+  @Test
+  public void checkThatWeCanGetByIdFromReturnedLocationAfterPost() {
+    String location = given().body(aggregatorSettingSample)
+        .post()
+        .then()
+        .statusCode(201)
+        .extract()
+        .header(HttpHeaders.LOCATION);
+    AggregatorSetting as = given().basePath("")
+        .get(location)
+        .then()
+        .statusCode(200)
+        .extract()
+        .as(AggregatorSetting.class);
+    assertThat(as).isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
+    given().basePath("").delete(location).then().statusCode(204);
+  }
+
+  @Test
+  public void checkThatMetaDataIsCreatedOnPost() {
+    // no user header
+    String location = given().body(aggregatorSettingSample)
+        .post()
+        .then()
+        .statusCode(201)
+        .extract()
+        .header("location");
+    AggregatorSetting as =
+        given().basePath("").get(location).then().extract().as(AggregatorSetting.class);
+    assertThat(as.getMetadata()).isNull();
+    given().basePath("").delete(location).then().statusCode(204);
+
+    // with user header
+    location = given().body(aggregatorSettingSample)
+        .header(XOkapiHeaders.USER_ID, UUID.randomUUID())
+        .post()
+        .then()
+        .statusCode(201)
+        .extract()
+        .header("location");
+    as = given().basePath("").get(location).then().extract().as(AggregatorSetting.class);
+    assertThat(as.getMetadata()).isNotNull();
+    given().basePath("").delete(location).then().statusCode(204);
+  }
 }
