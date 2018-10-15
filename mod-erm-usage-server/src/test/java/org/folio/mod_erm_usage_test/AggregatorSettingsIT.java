@@ -3,18 +3,6 @@ package org.folio.mod_erm_usage_test;
 import static com.jayway.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.parsing.Parser;
-import io.vertx.core.Context;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.UnsupportedEncodingException;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
@@ -26,6 +14,16 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.parsing.Parser;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Timeout;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
 public class AggregatorSettingsIT {
@@ -34,7 +32,6 @@ public class AggregatorSettingsIT {
   public static final String BASE_URI = "/aggregator-settings";
   private static final String TENANT = "diku";
   private static Vertx vertx;
-  private static Context vertxContext;
   private static int port;
   @Rule
   public Timeout timeout = Timeout.seconds(10);
@@ -42,7 +39,6 @@ public class AggregatorSettingsIT {
   @BeforeClass
   public static void setUp(TestContext context) {
     vertx = Vertx.vertx();
-    vertxContext = vertx.getOrCreateContext();
     try {
       PostgresClient.setIsEmbedded(true);
       PostgresClient instance = PostgresClient.getInstance(vertx);
@@ -60,13 +56,12 @@ public class AggregatorSettingsIT {
     RestAssured.defaultParser = Parser.JSON;
 
     TenantClient tenantClient = new TenantClient("localhost", port, "diku", "diku");
-    DeploymentOptions options = new DeploymentOptions()
-        .setConfig(new JsonObject().put("http.port", port))
-        .setWorker(true);
+    DeploymentOptions options =
+        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
 
     vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
       try {
-        tenantClient.post(null, res2 -> {
+        tenantClient.postTenant(null, res2 -> {
           async.complete();
         });
       } catch (Exception e) {
@@ -88,22 +83,13 @@ public class AggregatorSettingsIT {
   public void checkThatWeCanAddGetPutAndDeleteAggregatorSettings() {
 
     AggregatorSetting aggSetting = given()
-        .body("{\n"
-            + " \"id\": \"debb8412-3cd9-4dc6-8390-5e71b017c24e\",\n"
-            + " \"label\": \"Nationaler Statistikserver\",\n"
-            + " \"username\": \"TestUser\",\n"
-            + " \"password\": \"TestPassword\",\n"
-            + " \"apiKey\": \"132Test456ApiKey\",\n"
-            + " \"serviceUrl\": \"https://sushi.redi-bw.de\",\n"
-            + " \"accountConfig\": {\n"
-            + "   \"configType\": \"Manual\",\n"
-            + "   \"configMail\": \"ab@counter-stats.com\",\n"
-            + "   \"displayContact\": [\n"
-            + "     \"Counter Aggregator Contact\",\n"
-            + "     \"Tel: +49 1234 - 9876\"\n"
-            + "   ]\n"
-            + "  }\n"
-            + "}")
+        .body("{\n" + " \"id\": \"debb8412-3cd9-4dc6-8390-5e71b017c24e\",\n"
+            + " \"label\": \"Nationaler Statistikserver\",\n" + " \"username\": \"TestUser\",\n"
+            + " \"password\": \"TestPassword\",\n" + " \"apiKey\": \"132Test456ApiKey\",\n"
+            + " \"serviceUrl\": \"https://sushi.redi-bw.de\",\n" + " \"accountConfig\": {\n"
+            + "   \"configType\": \"Manual\",\n" + "   \"configMail\": \"ab@counter-stats.com\",\n"
+            + "   \"displayContact\": [\n" + "     \"Counter Aggregator Contact\",\n"
+            + "     \"Tel: +49 1234 - 9876\"\n" + "   ]\n" + "  }\n" + "}")
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
@@ -114,8 +100,7 @@ public class AggregatorSettingsIT {
     assertThat(aggSetting.getLabel()).isEqualTo("Nationaler Statistikserver");
     assertThat(aggSetting.getId()).isNotEmpty();
 
-    given()
-        .header("X-Okapi-Tenant", TENANT)
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
@@ -127,22 +112,14 @@ public class AggregatorSettingsIT {
         .body("label", equalTo(aggSetting.getLabel()));
 
     given()
-        .body("{\n"
-            + " \"id\": \"debb8412-3cd9-4dc6-8390-5e71b017c24e\",\n"
+        .body("{\n" + " \"id\": \"debb8412-3cd9-4dc6-8390-5e71b017c24e\",\n"
             + " \"label\": \"Nationaler Statistikserver CHANGED\",\n"
-            + " \"username\": \"TestUser\",\n"
-            + " \"password\": \"TestPassword\",\n"
+            + " \"username\": \"TestUser\",\n" + " \"password\": \"TestPassword\",\n"
             + " \"apiKey\": \"132Test456ApiKey\",\n"
-            + " \"serviceUrl\": \"https://sushi.redi-bw.CHANGED\",\n"
-            + " \"accountConfig\": {\n"
-            + "  \"configType\": \"Manual\",\n"
-            + "  \"configMail\": \"ab@counter-stats.com\",\n"
-            + "  \"displayContact\": [\n"
-            + "   \"Counter Aggregator Contact\",\n"
-            + "   \"Tel: +49 1234 - 9876\"\n"
-            + "  ]\n"
-            + " }\n"
-            + "}")
+            + " \"serviceUrl\": \"https://sushi.redi-bw.CHANGED\",\n" + " \"accountConfig\": {\n"
+            + "  \"configType\": \"Manual\",\n" + "  \"configMail\": \"ab@counter-stats.com\",\n"
+            + "  \"displayContact\": [\n" + "   \"Counter Aggregator Contact\",\n"
+            + "   \"Tel: +49 1234 - 9876\"\n" + "  ]\n" + " }\n" + "}")
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
@@ -151,8 +128,7 @@ public class AggregatorSettingsIT {
         .then()
         .statusCode(204);
 
-    AggregatorSetting changed = given()
-        .header("X-Okapi-Tenant", TENANT)
+    AggregatorSetting changed = given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
@@ -163,8 +139,7 @@ public class AggregatorSettingsIT {
     assertThat(changed.getLabel()).isEqualTo("Nationaler Statistikserver CHANGED");
     assertThat(changed.getServiceUrl()).isEqualTo("https://sushi.redi-bw.CHANGED");
 
-    given()
-        .header("X-Okapi-Tenant", TENANT)
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .when()
@@ -172,8 +147,7 @@ public class AggregatorSettingsIT {
         .then()
         .statusCode(204);
 
-    given()
-        .header("X-Okapi-Tenant", TENANT)
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
@@ -185,22 +159,13 @@ public class AggregatorSettingsIT {
   @Test
   public void checkThatWeCanSearchByCQL() throws UnsupportedEncodingException {
     AggregatorSetting aggSetting = given()
-        .body("{\n"
-            + " \"id\": \"decd9dd8-ffdf-489a-bebd-38e0cb3c4948\",\n"
-            + " \"label\": \"Test Aggregator\",\n"
-            + " \"username\": \"TestUser\",\n"
-            + " \"password\": \"TestPassword\",\n"
-            + " \"apiKey\": \"132Test456ApiKey\",\n"
-            + " \"serviceUrl\": \"https://sushi.redi-bw.de\",\n"
-            + " \"accountConfig\": {\n"
-            + "  \"configType\": \"Manual\",\n"
-            + "  \"configMail\": \"ab@counter-stats.com\",\n"
-            + "  \"displayContact\": [\n"
-            + "   \"Counter Aggregator Contact\",\n"
-            + "   \"Tel: +49 1234 - 9876\"\n"
-            + "  ]\n"
-            + " }\n"
-            + "}")
+        .body("{\n" + " \"id\": \"decd9dd8-ffdf-489a-bebd-38e0cb3c4948\",\n"
+            + " \"label\": \"Test Aggregator\",\n" + " \"username\": \"TestUser\",\n"
+            + " \"password\": \"TestPassword\",\n" + " \"apiKey\": \"132Test456ApiKey\",\n"
+            + " \"serviceUrl\": \"https://sushi.redi-bw.de\",\n" + " \"accountConfig\": {\n"
+            + "  \"configType\": \"Manual\",\n" + "  \"configMail\": \"ab@counter-stats.com\",\n"
+            + "  \"displayContact\": [\n" + "   \"Counter Aggregator Contact\",\n"
+            + "   \"Tel: +49 1234 - 9876\"\n" + "  ]\n" + " }\n" + "}")
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
@@ -212,8 +177,7 @@ public class AggregatorSettingsIT {
     assertThat(aggSetting.getId()).isNotEmpty();
 
     String cqlLabel = "?query=(label=\"Test Aggr*\")";
-    given()
-        .header("X-Okapi-Tenant", TENANT)
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
@@ -226,8 +190,7 @@ public class AggregatorSettingsIT {
         .body("aggregatorSettings[0].label", equalTo(aggSetting.getLabel()));
 
     String cqlConfigType = "?query=(accountConfig.configType=\"Manual\")";
-    given()
-        .header("X-Okapi-Tenant", TENANT)
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
@@ -243,21 +206,13 @@ public class AggregatorSettingsIT {
   @Test
   public void checkThatInvalidAggregatorSettingsIsNotPosted() {
     given()
-        .body("{\n"
-            + " \"id\": \"fb7f9f78-6fff-4492-8312-455f2e043175\",\n"
-            + " \"username\": \"TestUser\",\n"
-            + " \"password\": \"TestPassword\",\n"
+        .body("{\n" + " \"id\": \"fb7f9f78-6fff-4492-8312-455f2e043175\",\n"
+            + " \"username\": \"TestUser\",\n" + " \"password\": \"TestPassword\",\n"
             + " \"apiKey\": \"132Test456ApiKey\",\n"
-            + " \"serviceUrl\": \"https://sushi.redi-bw.de\",\n"
-            + " \"accountConfig\": {\n"
-            + "  \"configType\": \"Manual\",\n"
-            + "  \"configMail\": \"ab@counter-stats.com\",\n"
-            + "  \"displayContact\": [\n"
-            + "   \"Counter Aggregator Contact\",\n"
-            + "   \"Tel: +49 1234 - 9876\"\n"
-            + "  ]\n"
-            + " }\n"
-            + "}")
+            + " \"serviceUrl\": \"https://sushi.redi-bw.de\",\n" + " \"accountConfig\": {\n"
+            + "  \"configType\": \"Manual\",\n" + "  \"configMail\": \"ab@counter-stats.com\",\n"
+            + "  \"displayContact\": [\n" + "   \"Counter Aggregator Contact\",\n"
+            + "   \"Tel: +49 1234 - 9876\"\n" + "  ]\n" + " }\n" + "}")
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)

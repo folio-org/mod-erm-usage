@@ -13,10 +13,10 @@ import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.jaxrs.model.CounterReportDataDataCollection;
-import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
+import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HarvestingStatus;
+import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -105,13 +105,13 @@ public class HarvesterVerticle extends AbstractVerticle {
   }
 
   // TODO: handle limits > 30
-  public Future<UdProvidersDataCollection> getActiveProviders(String tenantId) {
+  public Future<UsageDataProviders> getActiveProviders(String tenantId) {
     final String logprefix = "Tenant: " + tenantId + ", ";
     final String url = okapiUrl + providerPath;
     final String queryStr = String.format("(harvestingStatus=%s)", HarvestingStatus.ACTIVE);
     LOG.info(logprefix + "getting providers");
 
-    Future<UdProvidersDataCollection> future = Future.future();
+    Future<UsageDataProviders> future = Future.future();
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.GET, url)
@@ -124,9 +124,9 @@ public class HarvesterVerticle extends AbstractVerticle {
           client.close();
           if (ar.succeeded()) {
             if (ar.result().statusCode() == 200) {
-              UdProvidersDataCollection entity;
+              UsageDataProviders entity;
               try {
-                entity = ar.result().bodyAsJson(UdProvidersDataCollection.class);
+                entity = ar.result().bodyAsJson(UsageDataProviders.class);
                 LOG.info(logprefix + "total providers: " + entity.getTotalRecords());
                 future.complete(entity);
               } catch (Exception e) {
@@ -240,8 +240,7 @@ public class HarvesterVerticle extends AbstractVerticle {
         .send(ar -> {
           if (ar.succeeded()) {
             // TODO: catch decode exception
-            CounterReportDataDataCollection result =
-                ar.result().bodyAsJson(CounterReportDataDataCollection.class);
+            CounterReports result = ar.result().bodyAsJson(CounterReports.class);
             List<YearMonth> availableMonths = new ArrayList<>();
             result.getCounterReports().forEach(r -> {
               // TODO: catch parse exception
@@ -335,6 +334,7 @@ public class HarvesterVerticle extends AbstractVerticle {
             return sendReportRequest(HttpMethod.POST, tenantId, report);
           } else {
             if (report.getFailedAttempts() != null) {
+              // FIXME: check null
               report.setFailedAttempts(existing.getFailedAttempts() + 1);
             }
             report.setId(existing.getId());
@@ -394,8 +394,7 @@ public class HarvesterVerticle extends AbstractVerticle {
         .send(handler -> {
           if (handler.succeeded()) {
             if (handler.result().statusCode() == 200) {
-              CounterReportDataDataCollection collection =
-                  handler.result().bodyAsJson(CounterReportDataDataCollection.class);
+              CounterReports collection = handler.result().bodyAsJson(CounterReports.class);
               if (collection.getCounterReports().size() == 1)
                 future.complete(collection.getCounterReports().get(0));
               else

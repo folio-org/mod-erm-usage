@@ -2,12 +2,12 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
-    "aggregatorSettings": {
+    "counterReports": {
       "type": "array",
-      "id": "aggregatorSettingsData",
+      "id": "counterReportData",
       "items": {
         "type": "object",
-        "$ref": "aggregatorSettingsData.json"
+        "$ref": "counterreport.json"
       }
     },
     "totalRecords": {
@@ -15,7 +15,7 @@
     }
   },
   "required": [
-    "aggregatorSettings",
+    "counterReports",
     "totalRecords"
   ]
 }

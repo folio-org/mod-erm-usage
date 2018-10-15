@@ -10,8 +10,8 @@ import java.nio.file.Paths;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
-import org.folio.rest.jaxrs.model.UdProvidersDataCollection;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
@@ -91,7 +91,7 @@ public class UsageDataProvidersIT {
 
     vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
       try {
-        tenantClient.post(null, res2 -> {
+        tenantClient.postTenant(null, res2 -> {
           async.complete();
         });
       } catch (Exception e) {
@@ -254,13 +254,13 @@ public class UsageDataProvidersIT {
     assertThat(usageDataProvider.getId()).isNotEmpty();
 
     String cqlLabel = "?query=(label=\"Test Usage*\")";
-    UdProvidersDataCollection queryResult = given().header("X-Okapi-Tenant", TENANT)
+    UsageDataProviders queryResult = given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
         .get(BASE_URI + cqlLabel)
         .thenReturn()
-        .as(UdProvidersDataCollection.class);
+        .as(UsageDataProviders.class);
     assertThat(queryResult.getUsageDataProviders().size()).isEqualTo(1);
     assertThat(queryResult.getUsageDataProviders().get(0).getLabel())
         .isEqualTo(usageDataProvider.getLabel());
