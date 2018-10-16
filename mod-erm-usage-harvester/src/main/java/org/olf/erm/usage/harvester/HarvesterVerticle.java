@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -18,6 +19,7 @@ import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HarvestingStatus;
 import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.olf.erm.usage.harvester.endpoints.ServiceEndpoint;
+import com.google.common.base.Strings;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.vertx.core.AbstractVerticle;
@@ -42,6 +44,8 @@ public class HarvesterVerticle extends AbstractVerticle {
   private String providerPath;
   private String aggregatorPath;
   private String moduleId;
+  private String loginPath = "/bl-users/login";
+  private String requiredPerm = "ermusage.all";
 
   public Future<List<String>> getTenants() {
     Future<List<String>> future = Future.future();
@@ -440,12 +444,38 @@ public class HarvesterVerticle extends AbstractVerticle {
 
   }
 
-  private Future<Object> handleErrorFuture() {
-    return handleErrorFuture("");
-  }
-
   private Future<Object> handleErrorFuture(String logPrefix) {
     return Future.future().setHandler(ar -> LOG.error(logPrefix + ar.cause().getMessage()));
+  }
+
+  public Future<String> getAuthToken(String tenantId, String username, String password) {
+    JsonObject userCred = new JsonObject().put("username", username).put("password", password);
+    WebClient client = WebClient.create(vertx);
+    Future<String> future = Future.future();
+    client.postAbs(okapiUrl + loginPath)
+        .addQueryParam("expandPermissions", "false")
+        .addQueryParam("fullPermissions", "false")
+        .putHeader(XOkapiHeaders.TENANT, tenantId)
+        .putHeader(HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
+        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
+        .sendJson(userCred, h -> {
+          if (h.succeeded()) {
+            String token = h.result().getHeader(XOkapiHeaders.TOKEN);
+            if (Strings.isNullOrEmpty(token))
+              future.fail("No token received: " + h.result().statusCode() + " "
+                  + h.result().statusMessage());
+            else if (h.result()
+                .bodyAsJsonObject()
+                .getJsonArray("permissions.permissions", new JsonArray())
+                .contains(requiredPerm))
+              future.fail("Required permission not found");
+            else
+              future.complete(token);
+          } else {
+            future.fail(h.cause());
+          }
+        });
+    return future;
   }
 
   @Override
@@ -462,6 +492,7 @@ public class HarvesterVerticle extends AbstractVerticle {
         moduleId)) {
       startFuture.fail("No or incomplete configuration found. Use -conf argument");
     } else {
+      System.out.println("Starting with config:\n" + config().encodePrettily());
       startFuture.complete();
 
       // only start processing if not in test
