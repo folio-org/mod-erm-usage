@@ -6,9 +6,9 @@ import io.vertx.core.json.JsonObject;
 
 public class Token {
 
-  final String token;
-  final String userId;
-  final String tenantId;
+  private final String token;
+  private final String userId;
+  private final String tenantId;
 
 
   public String getToken() {
@@ -39,5 +39,15 @@ public class Token {
     this.tenantId = json.getString("tenant");
     Objects.requireNonNull(userId);
     Objects.requireNonNull(tenantId);
+  }
+
+  public static Token createDummy(String token, String userId, String tenantId) {
+    return new Token(token, userId, tenantId);
+  }
+
+  private Token(String token, String userId, String tenantId) {
+    this.token = token;
+    this.userId = userId;
+    this.tenantId = tenantId;
   }
 }

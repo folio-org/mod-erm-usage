@@ -109,8 +109,8 @@ public class HarvesterVerticle extends AbstractVerticle {
   }
 
   // TODO: handle limits > 30
-  public Future<UsageDataProviders> getActiveProviders(String tenantId) {
-    final String logprefix = "Tenant: " + tenantId + ", ";
+  public Future<UsageDataProviders> getActiveProviders(Token token) {
+    final String logprefix = "Tenant: " + token.getTenantId() + ", ";
     final String url = okapiUrl + providerPath;
     final String queryStr = String.format("(harvestingStatus=%s)", HarvestingStatus.ACTIVE);
     LOG.info(logprefix + "getting providers");
@@ -119,8 +119,9 @@ public class HarvesterVerticle extends AbstractVerticle {
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.GET, url)
-        .putHeader("x-okapi-tenant", tenantId)
-        .putHeader("accept", "application/json,text/plain")
+        .putHeader(XOkapiHeaders.TOKEN, token.getToken())
+        .putHeader(XOkapiHeaders.TENANT, token.getTenantId())
+        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
         .setQueryParam("limit", "30")
         .setQueryParam("offset", "0")
         .setQueryParam("query", queryStr)
@@ -147,9 +148,8 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
-  public Future<AggregatorSetting> getAggregatorSetting(String tenantId,
-      UsageDataProvider provider) {
-    final String logprefix = "Tenant: " + tenantId + ", ";
+  public Future<AggregatorSetting> getAggregatorSetting(Token token, UsageDataProvider provider) {
+    final String logprefix = "Tenant: " + token.getTenantId() + ", ";
     Future<AggregatorSetting> future = Future.future();
 
     Aggregator aggregator = provider.getAggregator();
@@ -161,7 +161,8 @@ public class HarvesterVerticle extends AbstractVerticle {
     final String aggrUrl = okapiUrl + aggregatorPath + "/" + aggregator.getId();
     WebClient client = WebClient.create(vertx);
     client.requestAbs(HttpMethod.GET, aggrUrl)
-        .putHeader("x-okapi-tenant", tenantId)
+        .putHeader(XOkapiHeaders.TOKEN, token.getToken())
+        .putHeader(XOkapiHeaders.TENANT, token.getTenantId())
         .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
         .send(ar -> {
           client.close();
@@ -207,14 +208,14 @@ public class HarvesterVerticle extends AbstractVerticle {
     return cr;
   }
 
-  public Future<ServiceEndpoint> getServiceEndpoint(String tenantId, UsageDataProvider provider) {
+  public Future<ServiceEndpoint> getServiceEndpoint(Token token, UsageDataProvider provider) {
     Future<AggregatorSetting> aggrFuture = Future.future();
     Future<ServiceEndpoint> sepFuture = Future.future();
 
     Aggregator aggregator = provider.getAggregator();
     // Complete aggrFuture if aggregator is not set.. aka skip it
     if (aggregator != null) {
-      aggrFuture = getAggregatorSetting(tenantId, provider);
+      aggrFuture = getAggregatorSetting(token, provider);
     } else {
       aggrFuture.complete(null);
     }
@@ -227,7 +228,7 @@ public class HarvesterVerticle extends AbstractVerticle {
     return sepFuture;
   }
 
-  public Future<List<YearMonth>> getValidMonths(String tenantId, String vendorId, String reportName,
+  public Future<List<YearMonth>> getValidMonths(Token token, String vendorId, String reportName,
       YearMonth start, YearMonth end) {
     Future<List<YearMonth>> future = Future.future();
     WebClient client = WebClient.create(vertx);
@@ -237,22 +238,28 @@ public class HarvesterVerticle extends AbstractVerticle {
         "(vendorId=%s AND report=\"\" AND reportName=%s AND yearMonth>=%s AND yearMonth<=%s)",
         vendorId, reportName, start.toString(), end.toString());
     client.getAbs(okapiUrl + reportsPath)
-        .putHeader("x-okapi-tenant", tenantId)
-        .putHeader("accept", "application/json,text/plain")
+        .putHeader(XOkapiHeaders.TOKEN, token.getToken())
+        .putHeader(XOkapiHeaders.TENANT, token.getTenantId())
+        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
         .setQueryParam("query", queryStr)
         .setQueryParam("tiny", "true")
         .send(ar -> {
           if (ar.succeeded()) {
             // TODO: catch decode exception
-            CounterReports result = ar.result().bodyAsJson(CounterReports.class);
-            List<YearMonth> availableMonths = new ArrayList<>();
-            result.getCounterReports().forEach(r -> {
-              // TODO: catch parse exception
-              // TODO: check r.getDownloadTime() and value of r.getFailedAttempts()
-              if (r.getFailedAttempts() == null)
-                availableMonths.add(YearMonth.parse(r.getYearMonth()));
-            });
-            future.complete(availableMonths);
+            if (ar.result().statusCode() == 200) {
+              CounterReports result = ar.result().bodyAsJson(CounterReports.class);
+              List<YearMonth> availableMonths = new ArrayList<>();
+              result.getCounterReports().forEach(r -> {
+                // TODO: catch parse exception
+                // TODO: check r.getDownloadTime() and value of r.getFailedAttempts()
+                if (r.getFailedAttempts() == null)
+                  availableMonths.add(YearMonth.parse(r.getYearMonth()));
+              });
+              future.complete(availableMonths);
+            } else {
+              future.fail(String.format(ERR_MSG_STATUS, ar.result().statusCode(),
+                  ar.result().statusMessage(), okapiUrl + reportsPath));
+            }
           } else {
             future.fail(ar.cause());
           }
@@ -261,8 +268,8 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
-  public Future<List<FetchItem>> getFetchList(String tenantId, UsageDataProvider provider) {
-    final String logprefix = "Tenant: " + tenantId + ", ";
+  public Future<List<FetchItem>> getFetchList(Token token, UsageDataProvider provider) {
+    final String logprefix = "Tenant: " + token.getTenantId() + ", ";
 
     // check if harvesting status is 'active'
     if (!provider.getHarvestingStatus().equals(HarvestingStatus.ACTIVE)) {
@@ -281,7 +288,7 @@ public class HarvesterVerticle extends AbstractVerticle {
     @SuppressWarnings("rawtypes")
     List<Future> futures = new ArrayList<>();
     provider.getRequestedReports().forEach(reportName -> {
-      futures.add(getValidMonths(tenantId, provider.getVendorId(), reportName, startMonth, endMonth)
+      futures.add(getValidMonths(token, provider.getVendorId(), reportName, startMonth, endMonth)
           .map(list -> {
             List<YearMonth> arrayList =
                 DateUtil.getYearMonths(provider.getHarvestingStart(), provider.getHarvestingEnd());
@@ -303,13 +310,13 @@ public class HarvesterVerticle extends AbstractVerticle {
     return future;
   }
 
-  public void fetchAndPostReports(String tenantId, UsageDataProvider provider) {
-    final String logprefix = "Tenant: " + tenantId + ", ";
+  public void fetchAndPostReports(Token token, UsageDataProvider provider) {
+    final String logprefix = "Tenant: " + token.getTenantId() + ", ";
     LOG.info(logprefix + "processing provider: " + provider.getLabel());
 
-    getServiceEndpoint(tenantId, provider).map(sep -> {
+    getServiceEndpoint(token, provider).map(sep -> {
       if (sep != null) {
-        getFetchList(tenantId, provider).compose(list -> {
+        getFetchList(token, provider).compose(list -> {
           list.forEach(
               li -> sep.fetchSingleReport(li.reportType, li.begin, li.end).compose(reportData -> {
                 // fetchSingleReport completes successful, we got a valid report
@@ -319,38 +326,43 @@ public class HarvesterVerticle extends AbstractVerticle {
 
                 CounterReport report =
                     createCounterReport(reportData, li.reportType, provider, month);
-                postReport(tenantId, report);
-              }, handleErrorFuture("Tenant: " + tenantId + ", Provider: " + provider.getLabel()
-                  + ", " + li.toString() + ", ")));
+                postReport(token, report);
+              }, handleErrorFuture("Tenant: " + token.getTenantId() + ", Provider: "
+                  + provider.getLabel() + ", " + li.toString() + ", ")));
           return Future.succeededFuture();
+        }).setHandler(h -> {
+          LOG.error(h.cause());
         });
       }
       return Future.failedFuture("No ServiceEndpoint");
+    }).setHandler(h -> {
+      if (h.failed())
+        LOG.error(h.cause());
     });
   }
 
   // TODO: handle failed POST/PUT
-  public Future<HttpResponse<Buffer>> postReport(String tenantId, CounterReport report) {
-    return getReport(tenantId, report.getVendorId(), report.getReportName(), report.getYearMonth(),
+  public Future<HttpResponse<Buffer>> postReport(Token token, CounterReport report) {
+    return getReport(token, report.getVendorId(), report.getReportName(), report.getYearMonth(),
         true).compose(existing -> {
           if (existing == null) { // no report found
             // POST the report
-            return sendReportRequest(HttpMethod.POST, tenantId, report);
+            return sendReportRequest(HttpMethod.POST, token, report);
           } else {
             if (report.getFailedAttempts() != null) {
               // FIXME: check null
               report.setFailedAttempts(existing.getFailedAttempts() + 1);
             }
             report.setId(existing.getId());
-            return sendReportRequest(HttpMethod.PUT, tenantId, report);
+            return sendReportRequest(HttpMethod.PUT, token, report);
           }
         });
 
   }
 
-  public Future<HttpResponse<Buffer>> sendReportRequest(HttpMethod method, String tenantId,
+  public Future<HttpResponse<Buffer>> sendReportRequest(HttpMethod method, Token token,
       CounterReport report) {
-    final String logprefix = "Tenant: " + tenantId + ", ";
+    final String logprefix = "Tenant: " + token.getTenantId() + ", ";
     String urlTmp = okapiUrl + reportsPath;
     if (!method.equals(HttpMethod.POST) && !method.equals(HttpMethod.PUT)) {
       return Future.failedFuture("HttpMethod not supported");
@@ -365,8 +377,9 @@ public class HarvesterVerticle extends AbstractVerticle {
 
     WebClient client = WebClient.create(vertx);
     client.requestAbs(method, url)
-        .putHeader("x-okapi-tenant", tenantId)
-        .putHeader("accept", "application/json,text/plain")
+        .putHeader(XOkapiHeaders.TOKEN, token.getToken())
+        .putHeader(XOkapiHeaders.TENANT, token.getTenantId())
+        .putHeader(HttpHeaders.ACCEPT, MediaType.PLAIN_TEXT_UTF_8.toString())
         .sendJsonObject(JsonObject.mapFrom(report), ar -> {
           if (ar.succeeded()) {
             LOG.info(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
@@ -384,15 +397,16 @@ public class HarvesterVerticle extends AbstractVerticle {
   /**
    * completes with the found report or null if none is found fails otherwise
    */
-  public Future<CounterReport> getReport(String tenantId, String vendorId, String reportName,
+  public Future<CounterReport> getReport(Token token, String vendorId, String reportName,
       String month, boolean tiny) {
     WebClient client = WebClient.create(vertx);
     Future<CounterReport> future = Future.future();
     String queryStr = String.format("(vendorId=%s AND yearMonth=%s AND reportName=%s)", vendorId,
         month, reportName);
     client.getAbs(okapiUrl + reportsPath)
-        .putHeader("x-okapi-tenant", tenantId)
-        .putHeader("accept", "application/json")
+        .putHeader(XOkapiHeaders.TOKEN, token.getToken())
+        .putHeader(XOkapiHeaders.TENANT, token.getTenantId())
+        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
         .setQueryParam("query", queryStr)
         .setQueryParam("tiny", String.valueOf(tiny))
         .send(handler -> {
@@ -421,12 +435,13 @@ public class HarvesterVerticle extends AbstractVerticle {
         tenantList.forEach(t -> {
           this.hasEnabledUsageModule(t).map(en -> {
             if (en) {
-              this.getActiveProviders(t).map(providers -> {
-                providers.getUsageDataProviders().forEach(p -> this.fetchAndPostReports(t, p));
-                return null;
-              }).setHandler(h -> {
+              Future<Token> authToken = this.getAuthToken(t, "harvester", "harvester");
+              authToken.compose(token -> this.getActiveProviders(token).map(providers -> {
+                providers.getUsageDataProviders().forEach(p -> this.fetchAndPostReports(token, p));
+                return Future.succeededFuture();
+              })).setHandler(h -> {
                 if (h.failed())
-                  LOG.error("Tenant " + t + ": failed to get providers: " + h.cause());
+                  LOG.error(h.cause());
               });
             } else {
               LOG.info("Tenant " + t + ": not enabled");
@@ -462,8 +477,8 @@ public class HarvesterVerticle extends AbstractVerticle {
           if (h.succeeded()) {
             String token = h.result().getHeader(XOkapiHeaders.TOKEN);
             if (h.result().statusCode() != 201)
-              future.fail("Could not authenticate: " + h.result().statusCode() + " "
-                  + h.result().statusMessage());
+              future.fail("Could not authenticate for Tenant " + tenantId + ": "
+                  + h.result().statusCode() + " " + h.result().statusMessage());
             else if (Strings.isNullOrEmpty(token))
               future.fail("No token received: " + h.result().statusCode() + " "
                   + h.result().statusMessage());

@@ -75,6 +75,7 @@ public class HarvesterTest {
   private String providerPath;
   private String aggregatorPath;
   private String moduleId;
+  private Token token;
 
   @Before
   public void setup(TestContext context) {
@@ -90,6 +91,7 @@ public class HarvesterTest {
           providerPath = harvester.config().getString("providerPath");
           aggregatorPath = harvester.config().getString("aggregatorPath");
           moduleId = harvester.config().getString("moduleId");
+          token = Token.createDummy(tenantId, "6bf2a318-17a9-4fd9-a889-8baf665ab3c8", tenantId);
         }));
   }
 
@@ -227,7 +229,7 @@ public class HarvesterTest {
         .willReturn(aResponse().withBodyFile("usage-data-providers.json")));
 
     Async async = context.async();
-    harvester.getActiveProviders(tenantId).setHandler(ar -> {
+    harvester.getActiveProviders(token).setHandler(ar -> {
       context.assertTrue(ar.succeeded());
       context.assertEquals(3, ar.result().getTotalRecords());
       async.complete();
@@ -239,7 +241,7 @@ public class HarvesterTest {
     stubFor(get(urlPathMatching(providerPath)).willReturn(aResponse().withBody("")));
 
     Async async = context.async();
-    harvester.getActiveProviders(tenantId).setHandler(ar -> {
+    harvester.getActiveProviders(token).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("Error decoding"));
       async.complete();
@@ -251,7 +253,7 @@ public class HarvesterTest {
     stubFor(get(urlPathMatching(providerPath)).willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
-    harvester.getActiveProviders(tenantId).setHandler(ar -> {
+    harvester.getActiveProviders(token).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.cause().getMessage().contains("404"));
       async.complete();
@@ -263,7 +265,7 @@ public class HarvesterTest {
     wireMockRule.stop();
 
     Async async = context.async();
-    harvester.getActiveProviders(tenantId).setHandler(ar -> {
+    harvester.getActiveProviders(token).setHandler(ar -> {
       context.assertTrue(ar.failed());
       LOG.error(ar.cause());
       async.complete();
@@ -280,7 +282,7 @@ public class HarvesterTest {
         .willReturn(aResponse().withBodyFile("aggregator-setting.json")));
 
     Async async = context.async();
-    harvester.getAggregatorSetting(tenantId, provider).setHandler(ar -> {
+    harvester.getAggregatorSetting(token, provider).setHandler(ar -> {
       context.assertTrue(ar.succeeded());
       context.assertTrue("Nationaler Statistikserver".equals(ar.result().getLabel()));
       async.complete();
@@ -299,7 +301,7 @@ public class HarvesterTest {
 
     provider1.setAggregator(null);
     Async async = context.async();
-    harvester.getAggregatorSetting(tenantId, provider1).setHandler(ar -> {
+    harvester.getAggregatorSetting(token, provider1).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.result() == null);
       context.assertTrue(ar.cause().getMessage().contains("no aggregator found"));
@@ -308,7 +310,7 @@ public class HarvesterTest {
 
     provider2.getAggregator().setId(null);
     Async async2 = context.async();
-    harvester.getAggregatorSetting(tenantId, provider2).setHandler(ar -> {
+    harvester.getAggregatorSetting(token, provider2).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.result() == null);
       context.assertTrue(ar.cause().getMessage().contains("no aggregator found"));
@@ -326,7 +328,7 @@ public class HarvesterTest {
         .willReturn(aResponse().withBody("garbage")));
 
     Async async = context.async();
-    harvester.getAggregatorSetting(tenantId, provider).setHandler(ar -> {
+    harvester.getAggregatorSetting(token, provider).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.result() == null);
       context.assertTrue(ar.cause().getMessage().contains("Error decoding"));
@@ -344,7 +346,7 @@ public class HarvesterTest {
         aResponse().withBody("Aggregator settingObject does not exist").withStatus(404)));
 
     Async async = context.async();
-    harvester.getAggregatorSetting(tenantId, provider).setHandler(ar -> {
+    harvester.getAggregatorSetting(token, provider).setHandler(ar -> {
       context.assertTrue(ar.failed());
       context.assertTrue(ar.result() == null);
       context.assertTrue(ar.cause().getMessage().contains("404"));
@@ -361,7 +363,7 @@ public class HarvesterTest {
     wireMockRule.stop();
 
     Async async = context.async();
-    harvester.getAggregatorSetting(tenantId, provider).setHandler(ar -> {
+    harvester.getAggregatorSetting(token, provider).setHandler(ar -> {
       context.assertTrue(ar.failed());
       async.complete();
     });
@@ -396,7 +398,7 @@ public class HarvesterTest {
     stubFor(post(urlEqualTo(url)).willReturn(aResponse().withStatus(201)));
 
     Async async = context.async();
-    harvester.postReport(tenantId, Json.decodeValue(crJson.toString(), CounterReport.class))
+    harvester.postReport(token, Json.decodeValue(crJson.toString(), CounterReport.class))
         .setHandler(ar -> {
           if (ar.succeeded()) {
             wireMockRule.verify(postRequestedFor(urlEqualTo(url)));
@@ -416,7 +418,7 @@ public class HarvesterTest {
     stubFor(put(urlEqualTo(urlId)).willReturn(aResponse().withStatus(201)));
 
     Async async = context.async();
-    harvester.postReport(tenantId, Json.decodeValue(crJson.toString(), CounterReport.class))
+    harvester.postReport(token, Json.decodeValue(crJson.toString(), CounterReport.class))
         .setHandler(ar -> {
           if (ar.succeeded()) {
             wireMockRule.verify(putRequestedFor(urlEqualTo(urlId)));
@@ -438,7 +440,7 @@ public class HarvesterTest {
         .willReturn(aResponse().withBodyFile("aggregator-setting.json")));
 
     Async async = context.async();
-    harvester.getServiceEndpoint("diku", provider).setHandler(ar -> {
+    harvester.getServiceEndpoint(token, provider).setHandler(ar -> {
       if (ar.succeeded()) {
         context.assertTrue(ar.result() != null);
         async.complete();
