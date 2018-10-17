@@ -448,10 +448,10 @@ public class HarvesterVerticle extends AbstractVerticle {
     return Future.future().setHandler(ar -> LOG.error(logPrefix + ar.cause().getMessage()));
   }
 
-  public Future<String> getAuthToken(String tenantId, String username, String password) {
+  public Future<Token> getAuthToken(String tenantId, String username, String password) {
     JsonObject userCred = new JsonObject().put("username", username).put("password", password);
     WebClient client = WebClient.create(vertx);
-    Future<String> future = Future.future();
+    Future<Token> future = Future.future();
     client.postAbs(okapiUrl + loginPath)
         .addQueryParam("expandPermissions", "false")
         .addQueryParam("fullPermissions", "false")
@@ -461,7 +461,10 @@ public class HarvesterVerticle extends AbstractVerticle {
         .sendJson(userCred, h -> {
           if (h.succeeded()) {
             String token = h.result().getHeader(XOkapiHeaders.TOKEN);
-            if (Strings.isNullOrEmpty(token))
+            if (h.result().statusCode() != 201)
+              future.fail("Could not authenticate: " + h.result().statusCode() + " "
+                  + h.result().statusMessage());
+            else if (Strings.isNullOrEmpty(token))
               future.fail("No token received: " + h.result().statusCode() + " "
                   + h.result().statusMessage());
             else if (h.result()
@@ -470,7 +473,7 @@ public class HarvesterVerticle extends AbstractVerticle {
                 .contains(requiredPerm))
               future.fail("Required permission not found");
             else
-              future.complete(token);
+              future.complete(new Token(token));
           } else {
             future.fail(h.cause());
           }
