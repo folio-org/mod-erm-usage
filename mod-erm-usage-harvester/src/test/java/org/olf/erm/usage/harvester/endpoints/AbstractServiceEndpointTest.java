@@ -95,8 +95,7 @@ public class AbstractServiceEndpointTest {
     Async async = context.async();
     Future<String> fetchSingleReport = sep.fetchSingleReport("JR1", beginDate, endDate);
     fetchSingleReport.setHandler(ar -> {
-      if (ar.succeeded()) {
-        context.assertTrue(ar.result() == null);
+      if (ar.failed()) {
         async.complete();
       } else {
         context.fail();

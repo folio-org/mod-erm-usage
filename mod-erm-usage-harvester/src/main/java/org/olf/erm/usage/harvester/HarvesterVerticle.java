@@ -44,8 +44,8 @@ public class HarvesterVerticle extends AbstractVerticle {
   private String providerPath;
   private String aggregatorPath;
   private String moduleId;
-  private String loginPath = "/bl-users/login";
-  private String requiredPerm = "ermusage.all";
+  private String loginPath;
+  private String requiredPerm;
 
   public Future<List<String>> getTenants() {
     Future<List<String>> future = Future.future();
@@ -317,21 +317,28 @@ public class HarvesterVerticle extends AbstractVerticle {
     getServiceEndpoint(token, provider).map(sep -> {
       if (sep != null) {
         getFetchList(token, provider).compose(list -> {
-          list.forEach(
-              li -> sep.fetchSingleReport(li.reportType, li.begin, li.end).compose(reportData -> {
-                // fetchSingleReport completes successful, we got a valid report
-                // FIXME: Fix me
-                LocalDate parse = LocalDate.parse(li.begin);
-                YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
+          list.forEach(li -> {
+            sep.fetchSingleReport(li.reportType, li.begin, li.end).setHandler(h -> {
+              String reportData;
+              if (h.succeeded()) {
+                reportData = h.result();
+              } else {
+                reportData = null;
+                LOG.error("Tenant: " + token.getTenantId() + ", Provider: " + provider.getLabel()
+                    + ", " + li.toString() + ", " + h.cause().getMessage());
+              }
 
-                CounterReport report =
-                    createCounterReport(reportData, li.reportType, provider, month);
-                postReport(token, report);
-              }, handleErrorFuture("Tenant: " + token.getTenantId() + ", Provider: "
-                  + provider.getLabel() + ", " + li.toString() + ", ")));
+              LocalDate parse = LocalDate.parse(li.begin);
+              YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
+              CounterReport report =
+                  createCounterReport(reportData, li.reportType, provider, month);
+              postReport(token, report);
+            });
+          });
           return Future.succeededFuture();
         }).setHandler(h -> {
-          LOG.error(h.cause());
+          if (h.failed())
+            LOG.error(h.cause());
         });
       }
       return Future.failedFuture("No ServiceEndpoint");
@@ -505,6 +512,8 @@ public class HarvesterVerticle extends AbstractVerticle {
     providerPath = config().getString("providerPath");
     aggregatorPath = config().getString("aggregatorPath");
     moduleId = config().getString("moduleId");
+    loginPath = config().getString("loginPath", "/bl-users/login");
+    requiredPerm = config().getString("requiredPerm", "ermusage.all");
 
     if (StringUtils.isAnyBlank(okapiUrl, tenantsPath, reportsPath, providerPath, aggregatorPath,
         moduleId)) {

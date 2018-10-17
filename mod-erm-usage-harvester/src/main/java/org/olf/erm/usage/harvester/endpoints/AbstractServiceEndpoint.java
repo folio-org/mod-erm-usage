@@ -27,7 +27,7 @@ public abstract class AbstractServiceEndpoint implements ServiceEndpoint {
           if (isValidReport(result))
             future.complete(result);
           else
-            future.complete(null);
+            future.fail("Report not valid");
         } else {
           future.fail(url + " - " + ar.result().statusCode() + " : " + ar.result().statusMessage());
         }
