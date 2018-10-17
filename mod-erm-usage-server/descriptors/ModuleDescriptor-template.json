@@ -318,12 +318,6 @@
         "ermusage.vendors.get"
       ],
       "visible": true
-    },
-    {
-      "permissionName": "module.erm-usage.enabled",
-      "displayName": "UI: ERM Usage enabled",
-      "description": "Base property to enable any access the ERM Usage module",
-      "visible": true
     }
   ],
   "launchDescriptor": {
