@@ -1,6 +1,24 @@
 {
   "id": "${artifactId}-${version}",
   "name": "erm-usage",
+  "requires": [
+    {
+      "id": "users-bl",
+      "version": "3.0"
+    },
+    {
+      "id": "usage-data-providers",
+      "version": "0.1"
+    },
+    {
+      "id": "aggregator-settings",
+      "version": "0.1"
+    },
+    {
+      "id": "counter-reports",
+      "version": "0.1"
+    }
+  ],
   "launchDescriptor": {
     "dockerImage": "${artifactId}:${version}",
     "dockerArgs": {
