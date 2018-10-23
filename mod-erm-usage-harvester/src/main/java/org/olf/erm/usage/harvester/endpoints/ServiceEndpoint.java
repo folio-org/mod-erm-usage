@@ -1,40 +1,50 @@
 package org.olf.erm.usage.harvester.endpoints;
 
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.ServiceLoader;
 import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
+import com.google.common.base.Strings;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 
 
 public interface ServiceEndpoint {
-
-  String buildURL(String report, String begin, String end);
 
   boolean isValidReport(String report);
 
   Future<String> fetchSingleReport(String report, String beginDate, String endDate);
 
-  public static ServiceEndpoint create(Vertx vertx, UsageDataProvider provider,
-      AggregatorSetting aggregator) {
+  default List<String> getConfigurationParameters() {
+    return Collections.emptyList();
+  }
+
+  public static ServiceEndpoint create(UsageDataProvider provider, AggregatorSetting aggregator) {
+    Objects.requireNonNull(provider);
+
     final Logger LOG = Logger.getLogger(ServiceEndpoint.class);
 
-    String serviceType = "";
-    String name = "";
-    if (aggregator == null) {
-      serviceType = provider.getServiceType();
-      name = provider.getLabel();
-    } else {
-      serviceType = aggregator.getServiceType();
-      name = aggregator.getLabel();
+    String serviceType =
+        (aggregator == null) ? provider.getServiceType() : aggregator.getServiceType();
+
+
+    if (Strings.isNullOrEmpty(serviceType)) {
+      LOG.error("serviceType is null or empty");
+      return null;
     }
 
-    switch (serviceType) {
-      case "NSS":
-        return new NSS(vertx, provider, aggregator);
-      default:
-        LOG.error("No implementation found for serviceType '" + serviceType + "'. (" + name + ")");
-        return null;
+    ServiceLoader<ServiceEndpointProvider> loader =
+        ServiceLoader.load(ServiceEndpointProvider.class);
+    for (ServiceEndpointProvider p : loader) {
+      if (p.getServiceType().equals(serviceType)) {
+        return p.create(provider, aggregator);
+      }
     }
+
+    LOG.error("No implementation found for serviceType '" + serviceType + "'");
+    return null;
   }
 }

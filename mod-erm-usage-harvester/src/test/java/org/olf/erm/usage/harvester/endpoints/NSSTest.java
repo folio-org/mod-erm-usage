@@ -27,7 +27,8 @@ import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
-public class AbstractServiceEndpointTest {
+public class NSSTest {
+
 
   @Rule
   public Timeout timeoutRule = Timeout.seconds(5);
@@ -36,9 +37,13 @@ public class AbstractServiceEndpointTest {
   @Rule
   public RunTestOnContext ctx = new RunTestOnContext();
 
-  private static final Logger LOG = Logger.getLogger(AbstractServiceEndpointTest.class);
+  private static final Logger LOG = Logger.getLogger(NSSTest.class);
   private UsageDataProvider provider;
   private AggregatorSetting aggregator;
+
+  private static final String reportType = "JR1";
+  private static final String endDate = "2016-03-31";
+  private static final String beginDate = "2016-03-01";
 
   @Before
   public void setup(TestContext context)
@@ -57,17 +62,16 @@ public class AbstractServiceEndpointTest {
   @Test
   public void fetchSingleReportWithAggregatorValidReport(TestContext context)
       throws JsonParseException, JsonMappingException, IOException {
-    final String endDate = "2016-03-31";
-    final String beginDate = "2016-03-01";
-    final ServiceEndpoint sep = ServiceEndpoint.create(ctx.vertx(), provider, aggregator);
-    final String url = sep.buildURL("JR1", beginDate, endDate);
+
+    final ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator);
+    final String url = ((NSS) sep).buildURL(reportType, beginDate, endDate);
 
     LOG.info("Creating stub for: " + url);
     stubFor(get(urlEqualTo(url.replaceAll(wireMockRule.url(""), "/")))
         .willReturn(aResponse().withBodyFile("nss-report-2016-03.xml")));
 
     Async async = context.async();
-    Future<String> fetchSingleReport = sep.fetchSingleReport("JR1", beginDate, endDate);
+    Future<String> fetchSingleReport = sep.fetchSingleReport(reportType, beginDate, endDate);
     fetchSingleReport.setHandler(ar -> {
       if (ar.succeeded()) {
         context.assertTrue(ar.succeeded());
@@ -83,17 +87,15 @@ public class AbstractServiceEndpointTest {
   @Test
   public void fetchSingleReportWithAggregatorInvalidReport(TestContext context)
       throws JsonParseException, JsonMappingException, IOException {
-    final String endDate = "2018-03-31";
-    final String beginDate = "2018-03-01";
-    final ServiceEndpoint sep = ServiceEndpoint.create(ctx.vertx(), provider, aggregator);
-    final String url = sep.buildURL("JR1", beginDate, endDate);
+    final ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator);
+    final String url = ((NSS) sep).buildURL(reportType, beginDate, endDate);
 
     LOG.info("Creating stub for: " + url);
     stubFor(get(urlEqualTo(url.replaceAll(wireMockRule.url(""), "/")))
         .willReturn(aResponse().withBodyFile("nss-report-2018-03-fail.xml")));
 
     Async async = context.async();
-    Future<String> fetchSingleReport = sep.fetchSingleReport("JR1", beginDate, endDate);
+    Future<String> fetchSingleReport = sep.fetchSingleReport(reportType, beginDate, endDate);
     fetchSingleReport.setHandler(ar -> {
       if (ar.failed()) {
         async.complete();
@@ -106,17 +108,15 @@ public class AbstractServiceEndpointTest {
   @Test
   public void fetchSingleReportWithAggregatorInvalidResponse(TestContext context)
       throws JsonParseException, JsonMappingException, IOException {
-    final String endDate = "2018-03-31";
-    final String beginDate = "2018-03-01";
-    final ServiceEndpoint sep = ServiceEndpoint.create(ctx.vertx(), provider, aggregator);
-    final String url = sep.buildURL("JR1", beginDate, endDate);
+    final ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator);
+    final String url = ((NSS) sep).buildURL(reportType, beginDate, endDate);
 
     LOG.info("Creating stub for: " + url);
     stubFor(get(urlEqualTo(url.replaceAll(wireMockRule.url(""), "/")))
         .willReturn(aResponse().withStatus(404)));
 
     Async async = context.async();
-    Future<String> fetchSingleReport = sep.fetchSingleReport("JR1", beginDate, endDate);
+    Future<String> fetchSingleReport = sep.fetchSingleReport(reportType, beginDate, endDate);
     fetchSingleReport.setHandler(ar -> {
       if (ar.succeeded()) {
         context.fail();
@@ -131,14 +131,12 @@ public class AbstractServiceEndpointTest {
   @Test
   public void fetchSingleReportWithAggregatorNoService(TestContext context)
       throws JsonParseException, JsonMappingException, IOException {
-    final String endDate = "2018-03-31";
-    final String beginDate = "2018-03-01";
-    final ServiceEndpoint sep = ServiceEndpoint.create(ctx.vertx(), provider, aggregator);
+    final ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator);
 
     wireMockRule.stop();
 
     Async async = context.async();
-    Future<String> fetchSingleReport = sep.fetchSingleReport("JR1", beginDate, endDate);
+    Future<String> fetchSingleReport = sep.fetchSingleReport(reportType, beginDate, endDate);
     fetchSingleReport.setHandler(ar -> {
       if (ar.succeeded()) {
         context.fail();

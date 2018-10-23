@@ -1,17 +1,17 @@
 {
   "id": "4c66b956-23a8-4418-aef6-1c35dcdaccc4",
   "label": "ACM Digital Library",
-  "username": "user name",
-  "password": "XXXuserpasswordXXX",
-  "apiKey": "XXX123ABCXXX",
   "serviceType": "My Service",
   "serviceUrl": "www.myaggregator.com",
+  "aggregatorConfig": {
+    "apiKey": "abc",
+    "requestorId": "def",
+    "customerId": "ghi",
+    "reportRelease": "4"
+  },
   "accountConfig": {
     "configType": "Manual",
     "configMail": "ab@counter-stats.com",
-    "displayContact": [
-      "Counter Aggregator Contact",
-      "Tel: +49 1234 - 9876"
-    ]
+    "displayContact": ["Counter Aggregator Contact", "Tel: +49 1234 - 9876"]
   }
 }

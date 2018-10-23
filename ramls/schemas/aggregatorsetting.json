@@ -9,17 +9,6 @@
     "label": {
       "type": "string"
     },
-    "username": {
-      "type": "string",
-      "description": "Username for web frontend of aggregator."
-    },
-    "password": {
-      "type": "string",
-      "description": "Hide in frontend, display to entitled users via “show” button, password for web frontend."
-    },
-    "apiKey": {
-      "type": "string"
-    },
     "serviceType": {
       "type": "string",
       "description": "Specifies implementation specific for this aggregator."
@@ -27,6 +16,10 @@
     "serviceUrl": {
       "type": "string",
       "description": "Aggregator’s service URL to use for harvesting."
+    },
+    "aggregatorConfig": {
+      "type": "object",
+      "description": "Additional key/value pairs for aggregator configuration"
     },
     "accountConfig": {
       "type": "object",
@@ -67,10 +60,9 @@
   },
   "required": [
     "label",
-    "username",
-    "password",
+    "serviceType",
     "serviceUrl",
     "accountConfig"
   ],
-  "additionalProperties": false
+  "additionalProperties": true
 }

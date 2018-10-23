@@ -221,7 +221,7 @@ public class HarvesterVerticle extends AbstractVerticle {
     }
 
     aggrFuture.compose(as -> {
-      ServiceEndpoint sep = ServiceEndpoint.create(vertx, provider, as);
+      ServiceEndpoint sep = ServiceEndpoint.create(provider, as);
       sepFuture.complete(sep);
     }, sepFuture);
 

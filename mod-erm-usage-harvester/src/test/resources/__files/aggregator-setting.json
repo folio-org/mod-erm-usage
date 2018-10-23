@@ -1,11 +1,14 @@
 {
   "id": "54e8d70e-6ffe-4f1b-a3b0-534e95287680",
   "label": "Nationaler Statistikserver",
-  "username": "user name",
-  "password": "XXXuserpasswordXXX",
-  "apiKey": "XXX123ABCXXX",
   "serviceType": "NSS",
   "serviceUrl": "https://stats.redi-bw.de/prod/Sushiservice/GetReport",
+  "aggregatorConfig": {
+    "apiKey": "abc",
+    "requestorId": "def",
+    "customerId": "ghi",
+    "reportRelease": "4"
+  },
   "accountConfig": {
     "configType": "Manual",
     "configMail": "ab@counter-stats.com",

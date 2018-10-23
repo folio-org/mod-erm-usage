@@ -8,8 +8,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.olf.erm.usage.harvester.endpoints.NSS;
-import org.olf.erm.usage.harvester.endpoints.ServiceEndpoint;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,22 +38,19 @@ public class ServiceEndpointTest {
 
   @Test
   public void createNSS(TestContext context) {
-    ServiceEndpoint sep =
-        ServiceEndpoint.create(ctx.vertx(), provider, aggregator.withServiceType("NSS"));
+    ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator.withServiceType("NSS"));
     context.assertTrue(sep instanceof NSS);
 
-    ServiceEndpoint sep2 =
-        ServiceEndpoint.create(ctx.vertx(), provider.withServiceType("NSS"), null);
+    ServiceEndpoint sep2 = ServiceEndpoint.create(provider.withServiceType("NSS"), null);
     context.assertTrue(sep2 instanceof NSS);
   }
 
   @Test
   public void createNoImpl(TestContext context) {
-    ServiceEndpoint sep =
-        ServiceEndpoint.create(ctx.vertx(), provider, aggregator.withServiceType(""));
+    ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator.withServiceType(""));
     context.assertTrue(sep == null);
 
-    ServiceEndpoint sep2 = ServiceEndpoint.create(ctx.vertx(), provider.withServiceType(""), null);
+    ServiceEndpoint sep2 = ServiceEndpoint.create(provider.withServiceType(""), null);
     context.assertTrue(sep2 == null);
   }
 }
