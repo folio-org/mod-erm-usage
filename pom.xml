@@ -19,6 +19,8 @@
   <modules>
     <module>mod-erm-usage-server</module>
     <module>mod-erm-usage-client</module>
+    <module>endpoints-spi</module>
+    <module>endpoints-nss</module>
     <module>mod-erm-usage-harvester</module>
   </modules>
 
