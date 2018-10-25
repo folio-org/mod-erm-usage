@@ -1,7 +1,6 @@
 package org.folio.rest.impl;
 
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,7 +34,6 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
 
   private static final String ID_FIELD = "_id";
   private static final String LABEL_FIELD = "'label'";
-  private static final String SCHEMA_PATH = "/schemas/udProvidersData.json";
   private static final String TABLE_NAME_SUSHI_SETTINGS = "usage_data_providers";
 
   private final Messages messages = Messages.getInstance();
@@ -345,19 +343,10 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
                               PutUsageDataProvidersByIdResponse.respond400WithTextPlain(
                                   "Label " + entity.getLabel() + " is already in use")));
                         } else {
-                          Date createdDate = null;
-                          Date now = new Date();
-                          if (dataProviders.size() > 0) {
-                            createdDate = dataProviders.get(0).getCreatedDate();
-                          } else {
-                            createdDate = now;
-                          }
                           Criteria idCrit = new Criteria().addField(ID_FIELD)
                               .setJSONB(false)
                               .setOperation("=")
                               .setValue("'" + id + "'");
-                          entity.setUpdatedDate(now);
-                          entity.setCreatedDate(createdDate);
                           try {
                             PostgresClient.getInstance(vertxContext.owner(), tenantId)
                                 .update(TABLE_NAME_SUSHI_SETTINGS, entity, new Criterion(idCrit),

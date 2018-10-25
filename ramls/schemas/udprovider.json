@@ -88,13 +88,13 @@
     "notes": {
       "type": "string"
     },
-    "createdDate": {
-      "type": "string",
-      "format": "date-time"
+    "metadata": {
+      "type": "object",
+      "$ref": "../raml-util/schemas/metadata.schema"
     },
-    "updatedDate": {
-      "type": "string",
-      "format": "date-time"
+    "tags": {
+      "type": "object",
+      "$ref": "../raml-util/schemas/tags.schema"
     }
   },
   "required": [
@@ -104,9 +104,7 @@
     "harvestingStart",
     "harvestingStatus",
     "reportRelease",
-    "requestedReports",
-    "customerId",
-    "requestorId"
+    "requestedReports"
   ],
-  "additionalProperties": false
+  "additionalProperties": true
 }
