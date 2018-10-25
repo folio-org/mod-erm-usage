@@ -1,7 +1,6 @@
 package org.folio.rest.impl;
 
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -330,21 +329,10 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                         .succeededFuture(PutCounterReportsByIdResponse.respond500WithTextPlain(
                             messages.getMessage(lang, MessageConsts.InternalServerError))));
                   } else {
-                    List<CounterReport> counterReportList =
-                        (List<CounterReport>) getReply.result().getResults();
-                    Date createdDate = null;
-                    Date now = new Date();
-                    if (counterReportList.size() > 0) {
-                      createdDate = counterReportList.get(0).getCreatedDate();
-                    } else {
-                      createdDate = now;
-                    }
                     Criteria idCrit = new Criteria().addField(ID_FIELD)
                         .setJSONB(false)
                         .setOperation("=")
                         .setValue("'" + id + "'");
-                    entity.setUpdatedDate(now);
-                    entity.setCreatedDate(createdDate);
                     try {
                       PostgresClient.getInstance(vertxContext.owner(), tenantId)
                           .update(TABLE_NAME_COUNTER_REPORTS, entity, new Criterion(idCrit), true,

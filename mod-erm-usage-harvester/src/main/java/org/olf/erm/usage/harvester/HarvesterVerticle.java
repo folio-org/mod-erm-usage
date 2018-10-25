@@ -197,7 +197,6 @@ public class HarvesterVerticle extends AbstractVerticle {
     cr.setCustomerId(provider.getCustomerId());
     cr.setRelease(provider.getReportRelease().toString()); // TODO: update release to be a integer
     cr.setDownloadTime(Date.from(Instant.now())); // FIXME
-    cr.setCreationTime(Date.from(Instant.now())); // FIXME
     cr.setVendorId(provider.getVendorId());
     if (reportData != null) {
       cr.setFormat("???"); // FIXME

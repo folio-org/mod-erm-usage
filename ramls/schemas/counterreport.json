@@ -13,10 +13,6 @@
     "failedAttempts": {
       "type": "integer"
     },
-    "creationTime": {
-      "type": "string",
-      "format": "date-time"
-    },
     "release": {
       "type": "string"
     },
@@ -36,19 +32,20 @@
     "platformId": {
       "type": "string"
     },
+    "providerId": {
+      "type": "string"
+    },
     "format": {
       "type": "string"
     },
     "report": {
       "type": "string"
     },
-    "createdDate": {
-      "type": "string",
-      "format": "date-time"
-    },
-    "updatedDate": {
-      "type": "string",
-      "format": "date-time"
+    "metadata": {
+      "description": "Metadata about creation and changes, provided by the server (client should not provide)",
+      "type": "object",
+      "$ref": "../raml-util/schemas/metadata.schema",
+      "readonly": true
     }
   },
   "required": [
@@ -60,5 +57,5 @@
     "vendorId",
     "platformId"
   ],
-  "additionalProperties": false
+  "additionalProperties": true
 }
