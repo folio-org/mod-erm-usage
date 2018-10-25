@@ -81,6 +81,7 @@ public class UsageDataProvidersIT {
     Async async = context.async();
     port = NetworkUtils.nextFreePort();
 
+    RestAssured.reset();
     RestAssured.baseURI = "http://localhost";
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
@@ -102,6 +103,7 @@ public class UsageDataProvidersIT {
 
   @AfterClass
   public static void teardown(TestContext context) {
+    RestAssured.reset();
     Async async = context.async();
     vertx.close(context.asyncAssertSuccess(res -> {
       PostgresClient.stopEmbeddedPostgres();

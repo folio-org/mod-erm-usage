@@ -76,6 +76,7 @@ public class AggregatorSettingsIT {
     Async async = context.async();
     port = NetworkUtils.nextFreePort();
 
+    RestAssured.reset();
     RestAssured.baseURI = "http://localhost";
     RestAssured.basePath = BASE_URI;
     RestAssured.port = port;
@@ -103,6 +104,7 @@ public class AggregatorSettingsIT {
 
   @AfterClass
   public static void teardown(TestContext context) {
+    RestAssured.reset();
     Async async = context.async();
     vertx.close(context.asyncAssertSuccess(res -> {
       PostgresClient.stopEmbeddedPostgres();
