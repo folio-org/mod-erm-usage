@@ -9,6 +9,13 @@
   <version>0.0.3-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <licenses>
+    <license>
+      <name>Apache License 2.0</name>
+      <url>https://spdx.org/licenses/Apache-2.0</url>
+    </license>
+  </licenses>
+
   <modules>
     <module>mod-erm-usage-server</module>
     <module>mod-erm-usage-client</module>
