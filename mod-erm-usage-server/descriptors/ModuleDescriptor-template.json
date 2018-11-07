@@ -175,7 +175,7 @@
       "id": "vendor",
       "version": "1.0"
     }
-  ]
+  ],
   "permissionSets": [
     {
       "permissionName": "usagedataproviders.collection.get",
