@@ -1,4 +1,4 @@
-package org.test;
+package org.olf.erm.usage.harvester.endpoints;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -10,6 +10,7 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import org.junit.Test;
 import org.niso.schemas.counter.Report;
+import org.olf.erm.usage.harvester.endpoints.Tool;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SerializationTest {

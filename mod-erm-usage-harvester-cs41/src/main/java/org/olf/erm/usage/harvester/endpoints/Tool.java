@@ -1,4 +1,4 @@
-package org.test;
+package org.olf.erm.usage.harvester.endpoints;
 
 import java.io.IOException;
 import javax.xml.datatype.XMLGregorianCalendar;
