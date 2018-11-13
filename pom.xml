@@ -21,6 +21,7 @@
     <module>mod-erm-usage-client</module>
     <module>endpoints-spi</module>
     <module>endpoints-nss</module>
+    <module>endpoints-sushi4</module>
     <module>mod-erm-usage-harvester</module>
   </modules>
 
