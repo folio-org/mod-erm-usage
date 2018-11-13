@@ -7,5 +7,15 @@ public interface ServiceEndpointProvider {
 
   String getServiceType();
 
+  String getServiceName();
+
+  default String getServiceDescription() {
+    return "";
+  }
+
+  default Boolean isAggregator() {
+    return false;
+  }
+
   ServiceEndpoint create(UsageDataProvider provider, AggregatorSetting aggregator);
 }

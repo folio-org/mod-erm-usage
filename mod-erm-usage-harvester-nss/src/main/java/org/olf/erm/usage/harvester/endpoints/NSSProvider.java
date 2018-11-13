@@ -11,6 +11,11 @@ public class NSSProvider implements ServiceEndpointProvider {
   }
 
   @Override
+  public String getServiceName() {
+    return "Nationaler Statistikserver";
+  }
+
+  @Override
   public ServiceEndpoint create(UsageDataProvider provider, AggregatorSetting aggregator) {
     return new NSS(provider, aggregator);
   }
