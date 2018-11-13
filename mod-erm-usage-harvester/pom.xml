@@ -20,7 +20,7 @@
     </dependency>
     <dependency>
       <groupId>org.olf</groupId>
-      <artifactId>endpoints-nss</artifactId>
+      <artifactId>mod-erm-usage-harvester-nss</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
     <dependency>

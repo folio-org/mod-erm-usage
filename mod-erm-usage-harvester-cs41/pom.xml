@@ -7,13 +7,18 @@
     <artifactId>mod-erm-usage</artifactId>
     <version>0.0.3-SNAPSHOT</version>
   </parent>
-  <artifactId>endpoints-sushi4</artifactId>
+  <artifactId>mod-erm-usage-harvester-cs41</artifactId>
 
   <properties>
     <cxf.version>3.2.6</cxf.version>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.olf</groupId>
+      <artifactId>mod-erm-usage-harvester-spi</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.cxf</groupId>
       <artifactId>cxf-rt-frontend-jaxws</artifactId>

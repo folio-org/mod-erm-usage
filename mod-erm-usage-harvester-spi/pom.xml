@@ -1,28 +1,34 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.olf</groupId>
     <artifactId>mod-erm-usage</artifactId>
     <version>0.0.3-SNAPSHOT</version>
   </parent>
-  <artifactId>endpoints-nss</artifactId>
-  
+  <artifactId>mod-erm-usage-harvester-spi</artifactId>
+
   <dependencies>
     <dependency>
       <groupId>org.olf</groupId>
-      <artifactId>endpoints-spi</artifactId>
+      <artifactId>mod-erm-usage-client</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-web-client</artifactId>
+      <artifactId>vertx-core</artifactId>
       <version>${vertx.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.github.tomakehurst</groupId>
-      <artifactId>wiremock</artifactId>
-      <version>2.18.0</version>
-      <scope>test</scope>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>26.0-jre</version>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.17</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
