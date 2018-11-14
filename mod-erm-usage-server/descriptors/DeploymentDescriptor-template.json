@@ -1,7 +1,8 @@
 {
   "srvcId": "${artifactId}-${version}",
-  "nodeId": "localhost",
+  "nodeId": "10.0.2.15",
   "descriptor": {
-    "exec": "java -jar ../${project.parent.artifactId}/${artifactId}/target/${artifactId}-fat.jar -Dhttp.port=%p"
+    "dockerImage" : "mod-erm-usage-server:latest",
+    "dockerPull" : false
   }
 }

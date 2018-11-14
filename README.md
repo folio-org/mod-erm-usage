@@ -14,7 +14,7 @@ cd mod-erm-usage
 mvn clean install
 ```
 
-# Run
+# Run plain jar
 
 ### `mod-erm-usage-server`
 ```
@@ -45,6 +45,62 @@ configuration via json file:
   "aggregatorPath": "/aggregator-settings",
   "moduleId": "mod-erm-usage-harvester-0.0.2-SNAPSHOT"
 }
+```
+
+# Run via Docker
+
+## `mod-erm-usage-server`
+
+Build docker image
+
+```
+$ cd mod-erm-usage-server
+$ docker build -t mod-erm-usage-server .
+```
+
+Register ModuleDescriptor
+
+```
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @ModuleDescriptor.json http://localhost:9130/_/proxy/modules
+```
+
+Register DeploymentDescriptor
+
+```
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @DeploymentDescriptor.json http://localhost:9130/_/discovery/modules
+```
+
+Activate module for tenant
+
+```
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod-erm-usage-server-0.0.3-SNAPSHOT"}' http://localhost:9130/_/proxy/tenants/diku/modules
+```
+
+## `mod-erm-usage-harvester`
+
+Build docker image
+
+```
+$ cd mod-erm-usage-harvester
+$ docker build -t mod-erm-usage-harvester .
+```
+
+Register ModuleDescriptor
+
+```
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @ModuleDescriptor.json http://localhost:9130/_/proxy/modules
+```
+
+Activate module for tenant (do this before registering DeploymentDescriptor)
+
+```
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod-erm-usage-harvester-0.0.3-SNAPSHOT"}' http://localhost:9130/_/proxy/tenants/diku/modules
+```
+
+Register DeploymentDescriptor
+
+```
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @DeploymentDescriptor.json http://localhost:9130/_/discovery/modules
 ```
 
 ## Additional information
