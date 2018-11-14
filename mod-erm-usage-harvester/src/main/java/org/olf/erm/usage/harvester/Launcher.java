@@ -1,12 +1,14 @@
 package org.olf.erm.usage.harvester;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import org.apache.commons.io.FileUtils;
+import com.google.common.base.Strings;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import org.apache.commons.io.FileUtils;
 
 public class Launcher extends io.vertx.core.Launcher {
 
@@ -21,10 +23,11 @@ public class Launcher extends io.vertx.core.Launcher {
     if (deploymentOptions.getConfig() == null) {
       deploymentOptions.setConfig(new JsonObject());
     }
-
     try {
-      String config = FileUtils.readFileToString(new File("config.json"));
-      deploymentOptions.getConfig().mergeIn(new JsonObject(config));
+      // get default config
+      String config = FileUtils.readFileToString(new File("config.json"), Charset.defaultCharset());
+      JsonObject combined = new JsonObject(config).mergeIn(deploymentOptions.getConfig());
+      deploymentOptions.setConfig(combined);
     } catch (DecodeException e) {
       System.err.println("Couldnt decode JSON configuration");
     } catch (FileNotFoundException e) {
@@ -34,6 +37,21 @@ public class Launcher extends io.vertx.core.Launcher {
       e.printStackTrace();
     }
 
-    System.out.println(deploymentOptions.getConfig().encodePrettily());
+    // check configuration and abort if something is missing
+    String[] configParams = new String[]{"okapiUrl", "tenantsPath", "reportsPath", "providerPath",
+        "aggregatorPath", "moduleId", "loginPath", "requiredPerm"};
+    System.out.println("Using configuration:\n" + deploymentOptions.getConfig().encodePrettily());
+
+    boolean exit = false;
+    for (String param : configParams) {
+      if (Strings.isNullOrEmpty(deploymentOptions.getConfig().getString(param))) {
+        System.err.println("Parameter '" + param + "' missing in configuration.");
+        exit = true;
+      }
+    }
+    if (exit) {
+      System.exit(1);
+    }
   }
+
 }
