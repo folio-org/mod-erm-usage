@@ -7,7 +7,7 @@
       "version": "0.1",
       "handlers": [
         {
-          "methods": "GET",
+          "methods": [ "GET" ],
           "pathPattern": "/harvester/start"
         }
       ]
