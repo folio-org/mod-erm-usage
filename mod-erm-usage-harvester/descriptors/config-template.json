@@ -7,5 +7,7 @@
   "moduleIds": [
     "${parent.artifactId}-server-${project.version}",
     "${parent.artifactId}-harvester-${project.version}"
-  ]
+  ],
+  "loginPath": "/bl-users/login",
+  "requiredPerm": "ermusage.all"
 }

@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import io.vertx.core.Future;
 
 
@@ -20,6 +21,12 @@ public interface ServiceEndpoint {
 
   default List<String> getConfigurationParameters() {
     return Collections.emptyList();
+  }
+
+  public static List<ServiceEndpointProvider> getAvailableProviders() {
+    ServiceLoader<ServiceEndpointProvider> loader =
+        ServiceLoader.load(ServiceEndpointProvider.class);
+    return Lists.newArrayList(loader.iterator());
   }
 
   public static ServiceEndpoint create(UsageDataProvider provider, AggregatorSetting aggregator) {

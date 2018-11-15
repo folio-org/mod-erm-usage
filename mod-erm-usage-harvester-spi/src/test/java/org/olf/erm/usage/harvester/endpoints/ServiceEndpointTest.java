@@ -36,14 +36,14 @@ public class ServiceEndpointTest {
         AggregatorSetting.class);
   }
 
-  @Test
-  public void createNSS(TestContext context) {
-    ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator.withServiceType("NSS"));
-    context.assertTrue(sep instanceof NSS);
-
-    ServiceEndpoint sep2 = ServiceEndpoint.create(provider.withServiceType("NSS"), null);
-    context.assertTrue(sep2 instanceof NSS);
-  }
+  // @Test
+  // public void createNSS(TestContext context) {
+  // ServiceEndpoint sep = ServiceEndpoint.create(provider, aggregator.withServiceType("NSS"));
+  // context.assertTrue(sep instanceof NSS);
+  //
+  // ServiceEndpoint sep2 = ServiceEndpoint.create(provider.withServiceType("NSS"), null);
+  // context.assertTrue(sep2 instanceof NSS);
+  // }
 
   @Test
   public void createNoImpl(TestContext context) {
