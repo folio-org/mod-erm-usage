@@ -51,26 +51,29 @@ configuration via json file:
 
 ## `mod-erm-usage-server`
 
-Build docker image
+### Build docker image
 
 ```
 $ cd mod-erm-usage-server
 $ docker build -t mod-erm-usage-server .
 ```
 
-Register ModuleDescriptor
+### Register ModuleDescriptor
 
 ```
+$ cd target
 $ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @ModuleDescriptor.json http://localhost:9130/_/proxy/modules
 ```
 
-Register DeploymentDescriptor
+### Register DeploymentDescriptor
+
+Change _nodeId_ in _DockerDeploymentDescriptor.json_ to e.g. your hosts IP address (e.g. 10.0.2.15). Then execute:
 
 ```
-$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @DeploymentDescriptor.json http://localhost:9130/_/discovery/modules
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @DockerDeploymentDescriptor.json http://localhost:9130/_/discovery/modules
 ```
 
-Activate module for tenant
+### Activate module for tenant
 
 ```
 $ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod-erm-usage-server-0.0.3-SNAPSHOT"}' http://localhost:9130/_/proxy/tenants/diku/modules
@@ -78,29 +81,40 @@ $ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod
 
 ## `mod-erm-usage-harvester`
 
-Build docker image
+### Build docker image
 
 ```
 $ cd mod-erm-usage-harvester
 $ docker build -t mod-erm-usage-harvester .
 ```
 
-Register ModuleDescriptor
+### Change config file
+
+```
+$ cd target
+```
+
+Change _okapiUrl_ in file _config.json_ to your docker hosts IP address, e.g. `"okapiUrl": "http://172.17.0.1:9130"`.
+
+
+### Register ModuleDescriptor
 
 ```
 $ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @ModuleDescriptor.json http://localhost:9130/_/proxy/modules
 ```
 
-Activate module for tenant (do this before registering DeploymentDescriptor)
+### Activate module for tenant (do this before registering DeploymentDescriptor)
 
 ```
 $ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod-erm-usage-harvester-0.0.3-SNAPSHOT"}' http://localhost:9130/_/proxy/tenants/diku/modules
 ```
 
-Register DeploymentDescriptor
+### Register DeploymentDescriptor
+
+Change _nodeId_ in _DockerDeploymentDescriptor.json_ to e.g. your hosts IP address (e.g. 10.0.2.15). Then execute:
 
 ```
-$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @DeploymentDescriptor.json http://localhost:9130/_/discovery/modules
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @DockerDeploymentDescriptor.json http://localhost:9130/_/discovery/modules
 ```
 
 ## Additional information
