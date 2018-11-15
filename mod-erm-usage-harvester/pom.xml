@@ -9,7 +9,7 @@
   <parent>
     <groupId>org.olf</groupId>
     <artifactId>mod-erm-usage</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3-SNAPSHOT</version>
   </parent>
 
   <dependencies>
@@ -17,6 +17,21 @@
       <groupId>org.olf</groupId>
       <artifactId>mod-erm-usage-client</artifactId>
       <version>${project.parent.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.olf</groupId>
+      <artifactId>mod-erm-usage-harvester-nss</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.olf</groupId>
+      <artifactId>mod-erm-usage-harvester-cs41</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.folio.okapi</groupId>
+      <artifactId>okapi-common</artifactId>
+      <version>${okapi.version}</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -54,6 +69,11 @@
       <version>1.2.17</version>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.7.25</version>
+    </dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>2.8.11</version>
@@ -68,6 +88,18 @@
       <groupId>com.github.tomakehurst</groupId>
       <artifactId>wiremock</artifactId>
       <version>2.18.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.jayway.restassured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <version>2.4.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.11.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

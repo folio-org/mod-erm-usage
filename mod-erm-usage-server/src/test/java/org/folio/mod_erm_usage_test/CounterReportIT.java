@@ -1,21 +1,10 @@
 package org.folio.mod_erm_usage_test;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.parsing.Parser;
-import io.vertx.core.Context;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -26,6 +15,17 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.parsing.Parser;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Timeout;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 
 @RunWith(VertxUnitRunner.class)
 public class CounterReportIT {
@@ -34,15 +34,27 @@ public class CounterReportIT {
   public static final String BASE_URI = "/counter-reports";
   private static final String TENANT = "diku";
   private static Vertx vertx;
-  private static Context vertxContext;
   private static int port;
+  private static CounterReport report;
+  private static CounterReport reportChanged;
+
   @Rule
   public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void setUp(TestContext context) {
     vertx = Vertx.vertx();
-    vertxContext = vertx.getOrCreateContext();
+
+    try {
+      String reportStr =
+          new String(Files.readAllBytes(Paths.get("../ramls/examples/counterreport.sample")));
+      report = Json.decodeValue(reportStr, CounterReport.class);
+      reportChanged =
+          Json.decodeValue(reportStr, CounterReport.class).withCustomerId("CUSTOMER_ID_CHANGED");
+    } catch (Exception ex) {
+      context.fail(ex);
+    }
+
     try {
       PostgresClient.setIsEmbedded(true);
       PostgresClient instance = PostgresClient.getInstance(vertx);
@@ -55,18 +67,18 @@ public class CounterReportIT {
     Async async = context.async();
     port = NetworkUtils.nextFreePort();
 
+    RestAssured.reset();
     RestAssured.baseURI = "http://localhost";
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
 
     TenantClient tenantClient = new TenantClient("localhost", port, "diku", "diku");
-    DeploymentOptions options = new DeploymentOptions()
-        .setConfig(new JsonObject().put("http.port", port))
-        .setWorker(true);
+    DeploymentOptions options =
+        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
 
     vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
       try {
-        tenantClient.post(null, res2 -> {
+        tenantClient.postTenant(null, res2 -> {
           async.complete();
         });
       } catch (Exception e) {
@@ -77,6 +89,7 @@ public class CounterReportIT {
 
   @AfterClass
   public static void teardown(TestContext context) {
+    RestAssured.reset();
     Async async = context.async();
     vertx.close(context.asyncAssertSuccess(res -> {
       PostgresClient.stopEmbeddedPostgres();
@@ -86,175 +99,129 @@ public class CounterReportIT {
 
   @Test
   public void checkThatWeCanAddGetPutAndDeleteCounterReports() {
-    CounterReport counterReport = given()
-        .body("{\n"
-            + "\t\"id\": \"8c6b1c02-e153-4413-970b-1b1a3eca1325\",\n"
-            + "\t\"downloadTime\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"creationTime\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"release\": \"4\",\n"
-            + "\t\"reportName\": \"JR1\",\n"
-            + "\t\"beginDate\": \"2018-07-18\",\n"
-            + "\t\"endDate\": \"2018-07-18\",\n"
-            + "\t\"customerId\": \"CUSTOMER_ID\",\n"
-            + "\t\"vendorId\": \"5fb03fb5-56c0-4a6e-9f4e-194d1b540140\",\n"
-            + "\t\"platformId\": \"19b535aa-7007-435a-96da-a390853e6666\",\n"
-            + "\t\"format\": \"xml\",\n"
-            + "\t\"report\": \"<?xml version='1.0' encoding='UTF-8'?><cs:ReportResponse xmlns:cs='http://www.niso.org/schemas/sushi/counter' xmlns='http://www.niso.org/schemas/counter'>...</cs:ReportResponse>\"\n"
-            + "}")
+    // POST
+    given().body(Json.encode(report))
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .request()
         .post(BASE_URI)
-        .thenReturn()
-        .as(CounterReport.class);
-    assertThat(counterReport.getRelease()).isEqualTo("4");
-    assertThat(counterReport.getCustomerId()).isEqualTo("CUSTOMER_ID");
-    assertThat(counterReport.getId()).isNotEmpty();
+        .then()
+        .statusCode(201)
+        .body("release", equalTo(report.getRelease()))
+        .body("customerId", equalTo(report.getCustomerId()))
+        .body("id", equalTo(report.getId()));
 
-    given()
-        .header("X-Okapi-Tenant", TENANT)
+    // GET
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .when()
-        .get(BASE_URI + "/" + counterReport.getId())
+        .get(BASE_URI + "/" + report.getId())
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
-        .body("id", equalTo(counterReport.getId()))
-        .body("customerId", equalTo(counterReport.getCustomerId()));
+        .body("id", equalTo(report.getId()))
+        .body("customerId", equalTo(report.getCustomerId()));
 
-    given()
-        .body("{\n"
-            + "\t\"id\": \"8c6b1c02-e153-4413-970b-1b1a3eca1325\",\n"
-            + "\t\"downloadTime\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"creationTime\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"release\": \"4\",\n"
-            + "\t\"reportName\": \"JR1\",\n"
-            + "\t\"beginDate\": \"2018-07-18\",\n"
-            + "\t\"endDate\": \"2018-07-18\",\n"
-            + "\t\"customerId\": \"CUSTOMER_ID_CHANGED\",\n"
-            + "\t\"vendorId\": \"5fb03fb5-56c0-4a6e-9f4e-194d1b540140\",\n"
-            + "\t\"platformId\": \"19b535aa-7007-435a-96da-a390853e6666\",\n"
-            + "\t\"format\": \"xml\",\n"
-            + "\t\"report\": \"<?xml version='1.0' encoding='UTF-8'?><cs:ReportResponse xmlns:cs='http://www.niso.org/schemas/sushi/counter' xmlns:s='http://www.niso.org/schemas/sushi' xmlns='http://www.niso.org/schemas/counter'>...</cs:ReportResponse>\"\n"
-            + "}")
+    // PUT
+    given().body(Json.encode(reportChanged))
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
-        .request()
-        .put(BASE_URI + "/" + counterReport.getId())
+        .put(BASE_URI + "/" + report.getId())
         .then()
         .statusCode(204);
 
-    CounterReport changed = given()
-        .header("X-Okapi-Tenant", TENANT)
+    // GET again
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .request()
-        .get(BASE_URI + "/" + counterReport.getId())
-        .thenReturn()
-        .as(CounterReport.class);
-    assertThat(changed.getId()).isEqualTo(counterReport.getId());
-    assertThat(changed.getCustomerId()).isEqualTo("CUSTOMER_ID_CHANGED");
+        .get(BASE_URI + "/" + report.getId())
+        .then()
+        .statusCode(200)
+        .body("id", equalTo(reportChanged.getId()))
+        .body("customerId", equalTo(reportChanged.getCustomerId()));
 
-    given()
-        .header("X-Okapi-Tenant", TENANT)
+    // DELETE
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
-        .when()
-        .delete(BASE_URI + "/" + counterReport.getId())
+        .delete(BASE_URI + "/" + report.getId())
         .then()
         .statusCode(204);
 
-    given()
-        .header("X-Okapi-Tenant", TENANT)
+    // GET again
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .when()
-        .get(BASE_URI + "/" + counterReport.getId())
+        .get(BASE_URI + "/" + report.getId())
         .then()
         .statusCode(404);
   }
 
   @Test
   public void checkThatWeCanSearchByCQL() throws UnsupportedEncodingException {
-    CounterReport counterReport = given()
-        .body("{\n"
-            + "\t\"id\": \"e4c83024-fb81-45c2-ab01-bf2dc87bd905\",\n"
-            + "\t\"downloadTime\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"creationTime\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"release\": \"4\",\n"
-            + "\t\"reportName\": \"JR1\",\n"
-            + "\t\"beginDate\": \"2018-07-18\",\n"
-            + "\t\"endDate\": \"2018-07-18\",\n"
-            + "\t\"customerId\": \"CUSTOMER_ID\",\n"
-            + "\t\"vendorId\": \"5fb03fb5-56c0-4a6e-9f4e-194d1b540140\",\n"
-            + "\t\"platformId\": \"19b535aa-7007-435a-96da-a390853e6666\",\n"
-            + "\t\"format\": \"xml\",\n"
-            + "\t\"report\": \"<?xml version='1.0' encoding='UTF-8'?><cs:ReportResponse xmlns:cs='http://www.niso.org/schemas/sushi/counter' xmlns='http://www.niso.org/schemas/counter'>Search Me!</cs:ReportResponse>\"\n"
-            + "}")
+    given().body(Json.encode(report))
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .request()
         .post(BASE_URI)
-        .thenReturn()
-        .as(CounterReport.class);
-    assertThat(counterReport.getRelease()).isEqualTo("4");
-    assertThat(counterReport.getCustomerId()).isEqualTo("CUSTOMER_ID");
-    assertThat(counterReport.getId()).isNotEmpty();
+        .then()
+        .statusCode(201)
+        .body("id", equalTo(report.getId()));
 
-    String cqlReport = "?query=(report=\"Search*\")";
-    given()
-        .header("X-Okapi-Tenant", TENANT)
+    String cqlReport = "?query=(report=\"ReportResponse*\")";
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .when()
         .get(BASE_URI + cqlReport)
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
         .body("counterReports.size()", equalTo(1))
-        .body("counterReports[0].id", equalTo(counterReport.getId()))
-        .body("counterReports[0].customerId", equalTo(counterReport.getCustomerId()))
-        .body("counterReports[0].release", equalTo(counterReport.getRelease()));
+        .body("counterReports[0].id", equalTo(report.getId()))
+        .body("counterReports[0].customerId", equalTo(report.getCustomerId()))
+        .body("counterReports[0].release", equalTo(report.getRelease()));
 
-    String cqlReportName = "?query=(reportName==\"JR1\")";
-    given()
-        .header("X-Okapi-Tenant", TENANT)
+    String cqlReport2 = "?query=(report=\"ReportResponse123*\")";
+    given().header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .when()
+        .get(BASE_URI + cqlReport2)
+        .then()
+        .contentType(ContentType.JSON)
+        .statusCode(200)
+        .body("counterReports.size()", equalTo(0));
+
+    String cqlReportName = "?query=(reportName==\"JR1\")";
+    given().header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
         .get(BASE_URI + cqlReportName)
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
         .body("counterReports.size()", equalTo(1))
-        .body("counterReports[0].id", equalTo(counterReport.getId()))
-        .body("counterReports[0].customerId", equalTo(counterReport.getCustomerId()))
-        .body("counterReports[0].release", equalTo(counterReport.getRelease()));
+        .body("counterReports[0].id", equalTo(report.getId()))
+        .body("counterReports[0].customerId", equalTo(report.getCustomerId()))
+        .body("counterReports[0].release", equalTo(report.getRelease()));
+
+    // DELETE
+    given().header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(BASE_URI + "/" + report.getId())
+        .then()
+        .statusCode(204);
   }
 
   @Test
   public void checkThatInvalidCounterReportIsNotPosted() {
-    given()
-        .body("{\n"
-            + "\t\"id\": \"8c6b1c02-e153-4413-970b-1b1a3eca1325\",\n"
-            + "\t\"downloadTime\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"creationTime\": \"2018-07-18T14:12:00+02:00\",\n"
-            + "\t\"beginDate\": \"2018-07-18\",\n"
-            + "\t\"endDate\": \"2018-07-18\",\n"
-            + "\t\"customerId\": \"CUSTOMER_ID_CHANGED\",\n"
-            + "\t\"vendorId\": \"5fb03fb5-56c0-4a6e-9f4e-194d1b540140\",\n"
-            + "\t\"platformId\": \"19b535aa-7007-435a-96da-a390853e6666\",\n"
-            + "\t\"format\": \"xml\",\n"
-            + "\t\"report\": \"<?xml version='1.0' encoding='UTF-8'?><cs:ReportResponse xmlns:cs='http://www.niso.org/schemas/sushi/counter' xmlns:s='http://www.niso.org/schemas/sushi' xmlns='http://www.niso.org/schemas/counter'>...</cs:ReportResponse>\"\n"
-            + "}")
+    CounterReport invalidReport =
+        Json.decodeValue(Json.encode(report), CounterReport.class).withYearMonth(null);
+    given().body(Json.encode(invalidReport))
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .request()
         .post(BASE_URI)
         .then()
         .statusCode(422);

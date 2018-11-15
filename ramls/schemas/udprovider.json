@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Usage Data Provider Schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "vendorId": {
+      "type": "string",
+      "description": "Id of the the reports content’s vendor, linked via uuid from vendor app."
+    },
+    "platformId": {
+      "type": "string",
+      "description": "Id of the reports content’s platform, linked via uuid from ERM app."
+    },
+    "harvestingStart": {
+      "type": "string",
+      "format": "date-month"
+    },
+    "harvestingEnd": {
+      "type": "string",
+      "format": "date-month"
+    },
+    "harvestingStatus": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "in process",
+        "not possible"
+      ]
+    },
+    "aggregator": {
+      "type": "object",
+      "description": "Defined if statistics are harvested via aggregator",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Id of aggregator, linking of an aggregator predefined by an admin in the app settings"
+        },
+        "vendorCode": {
+          "type": "string",
+          "description": "Code used by the aggregator to identify the vendor (e. g. platform parameter at National Statistic Server)"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "serviceType": {
+      "type": "string",
+      "description": "Type of SUSHI service (i.e. SUSHI/SUSHI-Lite) for direct harvesting. If an aggregator is used for harvesting, serviceType is not specified."
+    },
+    "serviceUrl": {
+      "type": "string",
+      "description": "Direct SUSHI service URL used by the vendor. If an aggregator is used for harvesting, serviceUrl is not specified, the aggregator’s service URL saved in the settings will be used for harvesting."
+    },
+    "reportRelease": {
+      "type": "integer",
+      "description": "Specifies the counter report version."
+    },
+    "requestedReports": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "string"
+      }
+    },
+    "customerId": {
+      "type": "string"
+    },
+    "requestorId": {
+      "type": "string"
+    },
+    "apiKey": {
+      "type": "string"
+    },
+    "requestorName": {
+      "type": "string"
+    },
+    "requestorMail": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "$ref": "../raml-util/schemas/metadata.schema"
+    },
+    "tags": {
+      "type": "object",
+      "$ref": "../raml-util/schemas/tags.schema"
+    }
+  },
+  "required": [
+    "label",
+    "vendorId",
+    "platformId",
+    "harvestingStart",
+    "harvestingStatus",
+    "reportRelease",
+    "requestedReports"
+  ],
+  "additionalProperties": true
+}

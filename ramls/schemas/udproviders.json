@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "usageDataProviders": {
+      "type": "array",
+      "id": "udProvidersData",
+      "items": {
+        "type": "object",
+        "$ref": "udprovider.json"
+      }
+    },
+    "totalRecords": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "usageDataProviders",
+    "totalRecords"
+  ]
+}

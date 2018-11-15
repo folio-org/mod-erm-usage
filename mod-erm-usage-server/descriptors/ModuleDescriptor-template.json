@@ -170,6 +170,12 @@
       ]
     }
   ],
+  "requires": [
+    {
+      "id": "vendor",
+      "version": "1.0"
+    }
+  ],
   "permissionSets": [
     {
       "permissionName": "usagedataproviders.collection.get",
@@ -317,12 +323,6 @@
         "counterreports.item.get",
         "ermusage.vendors.get"
       ],
-      "visible": true
-    },
-    {
-      "permissionName": "module.erm-usage.enabled",
-      "displayName": "UI: ERM Usage enabled",
-      "description": "Base property to enable any access the ERM Usage module",
       "visible": true
     }
   ],
