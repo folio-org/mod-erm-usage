@@ -2,7 +2,7 @@
   "srvcId": "${artifactId}-${version}",
   "nodeId": "localhost",
   "descriptor": {
-    "dockerImage" : "mod-erm-usage-harvester:latest",
+    "dockerImage" : "${artifactId}:latest",
     "dockerPull" : false
   }
 }
