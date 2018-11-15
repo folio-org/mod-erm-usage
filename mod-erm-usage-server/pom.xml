@@ -29,7 +29,7 @@
     <dependency>
       <groupId>org.folio.okapi</groupId>
       <artifactId>okapi-common</artifactId>
-      <version>2.18.0</version>
+      <version>${okapi.version}</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
