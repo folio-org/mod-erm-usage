@@ -2,17 +2,6 @@ package org.olf.erm.usage.harvester;
 
 import static org.olf.erm.usage.harvester.Messages.ERR_MSG_DECODE;
 import static org.olf.erm.usage.harvester.Messages.ERR_MSG_STATUS;
-
-import com.google.common.net.HttpHeaders;
-import com.google.common.net.MediaType;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpMethod;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.HttpResponse;
-import io.vertx.ext.web.client.WebClient;
 import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -30,6 +19,16 @@ import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HarvestingStatus;
 import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.olf.erm.usage.harvester.endpoints.ServiceEndpoint;
+import com.google.common.net.HttpHeaders;
+import com.google.common.net.MediaType;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
 
 public class WorkerVerticle extends AbstractVerticle {
 
@@ -52,29 +51,33 @@ public class WorkerVerticle extends AbstractVerticle {
     Future<UsageDataProviders> future = Future.future();
 
     WebClient client = WebClient.create(vertx);
-    client.requestAbs(HttpMethod.GET, url).putHeader(XOkapiHeaders.TOKEN, token.getToken())
+    client.requestAbs(HttpMethod.GET, url)
+        .putHeader(XOkapiHeaders.TOKEN, token.getToken())
         .putHeader(XOkapiHeaders.TENANT, token.getTenantId())
-        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString()).setQueryParam("limit", "30")
-        .setQueryParam("offset", "0").setQueryParam("query", queryStr).send(ar -> {
-      client.close();
-      if (ar.succeeded()) {
-        if (ar.result().statusCode() == 200) {
-          UsageDataProviders entity;
-          try {
-            entity = ar.result().bodyAsJson(UsageDataProviders.class);
-            LOG.info(logprefix + "total providers: " + entity.getTotalRecords());
-            future.complete(entity);
-          } catch (Exception e) {
-            future.fail(logprefix + String.format(ERR_MSG_DECODE, url, e.getMessage()));
+        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
+        .setQueryParam("limit", "30")
+        .setQueryParam("offset", "0")
+        .setQueryParam("query", queryStr)
+        .send(ar -> {
+          client.close();
+          if (ar.succeeded()) {
+            if (ar.result().statusCode() == 200) {
+              UsageDataProviders entity;
+              try {
+                entity = ar.result().bodyAsJson(UsageDataProviders.class);
+                LOG.info(logprefix + "total providers: " + entity.getTotalRecords());
+                future.complete(entity);
+              } catch (Exception e) {
+                future.fail(logprefix + String.format(ERR_MSG_DECODE, url, e.getMessage()));
+              }
+            } else {
+              future.fail(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
+                  ar.result().statusMessage(), url));
+            }
+          } else {
+            future.fail(logprefix + "error: " + ar.cause().getMessage());
           }
-        } else {
-          future.fail(logprefix + String
-              .format(ERR_MSG_STATUS, ar.result().statusCode(), ar.result().statusMessage(), url));
-        }
-      } else {
-        future.fail(logprefix + "error: " + ar.cause().getMessage());
-      }
-    });
+        });
     return future;
   }
 
@@ -90,30 +93,30 @@ public class WorkerVerticle extends AbstractVerticle {
 
     final String aggrUrl = okapiUrl + aggregatorPath + "/" + aggregator.getId();
     WebClient client = WebClient.create(vertx);
-    client.requestAbs(HttpMethod.GET, aggrUrl).putHeader(XOkapiHeaders.TOKEN, token.getToken())
+    client.requestAbs(HttpMethod.GET, aggrUrl)
+        .putHeader(XOkapiHeaders.TOKEN, token.getToken())
         .putHeader(XOkapiHeaders.TENANT, token.getTenantId())
-        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString()).send(ar -> {
-      client.close();
-      if (ar.succeeded()) {
-        if (ar.result().statusCode() == 200) {
-          try {
-            AggregatorSetting setting = ar.result().bodyAsJson(AggregatorSetting.class);
-            LOG.info(logprefix + "got AggregatorSetting for id: " + aggregator.getId());
-            future.complete(setting);
-          } catch (Exception e) {
-            future.fail(logprefix + String.format(ERR_MSG_DECODE, aggrUrl, e.getMessage()));
+        .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
+        .send(ar -> {
+          client.close();
+          if (ar.succeeded()) {
+            if (ar.result().statusCode() == 200) {
+              try {
+                AggregatorSetting setting = ar.result().bodyAsJson(AggregatorSetting.class);
+                LOG.info(logprefix + "got AggregatorSetting for id: " + aggregator.getId());
+                future.complete(setting);
+              } catch (Exception e) {
+                future.fail(logprefix + String.format(ERR_MSG_DECODE, aggrUrl, e.getMessage()));
+              }
+            } else {
+              future.fail(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
+                  ar.result().statusMessage(), aggrUrl));
+            }
+          } else {
+            future.fail(logprefix + "failed getting AggregatorSetting for id: " + aggregator.getId()
+                + ", " + ar.cause().getMessage());
           }
-        } else {
-          future.fail(logprefix + String
-              .format(ERR_MSG_STATUS, ar.result().statusCode(), ar.result().statusMessage(),
-                  aggrUrl));
-        }
-      } else {
-        future.fail(
-            logprefix + "failed getting AggregatorSetting for id: " + aggregator.getId() + ", " + ar
-                .cause().getMessage());
-      }
-    });
+        });
     return future;
   }
 
@@ -168,32 +171,34 @@ public class WorkerVerticle extends AbstractVerticle {
     String queryStr = String.format(
         "(vendorId=%s AND report=\"\" AND reportName=%s AND yearMonth>=%s AND yearMonth<=%s)",
         vendorId, reportName, start.toString(), end.toString());
-    client.getAbs(okapiUrl + reportsPath).putHeader(XOkapiHeaders.TOKEN, token.getToken())
+    client.getAbs(okapiUrl + reportsPath)
+        .putHeader(XOkapiHeaders.TOKEN, token.getToken())
         .putHeader(XOkapiHeaders.TENANT, token.getTenantId())
         .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
-        .setQueryParam("query", queryStr).setQueryParam("tiny", "true").send(ar -> {
-      if (ar.succeeded()) {
-        // TODO: catch decode exception
-        if (ar.result().statusCode() == 200) {
-          CounterReports result = ar.result().bodyAsJson(CounterReports.class);
-          List<YearMonth> availableMonths = new ArrayList<>();
-          result.getCounterReports().forEach(r -> {
-            // TODO: catch parse exception
-            // TODO: check r.getDownloadTime() and value of r.getFailedAttempts()
-            if (r.getFailedAttempts() == null) {
-              availableMonths.add(YearMonth.parse(r.getYearMonth()));
+        .setQueryParam("query", queryStr)
+        .setQueryParam("tiny", "true")
+        .send(ar -> {
+          if (ar.succeeded()) {
+            // TODO: catch decode exception
+            if (ar.result().statusCode() == 200) {
+              CounterReports result = ar.result().bodyAsJson(CounterReports.class);
+              List<YearMonth> availableMonths = new ArrayList<>();
+              result.getCounterReports().forEach(r -> {
+                // TODO: catch parse exception
+                // TODO: check r.getDownloadTime() and value of r.getFailedAttempts()
+                if (r.getFailedAttempts() == null) {
+                  availableMonths.add(YearMonth.parse(r.getYearMonth()));
+                }
+              });
+              future.complete(availableMonths);
+            } else {
+              future.fail(String.format(ERR_MSG_STATUS, ar.result().statusCode(),
+                  ar.result().statusMessage(), okapiUrl + reportsPath));
             }
-          });
-          future.complete(availableMonths);
-        } else {
-          future.fail(String
-              .format(ERR_MSG_STATUS, ar.result().statusCode(), ar.result().statusMessage(),
-                  okapiUrl + reportsPath));
-        }
-      } else {
-        future.fail(ar.cause());
-      }
-    });
+          } else {
+            future.fail(ar.cause());
+          }
+        });
 
     return future;
   }
@@ -203,9 +208,8 @@ public class WorkerVerticle extends AbstractVerticle {
 
     // check if harvesting status is 'active'
     if (!provider.getHarvestingStatus().equals(HarvestingStatus.ACTIVE)) {
-      LOG.info(
-          logprefix + "skipping " + provider.getLabel() + " as harvesting status is " + provider
-              .getHarvestingStatus());
+      LOG.info(logprefix + "skipping " + provider.getLabel() + " as harvesting status is "
+          + provider.getHarvestingStatus());
       return Future.failedFuture("Harvesting not active");
     }
 
@@ -216,12 +220,13 @@ public class WorkerVerticle extends AbstractVerticle {
 
     List<FetchItem> fetchList = new ArrayList<>();
 
-    @SuppressWarnings("rawtypes") List<Future> futures = new ArrayList<>();
+    @SuppressWarnings("rawtypes")
+    List<Future> futures = new ArrayList<>();
     provider.getRequestedReports().forEach(reportName -> {
       futures.add(
           getValidMonths(provider.getVendorId(), reportName, startMonth, endMonth).map(list -> {
-            List<YearMonth> arrayList = DateUtil
-                .getYearMonths(provider.getHarvestingStart(), provider.getHarvestingEnd());
+            List<YearMonth> arrayList =
+                DateUtil.getYearMonths(provider.getHarvestingStart(), provider.getHarvestingEnd());
             arrayList.removeAll(list);
             arrayList.forEach(li -> fetchList.add(
                 new FetchItem(reportName, li.atDay(1).toString(), li.atEndOfMonth().toString())));
@@ -247,6 +252,10 @@ public class WorkerVerticle extends AbstractVerticle {
     getServiceEndpoint(provider).map(sep -> {
       if (sep != null) {
         getFetchList(provider).compose(list -> {
+          if (list.isEmpty()) {
+            LOG.info("Tenant: " + token.getTenantId() + ", Provider: " + provider.getLabel()
+                + ", No reports need to be fetched.");
+          }
           list.forEach(li -> {
             sep.fetchSingleReport(li.reportType, li.begin, li.end).setHandler(h -> {
               String reportData;
@@ -254,15 +263,14 @@ public class WorkerVerticle extends AbstractVerticle {
                 reportData = h.result();
               } else {
                 reportData = null;
-                LOG.error(
-                    "Tenant: " + token.getTenantId() + ", Provider: " + provider.getLabel() + ", "
-                        + li.toString() + ", " + h.cause().getMessage());
+                LOG.error("Tenant: " + token.getTenantId() + ", Provider: " + provider.getLabel()
+                    + ", " + li.toString() + ", " + h.cause().getMessage());
               }
 
               LocalDate parse = LocalDate.parse(li.begin);
               YearMonth month = YearMonth.of(parse.getYear(), parse.getMonth());
-              CounterReport report = createCounterReport(reportData, li.reportType, provider,
-                  month);
+              CounterReport report =
+                  createCounterReport(reportData, li.reportType, provider, month);
               postReport(report);
             });
           });
@@ -272,11 +280,17 @@ public class WorkerVerticle extends AbstractVerticle {
             LOG.error(h.cause());
           }
         });
+        return Future.succeededFuture();
+      } else {
+        return Future.failedFuture("No ServiceEndpoint");
       }
-      return Future.failedFuture("No ServiceEndpoint");
     }).setHandler(h -> {
-      if (h.failed()) {
-        LOG.error(h.cause());
+      if (h.succeeded() && h.result().failed()) {
+        LOG.error("Tenant: " + token.getTenantId() + ", Provider: " + provider.getLabel() + ", "
+            + h.result().cause().getMessage());
+      } else if (h.failed()) {
+        LOG.error("Tenant: " + token.getTenantId() + ", Provider: " + provider.getLabel() + ", "
+            + h.cause());
       }
     });
   }
@@ -315,14 +329,14 @@ public class WorkerVerticle extends AbstractVerticle {
     LOG.info(logprefix + "posting report with id " + report.getId());
 
     WebClient client = WebClient.create(vertx);
-    client.requestAbs(method, url).putHeader(XOkapiHeaders.TOKEN, token.getToken())
+    client.requestAbs(method, url)
+        .putHeader(XOkapiHeaders.TOKEN, token.getToken())
         .putHeader(XOkapiHeaders.TENANT, token.getTenantId())
         .putHeader(HttpHeaders.ACCEPT, MediaType.PLAIN_TEXT_UTF_8.toString())
         .sendJsonObject(JsonObject.mapFrom(report), ar -> {
           if (ar.succeeded()) {
-            LOG.info(logprefix + String
-                .format(ERR_MSG_STATUS, ar.result().statusCode(), ar.result().statusMessage(),
-                    url));
+            LOG.info(logprefix + String.format(ERR_MSG_STATUS, ar.result().statusCode(),
+                ar.result().statusMessage(), url));
             future.complete(ar.result());
           } else {
             LOG.error(ar.cause());
@@ -340,12 +354,14 @@ public class WorkerVerticle extends AbstractVerticle {
       boolean tiny) {
     WebClient client = WebClient.create(vertx);
     Future<CounterReport> future = Future.future();
-    String queryStr = String
-        .format("(vendorId=%s AND yearMonth=%s AND reportName=%s)", vendorId, month, reportName);
-    client.getAbs(okapiUrl + reportsPath).putHeader(XOkapiHeaders.TOKEN, token.getToken())
+    String queryStr = String.format("(vendorId=%s AND yearMonth=%s AND reportName=%s)", vendorId,
+        month, reportName);
+    client.getAbs(okapiUrl + reportsPath)
+        .putHeader(XOkapiHeaders.TOKEN, token.getToken())
         .putHeader(XOkapiHeaders.TENANT, token.getTenantId())
         .putHeader(HttpHeaders.ACCEPT, MediaType.JSON_UTF_8.toString())
-        .setQueryParam("query", queryStr).setQueryParam("tiny", String.valueOf(tiny))
+        .setQueryParam("query", queryStr)
+        .setQueryParam("tiny", String.valueOf(tiny))
         .send(handler -> {
           if (handler.succeeded()) {
             if (handler.result().statusCode() == 200) {
