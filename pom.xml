@@ -33,6 +33,7 @@
 
     <raml-module-builder.version>23.1.0</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
+    <parent.target.dir>${basedir}/target</parent.target.dir>
     <okapi.version>2.19.0</okapi.version>
     <vertx.version>3.5.1</vertx.version>
 
@@ -91,6 +92,67 @@
         <configuration>
           <useSystemClassLoader>false</useSystemClassLoader>
         </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.0.1</version>
+        <inherited>false</inherited>
+        <executions>
+          <execution>
+            <id>filter-descriptor-inputs</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${parent.target.dir}</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}/descriptors</directory>
+                  <include>*-template.json</include>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.coderplus.maven.plugins</groupId>
+        <artifactId>copy-rename-maven-plugin</artifactId>
+        <version>1.0</version>
+        <inherited>false</inherited>
+        <executions>
+          <execution>
+            <id>rename-descriptor-outputs</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>rename</goal>
+            </goals>
+            <configuration>
+              <fileSets>
+                <fileSet>
+                  <sourceFile>${parent.target.dir}/ModuleDescriptor-template.json</sourceFile>
+                  <destinationFile>${parent.target.dir}/ModuleDescriptor.json
+                  </destinationFile>
+                </fileSet>
+                <fileSet>
+                  <sourceFile>${parent.target.dir}/DeploymentDescriptor-template.json
+                  </sourceFile>
+                  <destinationFile>${parent.target.dir}/DeploymentDescriptor.json
+                  </destinationFile>
+                </fileSet>
+                <fileSet>
+                  <sourceFile>${parent.target.dir}/DockerDeploymentDescriptor-template.json
+                  </sourceFile>
+                  <destinationFile>${parent.target.dir}/DockerDeploymentDescriptor.json
+                  </destinationFile>
+                </fileSet>
+              </fileSets>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
     </plugins>
