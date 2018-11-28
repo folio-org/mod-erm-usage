@@ -282,6 +282,21 @@
               </fileSets>
             </configuration>
           </execution>
+          <execution>
+            <id>copy-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <fileSets>
+                <fileSet>
+                  <sourceFile>target/mod-erm-usage-server-fat.jar</sourceFile>
+                  <destinationFile>../target/mod-erm-usage-server-fat.jar</destinationFile>
+                </fileSet>
+              </fileSets>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
 
@@ -379,38 +394,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-
-      <plugin>
-        <inherited>false</inherited>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.1.1</version>
-        <executions>
-          <execution>
-            <id>copy-artifact</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <artifactItems>
-            <artifactItem>
-              <groupId>org.olf</groupId>
-              <artifactId>mod-erm-usage-server</artifactId>
-              <version>0.0.3-SNAPSHOT</version>
-              <type>jar</type>
-              <overWrite>false</overWrite>
-              <outputDirectory>../target</outputDirectory>
-              <destFileName>mod-erm-usage-server-fat.jar</destFileName>
-            </artifactItem>
-          </artifactItems>
-          <outputDirectory>mod-erm-usage-server/target</outputDirectory>
-          <overWriteReleases>false</overWriteReleases>
-          <overWriteSnapshots>true</overWriteSnapshots>
-        </configuration>
       </plugin>
 
     </plugins>
