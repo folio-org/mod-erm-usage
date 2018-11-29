@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.olf</groupId>
   <artifactId>mod-erm-usage</artifactId>
-  <version>0.0.3-SNAPSHOT</version>
+  <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <licenses>
@@ -33,6 +31,7 @@
 
     <raml-module-builder.version>23.1.0</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
+    <parent.target.dir>${basedir}/target</parent.target.dir>
     <okapi.version>2.19.0</okapi.version>
     <vertx.version>3.5.1</vertx.version>
 
@@ -92,20 +91,93 @@
           <useSystemClassLoader>false</useSystemClassLoader>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.0.1</version>
+        <inherited>false</inherited>
+        <executions>
+          <execution>
+            <id>filter-descriptor-inputs</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${parent.target.dir}</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}/descriptors</directory>
+                  <include>*-template.json</include>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.coderplus.maven.plugins</groupId>
+        <artifactId>copy-rename-maven-plugin</artifactId>
+        <version>1.0</version>
+        <inherited>false</inherited>
+        <executions>
+          <execution>
+            <id>rename-descriptor-outputs</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>rename</goal>
+            </goals>
+            <configuration>
+              <fileSets>
+                <fileSet>
+                  <sourceFile>${parent.target.dir}/ModuleDescriptor-template.json</sourceFile>
+                  <destinationFile>${parent.target.dir}/ModuleDescriptor.json
+                  </destinationFile>
+                </fileSet>
+                <fileSet>
+                  <sourceFile>${parent.target.dir}/DeploymentDescriptor-template.json
+                  </sourceFile>
+                  <destinationFile>${parent.target.dir}/DeploymentDescriptor.json
+                  </destinationFile>
+                </fileSet>
+                <fileSet>
+                  <sourceFile>${parent.target.dir}/DockerDeploymentDescriptor-template.json
+                  </sourceFile>
+                  <destinationFile>${parent.target.dir}/DockerDeploymentDescriptor.json
+                  </destinationFile>
+                </fileSet>
+              </fileSets>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
 
     </plugins>
   </build>
 
-  <scm>
-    <developerConnection>scm:git:git@git.sc.uni-leipzig.de:ubl/amsl/mod-erm-usage.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
-
   <distributionManagement>
     <repository>
-      <id>ubl-nexus</id>
-      <url>https://services.ub.uni-leipzig.de/nexus/repository/maven-releases/</url>
+      <id>folio-nexus</id>
+      <name>FOLIO Release Repository</name>
+      <url>https://repository.folio.org/repository/maven-releases/</url>
+      <uniqueVersion>false</uniqueVersion>
+      <layout>default</layout>
     </repository>
+    <snapshotRepository>
+      <id>folio-nexus</id>
+      <name>FOLIO Snapshot Repository</name>
+      <uniqueVersion>true</uniqueVersion>
+      <url>https://repository.folio.org/repository/maven-snapshots/</url>
+      <layout>default</layout>
+    </snapshotRepository>
   </distributionManagement>
+
+  <scm>
+    <url>https://github.com/folio-org/${artifactId}</url>
+    <connection>scm:git:git://github.com/folio-org/${artifactId}.git</connection>
+    <developerConnection>scm:git:git@github.com:folio-org/${artifactId}.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
 </project>

@@ -8,6 +8,7 @@
     "${parent.artifactId}-server-${project.version}",
     "${parent.artifactId}-harvester-${project.version}"
   ],
+  "moduleId": "mod-erm-usage-server",
   "loginPath": "/bl-users/login",
   "requiredPerm": "ermusage.all"
 }
