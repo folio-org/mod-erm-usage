@@ -43,7 +43,7 @@ configuration via json file:
   "reportsPath": "/counter-reports",
   "providerPath": "/usage-data-providers",
   "aggregatorPath": "/aggregator-settings",
-  "moduleId": "mod-erm-usage-harvester-0.0.3"
+  "moduleId": "mod-erm-usage-harvester-0.1.0"
 }
 ```
 
@@ -76,7 +76,7 @@ $ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @DockerDeploy
 ### Activate module for tenant
 
 ```
-$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod-erm-usage-server-0.0.3"}' http://localhost:9130/_/proxy/tenants/diku/modules
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod-erm-usage-server-0.1.0"}' http://localhost:9130/_/proxy/tenants/diku/modules
 ```
 
 ## `mod-erm-usage-harvester`
@@ -106,7 +106,7 @@ $ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @ModuleDescri
 ### Activate module for tenant (do this before registering DeploymentDescriptor)
 
 ```
-$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod-erm-usage-harvester-0.0.3"}' http://localhost:9130/_/proxy/tenants/diku/modules
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod-erm-usage-harvester-0.1.0"}' http://localhost:9130/_/proxy/tenants/diku/modules
 ```
 
 ### Register DeploymentDescriptor
