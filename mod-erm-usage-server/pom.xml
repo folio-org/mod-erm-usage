@@ -282,21 +282,6 @@
               </fileSets>
             </configuration>
           </execution>
-          <execution>
-            <id>copy-jar</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <fileSets>
-                <fileSet>
-                  <sourceFile>target/mod-erm-usage-server-fat.jar</sourceFile>
-                  <destinationFile>../target/mod-erm-usage-server-fat.jar</destinationFile>
-                </fileSet>
-              </fileSets>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
 

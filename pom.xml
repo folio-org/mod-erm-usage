@@ -27,7 +27,6 @@
 
     <raml-module-builder.version>23.1.0</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
-    <parent.target.dir>${basedir}/target</parent.target.dir>
     <okapi.version>2.19.0</okapi.version>
     <vertx.version>3.5.1</vertx.version>
 
@@ -99,7 +98,7 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>${parent.target.dir}</outputDirectory>
+              <outputDirectory>${project.build.directory}</outputDirectory>
               <resources>
                 <resource>
                   <directory>${project.basedir}/descriptors</directory>
@@ -127,20 +126,20 @@
             <configuration>
               <fileSets>
                 <fileSet>
-                  <sourceFile>${parent.target.dir}/ModuleDescriptor-template.json</sourceFile>
-                  <destinationFile>${parent.target.dir}/ModuleDescriptor.json
+                  <sourceFile>${project.build.directory}/ModuleDescriptor-template.json</sourceFile>
+                  <destinationFile>${project.build.directory}/ModuleDescriptor.json
                   </destinationFile>
                 </fileSet>
                 <fileSet>
-                  <sourceFile>${parent.target.dir}/DeploymentDescriptor-template.json
+                  <sourceFile>${project.build.directory}/DeploymentDescriptor-template.json
                   </sourceFile>
-                  <destinationFile>${parent.target.dir}/DeploymentDescriptor.json
+                  <destinationFile>${project.build.directory}/DeploymentDescriptor.json
                   </destinationFile>
                 </fileSet>
                 <fileSet>
-                  <sourceFile>${parent.target.dir}/DockerDeploymentDescriptor-template.json
+                  <sourceFile>${project.build.directory}/DockerDeploymentDescriptor-template.json
                   </sourceFile>
-                  <destinationFile>${parent.target.dir}/DockerDeploymentDescriptor.json
+                  <destinationFile>${project.build.directory}/DockerDeploymentDescriptor.json
                   </destinationFile>
                 </fileSet>
               </fileSets>
