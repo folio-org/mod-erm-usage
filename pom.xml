@@ -17,10 +17,6 @@
   <modules>
     <module>mod-erm-usage-server</module>
     <module>mod-erm-usage-client</module>
-    <module>mod-erm-usage-harvester-spi</module>
-    <module>mod-erm-usage-harvester-nss</module>
-    <module>mod-erm-usage-harvester-cs41</module>
-    <module>mod-erm-usage-harvester</module>
   </modules>
 
   <properties>
