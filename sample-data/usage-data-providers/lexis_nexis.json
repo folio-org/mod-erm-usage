@@ -4,7 +4,7 @@
   "vendorId": "54910f4c-34eb-4154-9ee6-9d9784605da2",
   "platformId": "00000000-0000-0000-0000-000000000000",
   "harvestingStart": "2018-01",
-  "harvestingStatus": "active",
+  "harvestingStatus": "inactive",
   "serviceType": "cs41",
   "serviceUrl": "http://usage.lexisnexis.com/SushiServer",
   "reportRelease": 4,
@@ -13,11 +13,5 @@
   "requestorId": "00000000-0000-0000-0000-000000000000",
   "requestorName": "Opentown Libraries",
   "requestorMail": "electronic@lib.opentown.edu",
-  "notes": "Please fill in your own credentials: customer ID and requestor ID, name and mail are only demonstrational.",
-  "metadata": {
-    "createdDate": "2018-11-28T13:45:02.684+0000",
-    "createdByUserId": "1cf96dfd-2192-5c60-9d03-854963aba2ec",
-    "updatedDate": "2018-11-28T13:46:31.593+0000",
-    "updatedByUserId": "1cf96dfd-2192-5c60-9d03-854963aba2ec"
-  }
+  "notes": "Please fill in your own credentials: customer ID and requestor ID, name and mail are only demonstrational."
 }

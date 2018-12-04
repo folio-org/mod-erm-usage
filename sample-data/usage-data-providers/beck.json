@@ -4,7 +4,7 @@
   "vendorId": "94c706e0-908f-4347-98b9-67d8348d49c7",
   "platformId": "00000000-0000-0000-0000-000000000000",
   "harvestingStart": "2019-01",
-  "harvestingStatus": "active",
+  "harvestingStatus": "inactive",
   "aggregator": {
     "id": "5b6ba83e-d7e5-414e-ba7b-134749c0d950",
     "vendorCode": "Beck"
@@ -15,11 +15,5 @@
   "requestorId": "00000",
   "requestorName": "Opentown Libraries",
   "requestorMail": "electronic@lib.optentown.edu",
-  "notes": "Please fill in your own credentials: customer ID and requestor ID, name and mail are only demonstrational.",
-  "metadata": {
-    "createdDate": "2018-11-28T13:57:43.360+0000",
-    "createdByUserId": "1cf96dfd-2192-5c60-9d03-854963aba2ec",
-    "updatedDate": "2018-11-28T13:59:38.188+0000",
-    "updatedByUserId": "1cf96dfd-2192-5c60-9d03-854963aba2ec"
-  }
+  "notes": "Please fill in your own credentials: customer ID and requestor ID, name and mail are only demonstrational."
 }

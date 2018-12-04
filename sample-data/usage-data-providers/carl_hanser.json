@@ -1,5 +1,5 @@
 {
-  "id": "90c2505e-5567-43e4-81ec-1b62a932617f",
+  "id": null,
   "label": "Carl Hanser Verlag",
   "vendorId": "2a060505-dd89-4540-9aa5-a49f7da8ab7f",
   "platformId": "00000000-0000-0000-0000-000000000000",
@@ -13,11 +13,5 @@
   "requestedReports": ["JR5", "JR1"],
   "customerId": "0000000",
   "requestorId": "electronic@lib.opentown.edu",
-  "notes": "Please fill in your own credentials: customer ID and requestor ID, name and mail are only demonstrational.",
-  "metadata": {
-    "createdDate": "2018-11-28T13:49:43.304+0000",
-    "createdByUserId": "1cf96dfd-2192-5c60-9d03-854963aba2ec",
-    "updatedDate": "2018-11-29T14:35:21.619+0000",
-    "updatedByUserId": "1cf96dfd-2192-5c60-9d03-854963aba2ec"
-  }
+  "notes": "Please fill in your own credentials: customer ID and requestor ID, name and mail are only demonstrational."
 }

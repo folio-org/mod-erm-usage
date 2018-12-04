@@ -1,12 +1,6 @@
 {
   "id": "5b6ba83e-d7e5-414e-ba7b-134749c0d950",
   "label": "German National Statistics Server",
-  "metadata": {
-    "createdDate": "2018-11-29T14:31:56.350",
-    "updatedDate": "2018-11-30T11:41:57.889+00",
-    "createdByUserId": "1cf96dfd-2192-5c60-9d03-854963aba2ec",
-    "updatedByUserId": "1cf96dfd-2192-5c60-9d03-854963aba2ec"
-  },
   "serviceUrl": "https://sushi.url-to-nss.de/Sushiservice/GetReport",
   "serviceType": "NSS",
   "accountConfig": {
