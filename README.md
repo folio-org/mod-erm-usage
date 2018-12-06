@@ -32,8 +32,12 @@ java -jar target/mod-erm-usage-server-fat.jar
 ### Build docker image
 
 ```
-$ docker build -t mod-erm-usage-server .
-$ docker run -t -i -p 8081:8081 -e DB_USERNAME=folio_admin -e DB_PASSWORD=folio_admin -e DB_HOST=172.17.0.1 -e DB_PORT=5432 -e DB_DATABASE=okapi_modules mod-erm-usage-server
+$ docker build -t mod-erm-usage .
+```
+
+### Run docker image
+```
+$ docker run -p 8081:8081 -e DB_USERNAME=folio_admin -e DB_PASSWORD=folio_admin -e DB_HOST=172.17.0.1 -e DB_PORT=5432 -e DB_DATABASE=okapi_modules mod-erm-usage
 ```
 
 ### Register ModuleDescriptor
@@ -54,7 +58,7 @@ $ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d @DockerDeploy
 ### Activate module for tenant
 
 ```
-$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod-erm-usage-server-0.1.0"}' http://localhost:9130/_/proxy/tenants/diku/modules
+$ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod-erm-usage-1.0.0"}' http://localhost:9130/_/proxy/tenants/diku/modules
 ```
 
 ## Additional information
