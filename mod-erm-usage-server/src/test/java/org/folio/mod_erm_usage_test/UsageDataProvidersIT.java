@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
+import org.folio.rest.jaxrs.model.SushiCredentials;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.persist.PostgresClient;
@@ -56,9 +57,10 @@ public class UsageDataProvidersIT {
       String udprovider2Str =
           new String(Files.readAllBytes(Paths.get("../ramls/examples/udproviders2.sample")));
       udprovider2 = Json.decodeValue(udprovider2Str, UsageDataProvider.class);
+      SushiCredentials sushiCredentials = udprovider2.getSushiCredentials();
       udprovider2Changed = Json.decodeValue(udprovider2Str, UsageDataProvider.class)
           .withLabel("CHANGED")
-          .withRequestorMail("CHANGED@ub.uni-leipzig.de");
+        .withSushiCredentials(sushiCredentials.withRequestorMail("CHANGED@ub.uni-leipzig.de"));
       String aggregatorStr =
           new String(Files.readAllBytes(Paths.get("../ramls/examples/aggregatorsettings.sample")));
       aggregator = Json.decodeValue(aggregatorStr, AggregatorSetting.class);
