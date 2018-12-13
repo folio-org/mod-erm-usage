@@ -3,8 +3,12 @@
     {
       "id": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd73",
       "label": "Data provider with aggregator",
-      "vendorId": "uuid-123456789",
-      "platformId": "uuid-123456789",
+      "vendor": {
+          "id": "uuid-123456789"
+         },
+        "platform": {
+          "id": "uuid-123456789"
+        },
       "harvestingConfig": {
         "harvestingStatus": "active",
         "useAggregator": true,
@@ -36,8 +40,12 @@
     {
       "id": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd72",
       "label": "Data provider without aggregator",
-      "vendorId": "uuid-123456789",
-      "platformId": "uuid-123456789",
+      "vendor": {
+          "id": "uuid-123456789"
+         },
+        "platform": {
+          "id": "uuid-123456789"
+        },
       "harvestingConfig": {
         "harvestingStatus": "active",
         "useAggregator": false,

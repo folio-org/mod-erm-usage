@@ -9,13 +9,37 @@
     "label": {
       "type": "string"
     },
-    "vendorId": {
-      "type": "string",
-      "description": "Id of the the reports content’s vendor, linked via uuid from vendor app."
+    "vendor": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Id of the the reports content’s vendor, linked via uuid from vendor app."
+        },
+        "name": {
+          "type": "string",
+          "description": "Vendor's name. If not given, it will be determined by backend module."
+        }
+      },
+      "required": [
+        "id"
+      ]
     },
-    "platformId": {
-      "type": "string",
-      "description": "Id of the reports content’s platform, linked via uuid from ERM app."
+    "platform": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Id of the the reports content’s platform, linked via uuid from ERM app."
+        },
+        "name": {
+          "type": "string",
+          "description": "Platform's name. If not given, it will be determined by backend module."
+        }
+      },
+      "required": [
+        "id"
+      ]
     },
     "harvestingConfig": {
       "type": "object",
@@ -53,6 +77,10 @@
             "id": {
               "type": "string",
               "description": "Id of aggregator, linking of an aggregator predefined by an admin in the app settings"
+            },
+            "name": {
+              "type": "string",
+              "description": "Name of the linked aggregator"
             },
             "vendorCode": {
               "type": "string",
@@ -130,8 +158,8 @@
   },
   "required": [
     "label",
-    "vendorId",
-    "platformId",
+    "vendor",
+    "platform",
     "harvestingConfig",
     "sushiCredentials"
   ],
