@@ -15,6 +15,10 @@ public class VendorNameResolver {
 
   private static final String VENDOR_ENDPOINT = "/vendor/";
 
+  private VendorNameResolver() {
+    throw new IllegalStateException("Utility class");
+  }
+
   public static Future<String> resolveName(String vendorId, String okapiUrl,
     Map<String, String> okapiHeaders, Vertx vertx) {
     Future<String> future = Future.future();

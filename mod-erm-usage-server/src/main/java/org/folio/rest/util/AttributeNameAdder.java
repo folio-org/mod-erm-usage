@@ -12,6 +12,10 @@ import org.folio.rest.util.nameresolver.VendorNameResolver;
 
 public class AttributeNameAdder {
 
+  private AttributeNameAdder() {
+    throw new IllegalStateException("Utility class.");
+  }
+
   public static Future<UsageDataProvider> resolveAndAddAttributeNames(UsageDataProvider udp,
     Map<String, String> okapiHeaders, Vertx vertx) {
     String okapiUrl = okapiHeaders.get("x-okapi-url");
@@ -48,10 +52,8 @@ public class AttributeNameAdder {
   }
 
   private static String getAggregatorId(UsageDataProvider udp) {
-    if (udp.getHarvestingConfig() != null) {
-      if (udp.getHarvestingConfig().getAggregator() != null) {
-        return udp.getHarvestingConfig().getAggregator().getId();
-      }
+    if (udp.getHarvestingConfig() != null && udp.getHarvestingConfig().getAggregator() != null) {
+      return udp.getHarvestingConfig().getAggregator().getId();
     }
     return null;
   }

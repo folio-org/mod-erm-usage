@@ -15,6 +15,10 @@ public class AggregatorNameResolver {
 
   private static final String AGGREGATOR_ENDPOINT = "/aggregator-settings/";
 
+  private AggregatorNameResolver() {
+    throw new IllegalStateException("Utility class");
+  }
+
   public static Future<String> resolveName(String aggregatorId, String okapiUrl,
     Map<String, String> okapiHeaders, Vertx vertx) {
     Future<String> future = Future.future();
