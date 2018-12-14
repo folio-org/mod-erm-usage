@@ -28,8 +28,6 @@ import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.AttributeNameAdder;
 import org.folio.rest.util.Constants;
-import org.folio.rest.util.nameresolver.AggregatorNameResolver;
-import org.folio.rest.util.nameresolver.VendorNameResolver;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
 
@@ -42,13 +40,8 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(UsageDataProvidersAPI.class);
 
-  private VendorNameResolver vendorNameResolver;
-  private AggregatorNameResolver aggregatorNameResolver;
-
   public UsageDataProvidersAPI(Vertx vertx, String tenantId) {
     PostgresClient.getInstance(vertx, tenantId).setIdField(ID_FIELD);
-    this.vendorNameResolver = new VendorNameResolver();
-    this.aggregatorNameResolver = new AggregatorNameResolver();
   }
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {

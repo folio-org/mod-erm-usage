@@ -15,19 +15,17 @@ public class AttributeNameAdder {
   public static Future<UsageDataProvider> resolveAndAddAttributeNames(UsageDataProvider udp,
     Map<String, String> okapiHeaders, Vertx vertx) {
     String okapiUrl = okapiHeaders.get("x-okapi-url");
-    okapiUrl = "http://localhost:9130";
 
     String vendorId = udp.getVendor().getId();
     Future<String> vendorNameFuture = VendorNameResolver
       .resolveName(vendorId, okapiUrl, okapiHeaders,
         vertx);
 
-    String aggregatorId = udp.getHarvestingConfig().getAggregator().getId();
+    String aggregatorId = getAggregatorId(udp);
     Future<String> aggregatorNameFuture = AggregatorNameResolver
       .resolveName(aggregatorId, okapiUrl, okapiHeaders, vertx);
 
     Future<UsageDataProvider> future = Future.future();
-
     CompositeFuture.all(vendorNameFuture, aggregatorNameFuture).setHandler(ar -> {
       if (ar.succeeded()) {
         if (ar instanceof CompositeFuture) {
@@ -35,13 +33,9 @@ public class AttributeNameAdder {
           String vendorName = cf.resultAt(0);
           String aggName = cf.resultAt(1);
 
-          Vendor vendor = udp.getVendor();
-          vendor.setName(vendorName);
-          udp.setVendor(vendor);
+          setVendorName(udp, vendorName);
+          setAggregatorName(udp, aggName);
 
-          Aggregator aggregator = udp.getHarvestingConfig().getAggregator();
-          aggregator.setName(aggName);
-          udp.getHarvestingConfig().setAggregator(aggregator);
           future.complete(udp);
         } else {
           future.fail("Error while adding names to udp. No composite future.");
@@ -51,6 +45,31 @@ public class AttributeNameAdder {
       }
     });
     return future;
+  }
+
+  private static String getAggregatorId(UsageDataProvider udp) {
+    if (udp.getHarvestingConfig() != null) {
+      if (udp.getHarvestingConfig().getAggregator() != null) {
+        return udp.getHarvestingConfig().getAggregator().getId();
+      }
+    }
+    return null;
+  }
+
+  private static void setVendorName(UsageDataProvider udp, String vendorName) {
+    if (vendorName != null) {
+      Vendor vendor = udp.getVendor();
+      vendor.setName(vendorName);
+      udp.setVendor(vendor);
+    }
+  }
+
+  private static void setAggregatorName(UsageDataProvider udp, String aggName) {
+    if (aggName != null) {
+      Aggregator aggregator = udp.getHarvestingConfig().getAggregator();
+      aggregator.setName(aggName);
+      udp.getHarvestingConfig().setAggregator(aggregator);
+    }
   }
 
 }

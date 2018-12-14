@@ -19,14 +19,17 @@ public class VendorNameResolver {
     Map<String, String> okapiHeaders, Vertx vertx) {
     Future<String> future = Future.future();
 
+    if (vendorId == null) {
+      future.complete();
+      return future;
+    }
+
     String endpoint = VENDOR_ENDPOINT + vendorId;
     WebClient webClient = WebClient.create(vertx);
     String url = okapiUrl + endpoint;
     HttpRequest<Buffer> request = webClient.getAbs(url);
 
-    okapiHeaders.forEach((key, val) -> {
-      request.putHeader(key, val);
-    });
+    okapiHeaders.forEach(request::putHeader);
     request.putHeader("accept", "application/json");
 
     request.send(ar -> {

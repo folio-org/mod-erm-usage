@@ -40,7 +40,6 @@ public class AggregatorSettingsIT {
   private static final String TENANT = "diku";
   private static final String QUERY_PARAM = "query";
   private static Vertx vertx;
-  private static int port;
 
   private static String aggregatorSettingSampleString;
   private static AggregatorSetting aggregatorSettingSample;
@@ -74,7 +73,7 @@ public class AggregatorSettingsIT {
       return;
     }
     Async async = context.async();
-    port = NetworkUtils.nextFreePort();
+    int port = NetworkUtils.nextFreePort();
 
     RestAssured.reset();
     RestAssured.baseURI = "http://localhost";

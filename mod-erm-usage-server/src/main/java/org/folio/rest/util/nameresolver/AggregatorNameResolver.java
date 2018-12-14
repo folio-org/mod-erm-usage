@@ -19,14 +19,17 @@ public class AggregatorNameResolver {
     Map<String, String> okapiHeaders, Vertx vertx) {
     Future<String> future = Future.future();
 
+    if (aggregatorId == null) {
+      future.complete();
+      return future;
+    }
+
     String endpoint = AGGREGATOR_ENDPOINT + aggregatorId;
     WebClient webClient = WebClient.create(vertx);
     String url = okapiUrl + endpoint;
     HttpRequest<Buffer> request = webClient.getAbs(url);
 
-    okapiHeaders.forEach((key, val) -> {
-      request.putHeader(key, val);
-    });
+    okapiHeaders.forEach(request::putHeader);
     request.putHeader("accept", "application/json");
 
     request.send(ar -> {
