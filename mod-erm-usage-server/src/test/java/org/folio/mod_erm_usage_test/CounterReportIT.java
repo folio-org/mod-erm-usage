@@ -2,7 +2,7 @@ package org.folio.mod_erm_usage_test;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
-import java.io.UnsupportedEncodingException;
+
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.folio.rest.RestVerticle;
@@ -34,7 +34,6 @@ public class CounterReportIT {
   public static final String BASE_URI = "/counter-reports";
   private static final String TENANT = "diku";
   private static Vertx vertx;
-  private static int port;
   private static CounterReport report;
   private static CounterReport reportChanged;
 
@@ -65,7 +64,7 @@ public class CounterReportIT {
       return;
     }
     Async async = context.async();
-    port = NetworkUtils.nextFreePort();
+    int port = NetworkUtils.nextFreePort();
 
     RestAssured.reset();
     RestAssured.baseURI = "http://localhost";
@@ -159,7 +158,7 @@ public class CounterReportIT {
   }
 
   @Test
-  public void checkThatWeCanSearchByCQL() throws UnsupportedEncodingException {
+  public void checkThatWeCanSearchByCQL() {
     given().body(Json.encode(report))
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
