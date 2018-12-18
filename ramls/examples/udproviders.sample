@@ -9,7 +9,7 @@
   },
   "harvestingConfig": {
     "harvestingStatus": "active",
-    "useAggregator": false,
+    "harvestVia": "sushi",
     "sushiConfig": {
       "serviceType": "cs41",
       "serviceUrl": "http://myvendor.com"

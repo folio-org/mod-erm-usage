@@ -52,9 +52,13 @@
             "inactive"
           ]
         },
-        "useAggregator": {
-          "type": "boolean",
-          "description": "If true, aggregator is used as defined in 'aggregator', else usage data is fetched from provider directly as specified by 'sushiConfig'"
+        "harvestVia": {
+          "type": "string",
+          "description": "Specifies how to harvest usage data, from an aggregator or directly from a provider via Sushi.",
+          "enum": [
+            "aggregator",
+            "sushi"
+          ]
         },
         "sushiConfig": {
           "serviceType": {
