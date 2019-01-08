@@ -61,13 +61,16 @@
           ]
         },
         "sushiConfig": {
-          "serviceType": {
-            "type": "string",
-            "description": "Type of SUSHI service (i.e. cs41 for Counter-Sushi 4.1) for direct harvesting."
-          },
-          "serviceUrl": {
-            "type": "string",
-            "description": "Direct SUSHI service URL to access provider's SUSHI service."
+          "type": "object",
+          "properties": {
+            "serviceType": {
+              "type": "string",
+              "description": "Type of SUSHI service (i.e. cs41 for Counter-Sushi 4.1) for direct harvesting."
+            },
+            "serviceUrl": {
+              "type": "string",
+              "description": "Direct SUSHI service URL to access provider's SUSHI service."
+            }
           },
           "required": [
             "serviceType",
