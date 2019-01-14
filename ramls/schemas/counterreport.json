@@ -39,7 +39,7 @@
       "type": "string"
     },
     "report": {
-      "type": "string"
+      "type": "object"
     },
     "metadata": {
       "description": "Metadata about creation and changes, provided by the server (client should not provide)",
