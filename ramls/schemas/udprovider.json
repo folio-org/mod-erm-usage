@@ -151,6 +151,12 @@
         "requestorId"
       ]
     },
+    "latestReport": {
+      "type": "string"
+    },
+    "earliestReport": {
+      "type": "string"
+    },
     "notes": {
       "type": "string"
     },

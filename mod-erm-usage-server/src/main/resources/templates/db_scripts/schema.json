@@ -42,7 +42,8 @@
       "fromModuleVersion": "1.0",
       "populateJsonWithId": true,
       "pkColumnName": "_id",
-      "withMetadata": true
+      "withMetadata": true,
+      "customSnippetPath": "updateTrigger.sql"
     }
   ],
   "views": [

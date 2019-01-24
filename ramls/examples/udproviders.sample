@@ -29,5 +29,7 @@
     "requestorName": "Karla Kolumna",
     "requestorMail": "kolumna@ub.uni-leipzig.de"
   },
+  "earliestReport": "2017-01",
+  "latestReport": "2017-12",
   "notes": "This is a note!"
 }

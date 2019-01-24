@@ -102,7 +102,7 @@ public class UsageDataProvidersIT {
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
 
-    TenantClient tenantClient = new TenantClient("localhost", port, "diku", "diku");
+    TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
       new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
 
