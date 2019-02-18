@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.ws.rs.core.Response;
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.AggregatorSettings;
@@ -20,7 +21,6 @@ import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
-import org.folio.rest.util.Constants;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
 import io.vertx.core.AsyncResult;
@@ -71,8 +71,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
       CQLWrapper cql = getCQL(query, limit, offset);
       vertxContext.runOnContext(
           v -> {
-            String tenantId =
-                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
             logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
             logger.debug("tenantId = " + tenantId);
             String[] fieldList = {"*"};
@@ -177,8 +176,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
     try {
       vertxContext.runOnContext(
           v -> {
-            String tenantId =
-                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
             try {
 
               String id = entity.getId();
@@ -297,8 +295,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
     try {
       vertxContext.runOnContext(
           v -> {
-            String tenantId =
-                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
             try {
               Criteria idCrit =
                   new Criteria()
@@ -374,8 +371,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
     try {
       vertxContext.runOnContext(
           v -> {
-            String tenantId =
-                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
             try {
               PostgresClient.getInstance(vertxContext.owner(), tenantId)
                   .delete(
@@ -429,7 +425,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
                           "You cannot change the value of the id field")));
             } else {
               String tenantId =
-                  TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+                  TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
               Criteria nameCrit = new Criteria();
               nameCrit.addField(LABEL_FIELD);
               nameCrit.setOperation("=");

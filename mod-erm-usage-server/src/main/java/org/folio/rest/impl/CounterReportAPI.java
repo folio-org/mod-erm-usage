@@ -21,7 +21,6 @@ import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
-import org.folio.rest.util.Constants;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
@@ -70,8 +69,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       CQLWrapper cql = getCQL(query, limit, offset);
       vertxContext.runOnContext(
           v -> {
-            String tenantId =
-                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
             logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
             logger.debug("tenantId = " + tenantId);
 
@@ -169,8 +167,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     try {
       vertxContext.runOnContext(
           v -> {
-            String tenantId =
-                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
             try {
               String id = entity.getId();
               if (id == null) {
@@ -281,8 +278,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     try {
       vertxContext.runOnContext(
           v -> {
-            String tenantId =
-                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
             try {
               Criteria idCrit =
                   new Criteria()
@@ -358,8 +354,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     try {
       vertxContext.runOnContext(
           v -> {
-            String tenantId =
-                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
             Criteria idCrit =
                 new Criteria()
                     .addField(ID_FIELD)
@@ -419,7 +414,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                           "You cannot change the value of the id field")));
             } else {
               String tenantId =
-                  TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+                  TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
               Criteria labelCrit = new Criteria();
               labelCrit.addField("'id'");
               labelCrit.setOperation("=");
