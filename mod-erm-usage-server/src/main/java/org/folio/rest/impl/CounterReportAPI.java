@@ -3,8 +3,10 @@ package org.folio.rest.impl;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import javax.ws.rs.core.Response;
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
@@ -20,6 +22,7 @@ import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.Constants;
+import org.olf.erm.usage.counter41.Counter4Utils;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
 import io.vertx.core.AsyncResult;
@@ -27,6 +30,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -374,5 +378,50 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     }
   }
 
+  private Optional<String> csvMapper(CounterReport cr) {
+    if (cr.getRelease().equals("4") && cr.getReport() != null) {
+      return Optional.of(Counter4Utils.toCSV(Counter4Utils.fromJSON(Json.encode(cr.getReport()))));
+    }
+    return Optional.empty();
+  }
+
+  @Override
+  public void getCounterReportsCsvById(
+      String id,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+
+    PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
+        .getById(
+            TABLE_NAME_COUNTER_REPORTS,
+            id,
+            CounterReport.class,
+            ar -> {
+              if (ar.succeeded()) {
+                Optional<String> csvResult = csvMapper(ar.result());
+                if (csvResult.isPresent()) {
+                  if (csvResult.get() != null) {
+                    asyncResultHandler.handle(
+                        Future.succeededFuture(
+                            GetCounterReportsCsvByIdResponse.respond200WithTextCsv(
+                                csvResult.get())));
+                  } else {
+                    asyncResultHandler.handle(
+                        Future.succeededFuture(
+                            GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
+                                "Error while tranforming report to CSV")));
+                  }
+                } else {
+                  asyncResultHandler.handle(
+                      Future.succeededFuture(
+                          GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
+                              "Empty report data or no mapper available")));
+                }
+              } else {
+                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
+              }
+            });
+  }
 }
 

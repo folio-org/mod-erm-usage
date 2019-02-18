@@ -57,3 +57,16 @@ resourceTypes:
       description: Delete report identified by id
     put:
       description: Put report identified by id
+  /csv:
+    /{id}:
+      get:
+        description: Get the report identified by id as CSV
+        responses: 
+          200:
+            body:
+              text/csv:
+          500:
+            description: Server Error
+            body:
+              text/plain:
+                      

@@ -152,6 +152,15 @@
           "permissionsRequired": [
             "counterreports.item.delete"
           ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/counter-reports/csv/{id}",
+          "permissionsRequired": [
+            "counterreports.item.get"
+          ]
         }
       ]
     },
