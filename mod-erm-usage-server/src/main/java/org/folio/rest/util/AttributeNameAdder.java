@@ -16,38 +16,39 @@ public class AttributeNameAdder {
     throw new IllegalStateException("Utility class.");
   }
 
-  public static Future<UsageDataProvider> resolveAndAddAttributeNames(UsageDataProvider udp,
-    Map<String, String> okapiHeaders, Vertx vertx) {
+  public static Future<UsageDataProvider> resolveAndAddAttributeNames(
+      UsageDataProvider udp, Map<String, String> okapiHeaders, Vertx vertx) {
     String okapiUrl = okapiHeaders.get("x-okapi-url");
 
     String vendorId = udp.getVendor().getId();
-    Future<String> vendorNameFuture = VendorNameResolver
-      .resolveName(vendorId, okapiUrl, okapiHeaders,
-        vertx);
+    Future<String> vendorNameFuture =
+        VendorNameResolver.resolveName(vendorId, okapiUrl, okapiHeaders, vertx);
 
     String aggregatorId = getAggregatorId(udp);
-    Future<String> aggregatorNameFuture = AggregatorNameResolver
-      .resolveName(aggregatorId, okapiUrl, okapiHeaders, vertx);
+    Future<String> aggregatorNameFuture =
+        AggregatorNameResolver.resolveName(aggregatorId, okapiUrl, okapiHeaders, vertx);
 
     Future<UsageDataProvider> future = Future.future();
-    CompositeFuture.all(vendorNameFuture, aggregatorNameFuture).setHandler(ar -> {
-      if (ar.succeeded()) {
-        if (ar instanceof CompositeFuture) {
-          CompositeFuture cf = (CompositeFuture) ar;
-          String vendorName = cf.resultAt(0);
-          String aggName = cf.resultAt(1);
+    CompositeFuture.all(vendorNameFuture, aggregatorNameFuture)
+        .setHandler(
+            ar -> {
+              if (ar.succeeded()) {
+                if (ar instanceof CompositeFuture) {
+                  CompositeFuture cf = (CompositeFuture) ar;
+                  String vendorName = cf.resultAt(0);
+                  String aggName = cf.resultAt(1);
 
-          setVendorName(udp, vendorName);
-          setAggregatorName(udp, aggName);
+                  setVendorName(udp, vendorName);
+                  setAggregatorName(udp, aggName);
 
-          future.complete(udp);
-        } else {
-          future.fail("Error while adding names to udp. No composite future.");
-        }
-      } else {
-        future.fail("Error while adding names to udp: " + ar.cause());
-      }
-    });
+                  future.complete(udp);
+                } else {
+                  future.fail("Error while adding names to udp. No composite future.");
+                }
+              } else {
+                future.fail("Error while adding names to udp: " + ar.cause());
+              }
+            });
     return future;
   }
 
@@ -73,5 +74,4 @@ public class AttributeNameAdder {
       udp.getHarvestingConfig().setAggregator(aggregator);
     }
   }
-
 }

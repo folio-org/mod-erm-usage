@@ -49,349 +49,475 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
     CQL2PgJSON cql2pgJson =
         new CQL2PgJSON(Arrays.asList(TABLE_NAME_AGGREGATOR_SETTINGS + ".jsonb"));
-    return new CQLWrapper(cql2pgJson, query).setLimit(new Limit(limit))
+    return new CQLWrapper(cql2pgJson, query)
+        .setLimit(new Limit(limit))
         .setOffset(new Offset(offset));
   }
 
   @Override
   @Validate
-  public void getAggregatorSettings(String query, String orderBy, AggregatorSettingsGetOrder order,
-      int offset, int limit, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getAggregatorSettings(
+      String query,
+      String orderBy,
+      AggregatorSettingsGetOrder order,
+      int offset,
+      int limit,
+      String lang,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
     logger.debug("Getting aggregator settings");
     try {
       CQLWrapper cql = getCQL(query, limit, offset);
-      vertxContext.runOnContext(v -> {
-        String tenantId =
-            TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
-        logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
-        logger.debug("tenantId = " + tenantId);
-        String[] fieldList = {"*"};
-        try {
-          PostgresClient.getInstance(vertxContext.owner(), tenantId)
-              .get(TABLE_NAME_AGGREGATOR_SETTINGS, AggregatorSetting.class, fieldList, cql, true,
-                  false, reply -> {
-                    try {
-                      if (reply.succeeded()) {
-                        AggregatorSettings aggregatorSettingsDataCollection =
-                            new AggregatorSettings();
-                        List<AggregatorSetting> aggregatorSettings =
-                            (List<AggregatorSetting>) reply.result().getResults();
-                        aggregatorSettingsDataCollection.setAggregatorSettings(aggregatorSettings);
-                        aggregatorSettingsDataCollection
-                            .setTotalRecords(reply.result().getResultInfo().getTotalRecords());
-                        asyncResultHandler
-                            .handle(Future.succeededFuture(GetAggregatorSettingsResponse
-                                .respond200WithApplicationJson(aggregatorSettingsDataCollection)));
-                      } else {
-                        asyncResultHandler
-                            .handle(Future.succeededFuture(GetAggregatorSettingsResponse
-                                .respond500WithTextPlain(reply.cause().getMessage())));
-                      }
-                    } catch (Exception e) {
-                      logger.debug(e.getLocalizedMessage());
+      vertxContext.runOnContext(
+          v -> {
+            String tenantId =
+                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
+            logger.debug("tenantId = " + tenantId);
+            String[] fieldList = {"*"};
+            try {
+              PostgresClient.getInstance(vertxContext.owner(), tenantId)
+                  .get(
+                      TABLE_NAME_AGGREGATOR_SETTINGS,
+                      AggregatorSetting.class,
+                      fieldList,
+                      cql,
+                      true,
+                      false,
+                      reply -> {
+                        try {
+                          if (reply.succeeded()) {
+                            AggregatorSettings aggregatorSettingsDataCollection =
+                                new AggregatorSettings();
+                            List<AggregatorSetting> aggregatorSettings =
+                                (List<AggregatorSetting>) reply.result().getResults();
+                            aggregatorSettingsDataCollection.setAggregatorSettings(
+                                aggregatorSettings);
+                            aggregatorSettingsDataCollection.setTotalRecords(
+                                reply.result().getResultInfo().getTotalRecords());
+                            asyncResultHandler.handle(
+                                Future.succeededFuture(
+                                    GetAggregatorSettingsResponse.respond200WithApplicationJson(
+                                        aggregatorSettingsDataCollection)));
+                          } else {
+                            asyncResultHandler.handle(
+                                Future.succeededFuture(
+                                    GetAggregatorSettingsResponse.respond500WithTextPlain(
+                                        reply.cause().getMessage())));
+                          }
+                        } catch (Exception e) {
+                          logger.debug(e.getLocalizedMessage());
 
-                      asyncResultHandler.handle(Future.succeededFuture(GetAggregatorSettingsResponse
-                          .respond500WithTextPlain(reply.cause().getMessage())));
-                    }
-                  });
-        } catch (IllegalStateException e) {
-          logger.debug("IllegalStateException: " + e.getLocalizedMessage());
-          asyncResultHandler
-              .handle(Future.succeededFuture(GetAggregatorSettingsResponse.respond400WithTextPlain(
-                  "CQL Illegal State Error for '" + query + "': " + e.getLocalizedMessage())));
-        } catch (Exception e) {
-          Throwable cause = e;
-          while (cause.getCause() != null) {
-            cause = cause.getCause();
-          }
-          logger.debug(
-              "Got error " + cause.getClass().getSimpleName() + ": " + e.getLocalizedMessage());
-          if (cause.getClass().getSimpleName().contains("CQLParseException")) {
-            logger.debug("BAD CQL");
-            asyncResultHandler.handle(
-                Future.succeededFuture(GetAggregatorSettingsResponse.respond400WithTextPlain(
-                    "CQL Parsing Error for '" + query + "': " + cause.getLocalizedMessage())));
-          } else {
-            asyncResultHandler.handle(io.vertx.core.Future
-                .succeededFuture(GetAggregatorSettingsResponse.respond500WithTextPlain(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-          }
-        }
-      });
+                          asyncResultHandler.handle(
+                              Future.succeededFuture(
+                                  GetAggregatorSettingsResponse.respond500WithTextPlain(
+                                      reply.cause().getMessage())));
+                        }
+                      });
+            } catch (IllegalStateException e) {
+              logger.debug("IllegalStateException: " + e.getLocalizedMessage());
+              asyncResultHandler.handle(
+                  Future.succeededFuture(
+                      GetAggregatorSettingsResponse.respond400WithTextPlain(
+                          "CQL Illegal State Error for '"
+                              + query
+                              + "': "
+                              + e.getLocalizedMessage())));
+            } catch (Exception e) {
+              Throwable cause = e;
+              while (cause.getCause() != null) {
+                cause = cause.getCause();
+              }
+              logger.debug(
+                  "Got error " + cause.getClass().getSimpleName() + ": " + e.getLocalizedMessage());
+              if (cause.getClass().getSimpleName().contains("CQLParseException")) {
+                logger.debug("BAD CQL");
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        GetAggregatorSettingsResponse.respond400WithTextPlain(
+                            "CQL Parsing Error for '"
+                                + query
+                                + "': "
+                                + cause.getLocalizedMessage())));
+              } else {
+                asyncResultHandler.handle(
+                    io.vertx.core.Future.succeededFuture(
+                        GetAggregatorSettingsResponse.respond500WithTextPlain(
+                            messages.getMessage(lang, MessageConsts.InternalServerError))));
+              }
+            }
+          });
     } catch (Exception e) {
       logger.error(e.getLocalizedMessage(), e);
       if (e.getCause() != null
           && e.getCause().getClass().getSimpleName().contains("CQLParseException")) {
         logger.debug("BAD CQL");
-        asyncResultHandler
-            .handle(Future.succeededFuture(GetAggregatorSettingsResponse.respond400WithTextPlain(
-                "CQL Parsing Error for '" + query + "': " + e.getLocalizedMessage())));
+        asyncResultHandler.handle(
+            Future.succeededFuture(
+                GetAggregatorSettingsResponse.respond400WithTextPlain(
+                    "CQL Parsing Error for '" + query + "': " + e.getLocalizedMessage())));
       } else {
-        asyncResultHandler.handle(io.vertx.core.Future
-            .succeededFuture(GetAggregatorSettingsResponse.respond500WithTextPlain(
-                messages.getMessage(lang, MessageConsts.InternalServerError))));
+        asyncResultHandler.handle(
+            io.vertx.core.Future.succeededFuture(
+                GetAggregatorSettingsResponse.respond500WithTextPlain(
+                    messages.getMessage(lang, MessageConsts.InternalServerError))));
       }
     }
   }
 
   @Override
   @Validate
-  public void postAggregatorSettings(String lang, AggregatorSetting entity,
-      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
+  public void postAggregatorSettings(
+      String lang,
+      AggregatorSetting entity,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     try {
-      vertxContext.runOnContext(v -> {
-        String tenantId =
-            TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
-        try {
+      vertxContext.runOnContext(
+          v -> {
+            String tenantId =
+                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            try {
 
-          String id = entity.getId();
-          if (id == null) {
-            id = UUID.randomUUID().toString();
-            entity.setId(id);
-          }
-          Criteria labelCrit = new Criteria();
-          labelCrit.addField(LABEL_FIELD);
-          labelCrit.setOperation("=");
-          labelCrit.setValue(entity.getLabel());
-          Criterion crit = new Criterion(labelCrit);
-          try {
-            PostgresClient.getInstance(vertxContext.owner(), TenantTool.calculateTenantId(tenantId))
-                .get(TABLE_NAME_AGGREGATOR_SETTINGS, AggregatorSetting.class, crit, true,
-                    getReply -> {
-                      logger.debug(
-                          "Attempting to get existing aggregator settings of same id and/or label");
-                      if (getReply.failed()) {
-                        logger.debug("Attempt to get aggregator settings failed: "
-                            + getReply.cause().getMessage());
-                        asyncResultHandler
-                            .handle(Future.succeededFuture(PostAggregatorSettingsResponse
-                                .respond500WithTextPlain(getReply.cause().getMessage())));
-                      } else {
-                        List<AggregatorSetting> aggregatorList =
-                            (List<AggregatorSetting>) getReply.result().getResults();
-                        if (aggregatorList.size() > 0) {
-                          logger.debug("Aggregator setting with this id/label already exists");
-                          asyncResultHandler.handle(Future.succeededFuture(
-                              PostAggregatorSettingsResponse.respond422WithApplicationJson(
-                                  ValidationHelper.createValidationErrorMessage("'label'",
-                                      entity.getLabel(),
-                                      "Aggregator setting with this id/label already exists"))));
-                        } else {
-                          PostgresClient postgresClient =
-                              PostgresClient.getInstance(vertxContext.owner(), tenantId);
-                          postgresClient.save(TABLE_NAME_AGGREGATOR_SETTINGS, entity.getId(),
-                              entity, reply -> {
-                                try {
-                                  if (reply.succeeded()) {
-                                    logger.debug("save successful");
-                                    final AggregatorSetting aggregatorSetting = entity;
-                                    aggregatorSetting.setId(entity.getId());
-                                    OutStream stream = new OutStream();
-                                    stream.setData(aggregatorSetting);
-                                    asyncResultHandler.handle(
-                                        Future.succeededFuture(PostAggregatorSettingsResponse
-                                            .respond201WithApplicationJson(entity,
-                                                PostAggregatorSettingsResponse.headersFor201()
-                                                    .withLocation(
-                                                        LOCATION_PREFIX + entity.getId()))));
-                                  } else {
-                                    asyncResultHandler.handle(
-                                        Future.succeededFuture(PostAggregatorSettingsResponse
-                                            .respond500WithTextPlain(reply.cause().toString())));
-                                  }
-                                } catch (Exception e) {
-                                  asyncResultHandler.handle(io.vertx.core.Future
-                                      .succeededFuture(PostAggregatorSettingsResponse
-                                          .respond500WithTextPlain(e.getMessage())));
-                                }
-                              });
-                        }
-                      }
-                    });
-          } catch (Exception e) {
-            logger.error(e.getLocalizedMessage(), e);
-            asyncResultHandler.handle(
-                Future.succeededFuture(PostAggregatorSettingsResponse.respond500WithTextPlain(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-          }
-        } catch (Exception e) {
-          asyncResultHandler
-              .handle(Future.succeededFuture(PostAggregatorSettingsResponse.respond500WithTextPlain(
-                  messages.getMessage(lang, MessageConsts.InternalServerError))));
-        }
-      });
-    } catch (Exception e) {
-      asyncResultHandler.handle(Future.succeededFuture(PostAggregatorSettingsResponse
-          .respond500WithTextPlain(messages.getMessage(lang, MessageConsts.InternalServerError))));
-    }
-  }
-
-  @Override
-  @Validate
-  public void getAggregatorSettingsById(String id, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    try {
-      vertxContext.runOnContext(v -> {
-        String tenantId =
-            TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
-        try {
-          Criteria idCrit = new Criteria().addField(ID_FIELD)
-              .setJSONB(false)
-              .setOperation("=")
-              .setValue("'" + id + "'");
-          Criterion criterion = new Criterion(idCrit);
-          logger.debug("Using criterion: " + criterion.toString());
-          PostgresClient.getInstance(vertxContext.owner(), tenantId)
-              .get(TABLE_NAME_AGGREGATOR_SETTINGS, AggregatorSetting.class, criterion, true, false,
-                  getReply -> {
-                    if (getReply.failed()) {
-                      asyncResultHandler.handle(Future.succeededFuture(
-                          GetAggregatorSettingsByIdResponse.respond500WithTextPlain(
-                              messages.getMessage(lang, MessageConsts.InternalServerError))));
-                    } else {
-                      List<AggregatorSetting> aggregatorSettingList =
-                          (List<AggregatorSetting>) getReply.result().getResults();
-                      if (aggregatorSettingList.size() < 1) {
-                        asyncResultHandler
-                            .handle(Future.succeededFuture(GetAggregatorSettingsByIdResponse
-                                .respond404WithTextPlain("Aggregator setting" + messages
-                                    .getMessage(lang, MessageConsts.ObjectDoesNotExist))));
-                      } else if (aggregatorSettingList.size() > 1) {
-                        logger.debug("Multiple aggregator settings found with the same id");
-                        asyncResultHandler.handle(Future.succeededFuture(
-                            GetAggregatorSettingsByIdResponse.respond500WithTextPlain(
-                                messages.getMessage(lang, MessageConsts.InternalServerError))));
-                      } else {
-                        asyncResultHandler
-                            .handle(Future.succeededFuture(GetAggregatorSettingsByIdResponse
-                                .respond200WithApplicationJson(aggregatorSettingList.get(0))));
-                      }
-                    }
-                  });
-        } catch (Exception e) {
-          logger.debug("Error occurred: " + e.getMessage());
-          asyncResultHandler.handle(
-              Future.succeededFuture(GetAggregatorSettingsByIdResponse.respond500WithTextPlain(
-                  messages.getMessage(lang, MessageConsts.InternalServerError))));
-        }
-      });
-    } catch (Exception e) {
-      asyncResultHandler.handle(Future.succeededFuture(GetAggregatorSettingsByIdResponse
-          .respond500WithTextPlain(messages.getMessage(lang, MessageConsts.InternalServerError))));
-    }
-  }
-
-  @Override
-  @Validate
-  public void deleteAggregatorSettingsById(String id, String lang, Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
-    try {
-      vertxContext.runOnContext(v -> {
-        String tenantId =
-            TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
-        try {
-          PostgresClient.getInstance(vertxContext.owner(), tenantId)
-              .delete(TABLE_NAME_AGGREGATOR_SETTINGS, id, deleteReply -> {
-                if (deleteReply.failed()) {
-                  logger.debug("Delete failed: " + deleteReply.cause().getMessage());
-                  asyncResultHandler.handle(Future
-                      .succeededFuture(DeleteAggregatorSettingsByIdResponse.respond400WithTextPlain(
-                          "Delete failed. Maybe aggregator setting is referenced by usage data provider?")));
-                } else {
-                  asyncResultHandler.handle(
-                      Future.succeededFuture(DeleteAggregatorSettingsByIdResponse.respond204()));
-                }
-              });
-        } catch (Exception e) {
-          logger.debug("Delete failed: " + e.getMessage());
-          asyncResultHandler.handle(
-              Future.succeededFuture(DeleteAggregatorSettingsByIdResponse.respond500WithTextPlain(
-                  messages.getMessage(lang, MessageConsts.InternalServerError))));
-        }
-      });
-    } catch (Exception e) {
-      asyncResultHandler.handle(Future.succeededFuture(DeleteAggregatorSettingsByIdResponse
-          .respond500WithTextPlain(messages.getMessage(lang, MessageConsts.InternalServerError))));
-    }
-  }
-
-  @Override
-  @Validate
-  public void putAggregatorSettingsById(String id, String lang, AggregatorSetting entity,
-      Map<String, String> okapiHeaders, Handler<AsyncResult<Response>> asyncResultHandler,
-      Context vertxContext) {
-    try {
-      vertxContext.runOnContext(v -> {
-        if (!id.equals(entity.getId())) {
-          asyncResultHandler.handle(Future.succeededFuture(PutAggregatorSettingsByIdResponse
-              .respond400WithTextPlain("You cannot change the value of the id field")));
-        } else {
-          String tenantId =
-              TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
-          Criteria nameCrit = new Criteria();
-          nameCrit.addField(LABEL_FIELD);
-          nameCrit.setOperation("=");
-          nameCrit.setValue(entity.getLabel());
-          try {
-            PostgresClient.getInstance(vertxContext.owner(), tenantId)
-                .get(TABLE_NAME_AGGREGATOR_SETTINGS, AggregatorSetting.class,
-                    new Criterion(nameCrit), true, false, getReply -> {
-                      if (getReply.failed()) {
-                        logger.debug("Error querying existing aggregator settings: "
-                            + getReply.cause().getLocalizedMessage());
-                        asyncResultHandler.handle(Future.succeededFuture(
-                            PutAggregatorSettingsByIdResponse.respond500WithTextPlain(
-                                messages.getMessage(lang, MessageConsts.InternalServerError))));
-                      } else {
-                        List<AggregatorSetting> aggregatorSettingList =
-                            (List<AggregatorSetting>) getReply.result().getResults();
-                        if (aggregatorSettingList.size() > 0
-                            && (!aggregatorSettingList.get(0).getId().equals(entity.getId()))) {
-                          asyncResultHandler.handle(Future.succeededFuture(
-                              PutAggregatorSettingsByIdResponse.respond400WithTextPlain(
-                                  "Label " + entity.getLabel() + " is already in use")));
-                        } else {
-                          try {
-                            PostgresClient.getInstance(vertxContext.owner(), tenantId)
-                                .update(TABLE_NAME_AGGREGATOR_SETTINGS, entity, id, putReply -> {
-                                  try {
-                                    if (putReply.failed()) {
-                                      asyncResultHandler.handle(Future.succeededFuture(
-                                          PutAggregatorSettingsByIdResponse.respond500WithTextPlain(
-                                              putReply.cause().getMessage())));
-                                    } else {
-                                      asyncResultHandler.handle(Future.succeededFuture(
-                                          PutAggregatorSettingsByIdResponse.respond204()));
+              String id = entity.getId();
+              if (id == null) {
+                id = UUID.randomUUID().toString();
+                entity.setId(id);
+              }
+              Criteria labelCrit = new Criteria();
+              labelCrit.addField(LABEL_FIELD);
+              labelCrit.setOperation("=");
+              labelCrit.setValue(entity.getLabel());
+              Criterion crit = new Criterion(labelCrit);
+              try {
+                PostgresClient.getInstance(
+                        vertxContext.owner(), TenantTool.calculateTenantId(tenantId))
+                    .get(
+                        TABLE_NAME_AGGREGATOR_SETTINGS,
+                        AggregatorSetting.class,
+                        crit,
+                        true,
+                        getReply -> {
+                          logger.debug(
+                              "Attempting to get existing aggregator settings of same id and/or label");
+                          if (getReply.failed()) {
+                            logger.debug(
+                                "Attempt to get aggregator settings failed: "
+                                    + getReply.cause().getMessage());
+                            asyncResultHandler.handle(
+                                Future.succeededFuture(
+                                    PostAggregatorSettingsResponse.respond500WithTextPlain(
+                                        getReply.cause().getMessage())));
+                          } else {
+                            List<AggregatorSetting> aggregatorList =
+                                (List<AggregatorSetting>) getReply.result().getResults();
+                            if (aggregatorList.size() > 0) {
+                              logger.debug("Aggregator setting with this id/label already exists");
+                              asyncResultHandler.handle(
+                                  Future.succeededFuture(
+                                      PostAggregatorSettingsResponse.respond422WithApplicationJson(
+                                          ValidationHelper.createValidationErrorMessage(
+                                              "'label'",
+                                              entity.getLabel(),
+                                              "Aggregator setting with this id/label already exists"))));
+                            } else {
+                              PostgresClient postgresClient =
+                                  PostgresClient.getInstance(vertxContext.owner(), tenantId);
+                              postgresClient.save(
+                                  TABLE_NAME_AGGREGATOR_SETTINGS,
+                                  entity.getId(),
+                                  entity,
+                                  reply -> {
+                                    try {
+                                      if (reply.succeeded()) {
+                                        logger.debug("save successful");
+                                        final AggregatorSetting aggregatorSetting = entity;
+                                        aggregatorSetting.setId(entity.getId());
+                                        OutStream stream = new OutStream();
+                                        stream.setData(aggregatorSetting);
+                                        asyncResultHandler.handle(
+                                            Future.succeededFuture(
+                                                PostAggregatorSettingsResponse
+                                                    .respond201WithApplicationJson(
+                                                        entity,
+                                                        PostAggregatorSettingsResponse
+                                                            .headersFor201()
+                                                            .withLocation(
+                                                                LOCATION_PREFIX
+                                                                    + entity.getId()))));
+                                      } else {
+                                        asyncResultHandler.handle(
+                                            Future.succeededFuture(
+                                                PostAggregatorSettingsResponse
+                                                    .respond500WithTextPlain(
+                                                        reply.cause().toString())));
+                                      }
+                                    } catch (Exception e) {
+                                      asyncResultHandler.handle(
+                                          io.vertx.core.Future.succeededFuture(
+                                              PostAggregatorSettingsResponse
+                                                  .respond500WithTextPlain(e.getMessage())));
                                     }
-                                  } catch (Exception e) {
-                                    asyncResultHandler.handle(
-                                        Future.succeededFuture(PutAggregatorSettingsByIdResponse
-                                            .respond500WithTextPlain(messages.getMessage(lang,
-                                                MessageConsts.InternalServerError))));
-                                  }
-                                });
-                          } catch (Exception e) {
-                            asyncResultHandler.handle(Future.succeededFuture(
-                                PutAggregatorSettingsByIdResponse.respond500WithTextPlain(
-                                    messages.getMessage(lang, MessageConsts.InternalServerError))));
+                                  });
+                            }
+                          }
+                        });
+              } catch (Exception e) {
+                logger.error(e.getLocalizedMessage(), e);
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        PostAggregatorSettingsResponse.respond500WithTextPlain(
+                            messages.getMessage(lang, MessageConsts.InternalServerError))));
+              }
+            } catch (Exception e) {
+              asyncResultHandler.handle(
+                  Future.succeededFuture(
+                      PostAggregatorSettingsResponse.respond500WithTextPlain(
+                          messages.getMessage(lang, MessageConsts.InternalServerError))));
+            }
+          });
+    } catch (Exception e) {
+      asyncResultHandler.handle(
+          Future.succeededFuture(
+              PostAggregatorSettingsResponse.respond500WithTextPlain(
+                  messages.getMessage(lang, MessageConsts.InternalServerError))));
+    }
+  }
+
+  @Override
+  @Validate
+  public void getAggregatorSettingsById(
+      String id,
+      String lang,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+    try {
+      vertxContext.runOnContext(
+          v -> {
+            String tenantId =
+                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            try {
+              Criteria idCrit =
+                  new Criteria()
+                      .addField(ID_FIELD)
+                      .setJSONB(false)
+                      .setOperation("=")
+                      .setValue("'" + id + "'");
+              Criterion criterion = new Criterion(idCrit);
+              logger.debug("Using criterion: " + criterion.toString());
+              PostgresClient.getInstance(vertxContext.owner(), tenantId)
+                  .get(
+                      TABLE_NAME_AGGREGATOR_SETTINGS,
+                      AggregatorSetting.class,
+                      criterion,
+                      true,
+                      false,
+                      getReply -> {
+                        if (getReply.failed()) {
+                          asyncResultHandler.handle(
+                              Future.succeededFuture(
+                                  GetAggregatorSettingsByIdResponse.respond500WithTextPlain(
+                                      messages.getMessage(
+                                          lang, MessageConsts.InternalServerError))));
+                        } else {
+                          List<AggregatorSetting> aggregatorSettingList =
+                              (List<AggregatorSetting>) getReply.result().getResults();
+                          if (aggregatorSettingList.size() < 1) {
+                            asyncResultHandler.handle(
+                                Future.succeededFuture(
+                                    GetAggregatorSettingsByIdResponse.respond404WithTextPlain(
+                                        "Aggregator setting"
+                                            + messages.getMessage(
+                                                lang, MessageConsts.ObjectDoesNotExist))));
+                          } else if (aggregatorSettingList.size() > 1) {
+                            logger.debug("Multiple aggregator settings found with the same id");
+                            asyncResultHandler.handle(
+                                Future.succeededFuture(
+                                    GetAggregatorSettingsByIdResponse.respond500WithTextPlain(
+                                        messages.getMessage(
+                                            lang, MessageConsts.InternalServerError))));
+                          } else {
+                            asyncResultHandler.handle(
+                                Future.succeededFuture(
+                                    GetAggregatorSettingsByIdResponse.respond200WithApplicationJson(
+                                        aggregatorSettingList.get(0))));
                           }
                         }
-                      }
-                    });
-          } catch (Exception e) {
-            logger.debug(e.getLocalizedMessage());
-            asyncResultHandler.handle(
-                Future.succeededFuture(PutAggregatorSettingsByIdResponse.respond500WithTextPlain(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-          }
-        }
-      });
+                      });
+            } catch (Exception e) {
+              logger.debug("Error occurred: " + e.getMessage());
+              asyncResultHandler.handle(
+                  Future.succeededFuture(
+                      GetAggregatorSettingsByIdResponse.respond500WithTextPlain(
+                          messages.getMessage(lang, MessageConsts.InternalServerError))));
+            }
+          });
+    } catch (Exception e) {
+      asyncResultHandler.handle(
+          Future.succeededFuture(
+              GetAggregatorSettingsByIdResponse.respond500WithTextPlain(
+                  messages.getMessage(lang, MessageConsts.InternalServerError))));
+    }
+  }
+
+  @Override
+  @Validate
+  public void deleteAggregatorSettingsById(
+      String id,
+      String lang,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+    try {
+      vertxContext.runOnContext(
+          v -> {
+            String tenantId =
+                TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+            try {
+              PostgresClient.getInstance(vertxContext.owner(), tenantId)
+                  .delete(
+                      TABLE_NAME_AGGREGATOR_SETTINGS,
+                      id,
+                      deleteReply -> {
+                        if (deleteReply.failed()) {
+                          logger.debug("Delete failed: " + deleteReply.cause().getMessage());
+                          asyncResultHandler.handle(
+                              Future.succeededFuture(
+                                  DeleteAggregatorSettingsByIdResponse.respond400WithTextPlain(
+                                      "Delete failed. Maybe aggregator setting is referenced by usage data provider?")));
+                        } else {
+                          asyncResultHandler.handle(
+                              Future.succeededFuture(
+                                  DeleteAggregatorSettingsByIdResponse.respond204()));
+                        }
+                      });
+            } catch (Exception e) {
+              logger.debug("Delete failed: " + e.getMessage());
+              asyncResultHandler.handle(
+                  Future.succeededFuture(
+                      DeleteAggregatorSettingsByIdResponse.respond500WithTextPlain(
+                          messages.getMessage(lang, MessageConsts.InternalServerError))));
+            }
+          });
+    } catch (Exception e) {
+      asyncResultHandler.handle(
+          Future.succeededFuture(
+              DeleteAggregatorSettingsByIdResponse.respond500WithTextPlain(
+                  messages.getMessage(lang, MessageConsts.InternalServerError))));
+    }
+  }
+
+  @Override
+  @Validate
+  public void putAggregatorSettingsById(
+      String id,
+      String lang,
+      AggregatorSetting entity,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+    try {
+      vertxContext.runOnContext(
+          v -> {
+            if (!id.equals(entity.getId())) {
+              asyncResultHandler.handle(
+                  Future.succeededFuture(
+                      PutAggregatorSettingsByIdResponse.respond400WithTextPlain(
+                          "You cannot change the value of the id field")));
+            } else {
+              String tenantId =
+                  TenantTool.calculateTenantId(okapiHeaders.get(Constants.OKAPI_HEADER_TENANT));
+              Criteria nameCrit = new Criteria();
+              nameCrit.addField(LABEL_FIELD);
+              nameCrit.setOperation("=");
+              nameCrit.setValue(entity.getLabel());
+              try {
+                PostgresClient.getInstance(vertxContext.owner(), tenantId)
+                    .get(
+                        TABLE_NAME_AGGREGATOR_SETTINGS,
+                        AggregatorSetting.class,
+                        new Criterion(nameCrit),
+                        true,
+                        false,
+                        getReply -> {
+                          if (getReply.failed()) {
+                            logger.debug(
+                                "Error querying existing aggregator settings: "
+                                    + getReply.cause().getLocalizedMessage());
+                            asyncResultHandler.handle(
+                                Future.succeededFuture(
+                                    PutAggregatorSettingsByIdResponse.respond500WithTextPlain(
+                                        messages.getMessage(
+                                            lang, MessageConsts.InternalServerError))));
+                          } else {
+                            List<AggregatorSetting> aggregatorSettingList =
+                                (List<AggregatorSetting>) getReply.result().getResults();
+                            if (aggregatorSettingList.size() > 0
+                                && (!aggregatorSettingList.get(0).getId().equals(entity.getId()))) {
+                              asyncResultHandler.handle(
+                                  Future.succeededFuture(
+                                      PutAggregatorSettingsByIdResponse.respond400WithTextPlain(
+                                          "Label " + entity.getLabel() + " is already in use")));
+                            } else {
+                              try {
+                                PostgresClient.getInstance(vertxContext.owner(), tenantId)
+                                    .update(
+                                        TABLE_NAME_AGGREGATOR_SETTINGS,
+                                        entity,
+                                        id,
+                                        putReply -> {
+                                          try {
+                                            if (putReply.failed()) {
+                                              asyncResultHandler.handle(
+                                                  Future.succeededFuture(
+                                                      PutAggregatorSettingsByIdResponse
+                                                          .respond500WithTextPlain(
+                                                              putReply.cause().getMessage())));
+                                            } else {
+                                              asyncResultHandler.handle(
+                                                  Future.succeededFuture(
+                                                      PutAggregatorSettingsByIdResponse
+                                                          .respond204()));
+                                            }
+                                          } catch (Exception e) {
+                                            asyncResultHandler.handle(
+                                                Future.succeededFuture(
+                                                    PutAggregatorSettingsByIdResponse
+                                                        .respond500WithTextPlain(
+                                                            messages.getMessage(
+                                                                lang,
+                                                                MessageConsts
+                                                                    .InternalServerError))));
+                                          }
+                                        });
+                              } catch (Exception e) {
+                                asyncResultHandler.handle(
+                                    Future.succeededFuture(
+                                        PutAggregatorSettingsByIdResponse.respond500WithTextPlain(
+                                            messages.getMessage(
+                                                lang, MessageConsts.InternalServerError))));
+                              }
+                            }
+                          }
+                        });
+              } catch (Exception e) {
+                logger.debug(e.getLocalizedMessage());
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        PutAggregatorSettingsByIdResponse.respond500WithTextPlain(
+                            messages.getMessage(lang, MessageConsts.InternalServerError))));
+              }
+            }
+          });
     } catch (Exception e) {
       logger.debug(e.getLocalizedMessage());
-      asyncResultHandler.handle(Future.succeededFuture(PutAggregatorSettingsByIdResponse
-          .respond500WithTextPlain(messages.getMessage(lang, MessageConsts.InternalServerError))));
+      asyncResultHandler.handle(
+          Future.succeededFuture(
+              PutAggregatorSettingsByIdResponse.respond500WithTextPlain(
+                  messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
   }
 }

@@ -37,8 +37,7 @@ public class CounterReportIT {
   private static CounterReport report;
   private static CounterReport reportChanged;
 
-  @Rule
-  public Timeout timeout = Timeout.seconds(10);
+  @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void setUp(TestContext context) {
@@ -46,10 +45,10 @@ public class CounterReportIT {
 
     try {
       String reportStr =
-        new String(Files.readAllBytes(Paths.get("../ramls/examples/counterreport.sample")));
+          new String(Files.readAllBytes(Paths.get("../ramls/examples/counterreport.sample")));
       report = Json.decodeValue(reportStr, CounterReport.class);
       reportChanged =
-        Json.decodeValue(reportStr, CounterReport.class).withCustomerId("CUSTOMER_ID_CHANGED");
+          Json.decodeValue(reportStr, CounterReport.class).withCustomerId("CUSTOMER_ID_CHANGED");
     } catch (Exception ex) {
       context.fail(ex);
     }
@@ -73,156 +72,174 @@ public class CounterReportIT {
 
     TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
-      new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
-    vertx.deployVerticle(RestVerticle.class.getName(), options, res -> {
-      try {
-        tenantClient.postTenant(null, res2 -> {
-          async.complete();
+        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
+    vertx.deployVerticle(
+        RestVerticle.class.getName(),
+        options,
+        res -> {
+          try {
+            tenantClient.postTenant(
+                null,
+                res2 -> {
+                  async.complete();
+                });
+          } catch (Exception e) {
+            context.fail(e);
+          }
         });
-      } catch (Exception e) {
-        context.fail(e);
-      }
-    });
   }
 
   @AfterClass
   public static void teardown(TestContext context) {
     RestAssured.reset();
     Async async = context.async();
-    vertx.close(context.asyncAssertSuccess(res -> {
-      PostgresClient.stopEmbeddedPostgres();
-      async.complete();
-    }));
+    vertx.close(
+        context.asyncAssertSuccess(
+            res -> {
+              PostgresClient.stopEmbeddedPostgres();
+              async.complete();
+            }));
   }
 
   @Test
   public void checkThatWeCanAddGetPutAndDeleteCounterReports() {
     // POST
-    given().body(Json.encode(report))
-      .header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", APPLICATION_JSON)
-      .post(BASE_URI)
-      .then()
-      .statusCode(201)
-      .body("release", equalTo(report.getRelease()))
-      .body("customerId", equalTo(report.getCustomerId()))
-      .body("id", equalTo(report.getId()));
+    given()
+        .body(Json.encode(report))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201)
+        .body("release", equalTo(report.getRelease()))
+        .body("customerId", equalTo(report.getCustomerId()))
+        .body("id", equalTo(report.getId()));
 
     // GET
-    given().header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", APPLICATION_JSON)
-      .get(BASE_URI + "/" + report.getId())
-      .then()
-      .contentType(ContentType.JSON)
-      .statusCode(200)
-      .body("id", equalTo(report.getId()))
-      .body("customerId", equalTo(report.getCustomerId()));
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + "/" + report.getId())
+        .then()
+        .contentType(ContentType.JSON)
+        .statusCode(200)
+        .body("id", equalTo(report.getId()))
+        .body("customerId", equalTo(report.getCustomerId()));
 
     // PUT
-    given().body(Json.encode(reportChanged))
-      .header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", "text/plain")
-      .put(BASE_URI + "/" + report.getId())
-      .then()
-      .statusCode(204);
+    given()
+        .body(Json.encode(reportChanged))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .put(BASE_URI + "/" + report.getId())
+        .then()
+        .statusCode(204);
 
     // GET again
-    given().header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", APPLICATION_JSON)
-      .get(BASE_URI + "/" + report.getId())
-      .then()
-      .statusCode(200)
-      .body("id", equalTo(reportChanged.getId()))
-      .body("customerId", equalTo(reportChanged.getCustomerId()));
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + "/" + report.getId())
+        .then()
+        .statusCode(200)
+        .body("id", equalTo(reportChanged.getId()))
+        .body("customerId", equalTo(reportChanged.getCustomerId()));
 
     // DELETE
-    given().header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", "text/plain")
-      .delete(BASE_URI + "/" + report.getId())
-      .then()
-      .statusCode(204);
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(BASE_URI + "/" + report.getId())
+        .then()
+        .statusCode(204);
 
     // GET again
-    given().header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", APPLICATION_JSON)
-      .get(BASE_URI + "/" + report.getId())
-      .then()
-      .statusCode(404);
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + "/" + report.getId())
+        .then()
+        .statusCode(404);
   }
 
   @Test
   public void checkThatWeCanSearchByCQL() {
-    given().body(Json.encode(report))
-      .header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", APPLICATION_JSON)
-      .post(BASE_URI)
-      .then()
-      .statusCode(201)
-      .body("id", equalTo(report.getId()));
+    given()
+        .body(Json.encode(report))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201)
+        .body("id", equalTo(report.getId()));
 
     String cqlReport = "?query=(report=\"ReportResponse*\")";
-    given().header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", APPLICATION_JSON)
-      .get(BASE_URI + cqlReport)
-      .then()
-      .contentType(ContentType.JSON)
-      .statusCode(200)
-      .body("counterReports.size()", equalTo(1))
-      .body("counterReports[0].id", equalTo(report.getId()))
-      .body("counterReports[0].customerId", equalTo(report.getCustomerId()))
-      .body("counterReports[0].release", equalTo(report.getRelease()));
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + cqlReport)
+        .then()
+        .contentType(ContentType.JSON)
+        .statusCode(200)
+        .body("counterReports.size()", equalTo(1))
+        .body("counterReports[0].id", equalTo(report.getId()))
+        .body("counterReports[0].customerId", equalTo(report.getCustomerId()))
+        .body("counterReports[0].release", equalTo(report.getRelease()));
 
     String cqlReport2 = "?query=(report=\"ReportResponse123*\")";
-    given().header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", APPLICATION_JSON)
-      .get(BASE_URI + cqlReport2)
-      .then()
-      .contentType(ContentType.JSON)
-      .statusCode(200)
-      .body("counterReports.size()", equalTo(0));
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + cqlReport2)
+        .then()
+        .contentType(ContentType.JSON)
+        .statusCode(200)
+        .body("counterReports.size()", equalTo(0));
 
     String cqlReportName = "?query=(reportName==\"JR1\")";
-    given().header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", APPLICATION_JSON)
-      .get(BASE_URI + cqlReportName)
-      .then()
-      .contentType(ContentType.JSON)
-      .statusCode(200)
-      .body("counterReports.size()", equalTo(1))
-      .body("counterReports[0].id", equalTo(report.getId()))
-      .body("counterReports[0].customerId", equalTo(report.getCustomerId()))
-      .body("counterReports[0].release", equalTo(report.getRelease()));
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + cqlReportName)
+        .then()
+        .contentType(ContentType.JSON)
+        .statusCode(200)
+        .body("counterReports.size()", equalTo(1))
+        .body("counterReports[0].id", equalTo(report.getId()))
+        .body("counterReports[0].customerId", equalTo(report.getCustomerId()))
+        .body("counterReports[0].release", equalTo(report.getRelease()));
 
     // DELETE
-    given().header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", "text/plain")
-      .delete(BASE_URI + "/" + report.getId())
-      .then()
-      .statusCode(204);
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(BASE_URI + "/" + report.getId())
+        .then()
+        .statusCode(204);
   }
 
   @Test
   public void checkThatInvalidCounterReportIsNotPosted() {
     CounterReport invalidReport =
-      Json.decodeValue(Json.encode(report), CounterReport.class).withYearMonth(null);
-    given().body(Json.encode(invalidReport))
-      .header("X-Okapi-Tenant", TENANT)
-      .header("content-type", APPLICATION_JSON)
-      .header("accept", APPLICATION_JSON)
-      .post(BASE_URI)
-      .then()
-      .statusCode(422);
+        Json.decodeValue(Json.encode(report), CounterReport.class).withYearMonth(null);
+    given()
+        .body(Json.encode(invalidReport))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(422);
   }
-
 }
