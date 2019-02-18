@@ -539,10 +539,13 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                   asyncResultHandler.handle(
                       Future.succeededFuture(
                           GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
-                              "Empty report data or no mapper available")));
+                              "No report data or no mapper available")));
                 }
               } else {
-                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
+                            ar.cause().getMessage())));
               }
             });
   }
