@@ -55,10 +55,10 @@ public class CounterReportCsvIT {
 
     try {
       String reportStr =
-          new String(Files.readAllBytes(Paths.get("../ramls/examples/counterreport3.sample.json")));
+          new String(Files.readAllBytes(Paths.get("../ramls/examples/counterreport.sample")));
       counterReport = Json.decodeValue(reportStr, CounterReport.class);
       expected =
-          Resources.toString(Resources.getResource("JR1/counterreport3.csv"), Charsets.UTF_8)
+          Resources.toString(Resources.getResource("JR1/counterreport.csv"), Charsets.UTF_8)
               .replace("$$$date_run$$$", LocalDate.now().toString());
     } catch (Exception ex) {
       context.fail(ex);

@@ -179,7 +179,7 @@ public class CounterReportIT {
         .statusCode(201)
         .body("id", equalTo(report.getId()));
 
-    String cqlReport = "?query=(report=\"ReportResponse*\")";
+    String cqlReport = "?query=(report=\"semantico*\")";
     given()
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
@@ -193,7 +193,7 @@ public class CounterReportIT {
         .body("counterReports[0].customerId", equalTo(report.getCustomerId()))
         .body("counterReports[0].release", equalTo(report.getRelease()));
 
-    String cqlReport2 = "?query=(report=\"ReportResponse123*\")";
+    String cqlReport2 = "?query=(report=\"someStringThatIsNotInTheReport*\")";
     given()
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
