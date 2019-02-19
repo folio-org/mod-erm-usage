@@ -161,6 +161,15 @@
           "permissionsRequired": [
             "counterreports.item.get"
           ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/counter-reports/csv/provider/{id}/report/{name}/from/{begin}/to/{end}",
+          "permissionsRequired": [
+            "counterreports.item.get"
+          ]
         }
       ]
     },

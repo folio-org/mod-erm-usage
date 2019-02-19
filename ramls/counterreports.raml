@@ -69,4 +69,11 @@ resourceTypes:
             description: Server Error
             body:
               text/plain:
-                      
+    /provider/{id}/report/{name}/from/{begin}/to/{end}:
+      get:
+        description: Get report for several months as CSV for a provider id
+        responses:
+          501:
+            description: Not Implemented
+            body:
+              text/plain:

@@ -549,4 +549,19 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               }
             });
   }
+
+  @Override
+  public void getCounterReportsCsvProviderReportFromToByIdAndNameAndBeginAndEnd(
+      String id,
+      String name,
+      String begin,
+      String end,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+    asyncResultHandler.handle(
+        Future.succeededFuture(
+            GetCounterReportsCsvProviderReportFromToByIdAndNameAndBeginAndEndResponse
+                .respond501WithTextPlain("Not implemented.")));
+  }
 }
