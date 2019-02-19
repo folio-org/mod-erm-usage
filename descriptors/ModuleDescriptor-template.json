@@ -1,5 +1,5 @@
 {
-  "id": "${artifactId}-${version}",
+  "id": "${project.artifactId}-${project.version}",
   "name": "erm-usage",
   "provides": [
     {
@@ -151,6 +151,24 @@
           "pathPattern": "/counter-reports/{id}",
           "permissionsRequired": [
             "counterreports.item.delete"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/counter-reports/csv/{id}",
+          "permissionsRequired": [
+            "counterreports.item.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/counter-reports/csv/provider/{id}/report/{name}/from/{begin}/to/{end}",
+          "permissionsRequired": [
+            "counterreports.item.get"
           ]
         }
       ]
@@ -327,7 +345,7 @@
     }
   ],
   "launchDescriptor": {
-    "dockerImage": "${artifactId}:${version}",
+    "dockerImage": "${project.artifactId}:${project.version}",
     "dockerArgs": {
       "HostConfig": {
         "PortBindings": {

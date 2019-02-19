@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.olf</groupId>
@@ -12,24 +14,27 @@
     <version>2.0.0-SNAPSHOT</version>
   </parent>
 
-  <properties>
-    <!-- TODO: util path needed? -->
-    <ramlfiles_util_path>${project.parent.basedir}/raml/raml-util</ramlfiles_util_path>
-    <postgresrunner.port>5434</postgresrunner.port>
-    <!-- Postgres port for Jenkins CI build environment https://issues.folio.org/browse/METADATA-10 -->
-    <postgres.port>5433</postgres.port>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.folio</groupId>
       <artifactId>domain-models-runtime</artifactId>
       <version>${raml-module-builder.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.module</groupId>
+          <artifactId>jackson-module-jaxb-annotations</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.folio.okapi</groupId>
       <artifactId>okapi-common</artifactId>
       <version>${okapi.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.olf</groupId>
+      <artifactId>mod-erm-usage-counter41</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -54,9 +59,9 @@
       <type>jar</type>
     </dependency>
     <dependency>
-      <groupId>com.jayway.restassured</groupId>
+      <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
-      <version>2.4.0</version>
+      <version>3.3.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -180,38 +185,6 @@
         <executions>
           <execution>
             <id>copy-resources</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${basedir}/target/classes/apidocs/raml</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${ramlfiles_path}</directory>
-                  <filtering>true</filtering>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-resources-2</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${basedir}/target/classes/apidocs/raml-util</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${ramlfiles_util_path}</directory>
-                  <filtering>true</filtering>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-resources-3</id>
             <phase>process-resources</phase>
             <goals>
               <goal>copy-resources</goal>
@@ -236,7 +209,7 @@
               <outputDirectory>${project.build.directory}</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${project.basedir}/descriptors</directory>
+                  <directory>${project.parent.basedir}/descriptors</directory>
                   <include>*Descriptor-template.json</include>
                   <filtering>true</filtering>
                 </resource>
@@ -313,14 +286,20 @@
             <phase>prepare-package</phase>
             <configuration>
               <target>
-                <replace token="baseUri: http://github.com/org/folio/mod-users" value="baseUri: http://localhost:{http.port}" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
+                <replace
+                  token="baseUri: http://github.com/org/folio/mod-users"
+                  value="baseUri: http://localhost:{http.port}"
+                  dir="${basedir}/target/classes/apidocs/raml">
+                  <include name="**/*.raml"/>
                 </replace>
-                <replace token="protocols: [ HTTPS ]" value="protocols: [ HTTP ]" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
+                <replace token="protocols: [ HTTPS ]"
+                  value="protocols: [ HTTP ]"
+                  dir="${basedir}/target/classes/apidocs/raml">
+                  <include name="**/*.raml"/>
                 </replace>
-                <replace token="../.." value="../raml-util" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
+                <replace token="../.." value="../raml-util"
+                  dir="${basedir}/target/classes/apidocs/raml">
+                  <include name="**/*.raml"/>
                 </replace>
               </target>
             </configuration>
@@ -364,14 +343,15 @@
             </goals>
             <configuration>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
                     <Main-Class>org.folio.rest.RestLauncher</Main-Class>
                     <Main-Verticle>org.folio.rest.RestVerticle</Main-Verticle>
                   </manifestEntries>
                 </transformer>
               </transformers>
-              <artifactSet />
+              <artifactSet/>
               <outputFile>${project.build.directory}/${project.artifactId}-fat.jar</outputFile>
             </configuration>
           </execution>

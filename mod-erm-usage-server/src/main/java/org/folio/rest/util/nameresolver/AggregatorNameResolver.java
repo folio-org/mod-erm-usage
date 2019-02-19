@@ -19,8 +19,8 @@ public class AggregatorNameResolver {
     throw new IllegalStateException("Utility class");
   }
 
-  public static Future<String> resolveName(String aggregatorId, String okapiUrl,
-    Map<String, String> okapiHeaders, Vertx vertx) {
+  public static Future<String> resolveName(
+      String aggregatorId, String okapiUrl, Map<String, String> okapiHeaders, Vertx vertx) {
     Future<String> future = Future.future();
 
     if (aggregatorId == null) {
@@ -36,22 +36,24 @@ public class AggregatorNameResolver {
     okapiHeaders.forEach(request::putHeader);
     request.putHeader("accept", "application/json");
 
-    request.send(ar -> {
-      if (ar.succeeded()) {
-        if (ar.result().statusCode() == 200) {
-          JsonObject vendorJson = ar.result().bodyAsJsonObject();
-          String aggregatorName = vendorJson.getString("label");
-          LOG.info("Found aggregator name " + aggregatorName + " for id " + aggregatorId);
-          future.complete(aggregatorName);
-        } else {
-          future
-            .fail("Got status code != 200 when fetching aggregator. Got code: " + ar.result()
-              .statusCode() + ". Maybe aggregator id is not correct?");
-        }
-      } else {
-        future.fail(ar.cause());
-      }
-    });
+    request.send(
+        ar -> {
+          if (ar.succeeded()) {
+            if (ar.result().statusCode() == 200) {
+              JsonObject vendorJson = ar.result().bodyAsJsonObject();
+              String aggregatorName = vendorJson.getString("label");
+              LOG.info("Found aggregator name " + aggregatorName + " for id " + aggregatorId);
+              future.complete(aggregatorName);
+            } else {
+              future.fail(
+                  "Got status code != 200 when fetching aggregator. Got code: "
+                      + ar.result().statusCode()
+                      + ". Maybe aggregator id is not correct?");
+            }
+          } else {
+            future.fail(ar.cause());
+          }
+        });
     return future;
   }
 }
