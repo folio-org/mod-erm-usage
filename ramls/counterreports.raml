@@ -77,3 +77,19 @@ resourceTypes:
             description: Not Implemented
             body:
               text/plain:
+  /upload/provider/{id}:
+    description: Upload a report from file for a provider identified by id
+    post:
+      body:
+        application/octet-stream:
+      responses: 
+        200:
+          body:
+            text/plain:
+        404:
+          body:
+            text/plain:
+        500:
+          body:
+            text/plain:
+      

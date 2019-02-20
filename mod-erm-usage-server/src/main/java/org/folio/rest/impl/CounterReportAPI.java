@@ -1,11 +1,14 @@
 package org.folio.rest.impl;
 
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import javax.ws.rs.core.Response;
+import org.apache.commons.codec.Charsets;
+import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -563,5 +566,27 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         Future.succeededFuture(
             GetCounterReportsCsvProviderReportFromToByIdAndNameAndBeginAndEndResponse
                 .respond501WithTextPlain("Not implemented.")));
+  }
+
+  @Override
+  public void postCounterReportsUploadProviderById(
+      String id,
+      InputStream entity,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+
+    String content = null;
+    try {
+      content = IOUtils.toString(entity, Charsets.UTF_8);
+    } catch (Exception e) {
+      asyncResultHandler.handle(
+          Future.succeededFuture(
+              PostCounterReportsUploadProviderByIdResponse.respond500WithTextPlain(e)));
+    }
+
+    asyncResultHandler.handle(
+        Future.succeededFuture(
+            PostCounterReportsUploadProviderByIdResponse.respond200WithTextPlain("OK" + content)));
   }
 }
