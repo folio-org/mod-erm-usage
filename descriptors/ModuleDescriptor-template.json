@@ -190,7 +190,7 @@
   ],
   "requires": [
     {
-      "id": "vendor",
+      "id": "vendor-storage.vendors",
       "version": "1.0"
     }
   ],

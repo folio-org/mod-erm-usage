@@ -13,7 +13,7 @@ public class VendorNameResolver {
 
   private static final Logger LOG = Logger.getLogger(VendorNameResolver.class);
 
-  private static final String VENDOR_ENDPOINT = "/vendor/";
+    private static final String VENDOR_ENDPOINT = "/vendor-storage/vendors/";
 
   private VendorNameResolver() {
     throw new IllegalStateException("Utility class");
