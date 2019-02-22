@@ -1,0 +1,27 @@
+{
+  "id": "4b659cb9-e4bb-493d-ae30-5f5690c54802",
+  "label": "JSTOR",
+	"vendor": {
+      "id": "48b1c9c4-cfb6-47fc-b34f-cff9cd2f8240"
+     },
+    "platform": {
+      "id": "uuid-123456789"
+    },
+	"harvestingConfig": {
+    "harvestingStatus": "active",
+    "harvestVia": "sushi",
+    "sushiConfig": {
+      "serviceType": "cs41",
+      "serviceUrl": "http://www.jstor.org/sushi"
+    },
+    "reportRelease": 4,
+    "requestedReports": [
+      "JR1"
+    ],
+    "harvestingStart": "2018-11"
+  },
+	"sushiCredentials": {
+    "customerId": "abc",
+    "requestorId": "123"
+  }
+}
