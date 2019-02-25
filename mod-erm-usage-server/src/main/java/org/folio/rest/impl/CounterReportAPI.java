@@ -1,16 +1,23 @@
 package org.folio.rest.impl;
 
+import java.io.InputStream;
+import java.time.Instant;
+import java.time.YearMonth;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import javax.ws.rs.core.Response;
+import org.apache.commons.codec.Charsets;
+import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.CounterReportsGetOrder;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -21,6 +28,7 @@ import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
+import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
@@ -37,6 +45,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
 
   private static final String ID_FIELD = "_id";
   private static final String TABLE_NAME_COUNTER_REPORTS = "counter_reports";
+  private static final String TABLE_NAME_UDP = "usage_data_providers";
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
 
@@ -563,5 +572,160 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         Future.succeededFuture(
             GetCounterReportsCsvProviderReportFromToByIdAndNameAndBeginAndEndResponse
                 .respond501WithTextPlain("Not implemented.")));
+  }
+
+  @Override
+  public void postCounterReportsUploadProviderById(
+      String id,
+      InputStream entity,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+    Vertx vertx = vertxContext.owner();
+    String tenantId = okapiHeaders.get(XOkapiHeaders.TENANT);
+
+    CounterReport counterReport;
+    try {
+      counterReport = getCounterReportFromInputStream(entity);
+    } catch (Exception e) {
+      asyncResultHandler.handle(
+          Future.succeededFuture(
+              PostCounterReportsUploadProviderByIdResponse.respond500WithTextPlain(
+                  String.format("Error uploading file: %s", e.getMessage()))));
+      return;
+    }
+
+    getUDPfromDbById(vertx, tenantId, id)
+        .compose(
+            udp ->
+                Future.succeededFuture(
+                    counterReport
+                        .withProviderId(udp.getId())
+                        .withDownloadTime(Date.from(Instant.now()))))
+        .compose(cr -> saveCounterReportToDb(vertx, tenantId, cr, true))
+        .setHandler(
+            ar -> {
+              if (ar.succeeded()) {
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        PostCounterReportsUploadProviderByIdResponse.respond200WithTextPlain(
+                            String.format("Saved report with id %s", ar.result()))));
+              } else {
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        PostCounterReportsUploadProviderByIdResponse.respond500WithTextPlain(
+                            String.format("Error saving report: %s", ar.cause()))));
+              }
+            });
+  }
+
+  class FileUploadException extends Exception {
+
+    private static final long serialVersionUID = -3795351043189447151L;
+
+    public FileUploadException(String message) {
+      super(message);
+    }
+
+    public FileUploadException(Exception e) {
+      super(e);
+    }
+  }
+
+  private CounterReport getCounterReportFromInputStream(InputStream entity)
+      throws FileUploadException {
+    String content;
+    try {
+      content = IOUtils.toString(entity, Charsets.UTF_8);
+    } catch (Exception e) {
+      throw new FileUploadException(e);
+    }
+
+    // Counter4
+    Report report = Counter4Utils.fromString(content);
+    if (report != null) {
+      List<YearMonth> yearMonthsFromReport = Counter4Utils.getYearMonthsFromReport(report);
+      if (yearMonthsFromReport.size() != 1) {
+        throw new FileUploadException(
+            "Provided report can only cover a period of exactly one month");
+      }
+      return new CounterReport()
+          .withCustomerId(report.getCustomer().get(0).getID())
+          .withRelease(report.getVersion())
+          .withReportName(Counter4Utils.getNameForReportTitle(report.getName()))
+          .withReport(
+              Json.decodeValue(
+                  Counter4Utils.toJSON(report), org.folio.rest.jaxrs.model.Report.class))
+          .withYearMonth(yearMonthsFromReport.get(0).toString());
+    }
+
+    throw new FileUploadException("Wrong format supplied");
+  }
+
+  private Future<UsageDataProvider> getUDPfromDbById(Vertx vertx, String tenantId, String id) {
+    Future<UsageDataProvider> udpFuture = Future.future();
+    PostgresClient.getInstance(vertx, tenantId)
+        .getById(
+            TABLE_NAME_UDP,
+            id,
+            UsageDataProvider.class,
+            ar -> {
+              if (ar.succeeded()) {
+                if (ar.result() != null) {
+                  udpFuture.complete(ar.result());
+                } else {
+                  udpFuture.fail(String.format("Provider with id %s not found", id));
+                }
+              } else {
+                udpFuture.fail(
+                    String.format(
+                        "Unable to get usage data provider with id %s: %s", id, ar.cause()));
+              }
+            });
+    return udpFuture;
+  }
+
+  private Future<String> saveCounterReportToDb(
+      Vertx vertx, String tenantId, CounterReport counterReport, boolean overwrite) {
+
+    // check if CounterReport already exists
+    Future<String> idFuture = Future.future();
+    PostgresClient.getInstance(vertx, tenantId)
+        .get(
+            TABLE_NAME_COUNTER_REPORTS,
+            // select the properties we want to check for
+            new CounterReport()
+                .withProviderId(counterReport.getProviderId())
+                .withReportName(counterReport.getReportName())
+                .withRelease(counterReport.getRelease())
+                .withYearMonth(counterReport.getYearMonth()),
+            false,
+            h -> {
+              if (h.succeeded()) {
+                int resultSize = h.result().getResults().size();
+                if (resultSize == 1) {
+                  idFuture.complete(h.result().getResults().get(0).getId());
+                } else if (resultSize > 1) {
+                  idFuture.fail("Too many results");
+                } else {
+                  idFuture.complete(null);
+                }
+              } else {
+                idFuture.fail(h.cause());
+              }
+            });
+
+    // save report
+    return idFuture.compose(
+        id -> {
+          if (id != null && !overwrite) {
+            return Future.failedFuture("Report already exists");
+          }
+
+          Future<String> upsertFuture = Future.future();
+          PostgresClient.getInstance(vertx, tenantId)
+              .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertFuture::handle);
+          return upsertFuture;
+        });
   }
 }

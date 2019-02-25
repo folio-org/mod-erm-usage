@@ -170,6 +170,15 @@
           "permissionsRequired": [
             "counterreports.item.get"
           ]
+        },
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/counter-reports/upload/provider/{id}",
+          "permissionsRequired": [
+            "counterreports.item.post"
+          ]
         }
       ]
     },
