@@ -146,7 +146,7 @@ public class CounterReportUploadIT {
             });
   }
 
-  private void testThatDBIsEmpty() {
+  private void testThatDBSizeIsSize(int i) {
     int size =
         get("/counter-reports")
             .then()
@@ -155,7 +155,11 @@ public class CounterReportUploadIT {
             .as(CounterReports.class)
             .getCounterReports()
             .size();
-    assertThat(size).isEqualTo(0);
+    assertThat(size).isEqualTo(i);
+  }
+
+  private void testThatDBIsEmpty() {
+    testThatDBSizeIsSize(0);
   }
 
   @Test
@@ -183,6 +187,65 @@ public class CounterReportUploadIT {
     Report reportFromXML = JAXB.unmarshal(FILE_REPORT_OK, Report.class);
     Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
     assertThat(reportFromXML).isEqualToComparingFieldByFieldRecursively(reportFromDB);
+
+    given().delete("/counter-reports/" + savedReportId).then().statusCode(204);
+    testThatDBIsEmpty();
+  }
+
+  @Test
+  public void testReportR4OkOverwriteTrue(TestContext ctx) {
+    String savedReportId =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(FILE_REPORT_OK)
+            .queryParam("overwrite", true)
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .extract()
+            .asString()
+            .replace("Saved report with id ", "");
+
+    String overwriteReportId =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(FILE_REPORT_OK)
+            .queryParam("overwrite", true)
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .extract()
+            .asString()
+            .replace("Saved report with id ", "");
+    assertThat(savedReportId).isEqualTo(overwriteReportId);
+    testThatDBSizeIsSize(1);
+
+    given().delete("/counter-reports/" + savedReportId).then().statusCode(204);
+    testThatDBIsEmpty();
+  }
+
+  @Test
+  public void testReportR4OkOverwriteFalse() {
+    String savedReportId =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(FILE_REPORT_OK)
+            .queryParam("overwrite", false)
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .extract()
+            .asString()
+            .replace("Saved report with id ", "");
+
+    given()
+        .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+        .body(FILE_REPORT_OK)
+        .queryParam("overwrite", false)
+        .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+        .then()
+        .statusCode(500)
+        .body(containsString("Report already exists"));
 
     given().delete("/counter-reports/" + savedReportId).then().statusCode(204);
     testThatDBIsEmpty();
