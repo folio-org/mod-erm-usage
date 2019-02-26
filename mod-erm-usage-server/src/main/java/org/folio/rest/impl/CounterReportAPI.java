@@ -577,6 +577,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   @Override
   public void postCounterReportsUploadProviderById(
       String id,
+      boolean overwrite,
       InputStream entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
@@ -602,7 +603,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                     counterReport
                         .withProviderId(udp.getId())
                         .withDownloadTime(Date.from(Instant.now()))))
-        .compose(cr -> saveCounterReportToDb(vertx, tenantId, cr, true))
+        .compose(cr -> saveCounterReportToDb(vertx, tenantId, cr, overwrite))
         .setHandler(
             ar -> {
               if (ar.succeeded()) {

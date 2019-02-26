@@ -80,6 +80,11 @@ resourceTypes:
   /upload/provider/{id}:
     description: Upload a report from file for a provider identified by id
     post:
+      queryParameters: 
+        overwrite:
+          description: Overwrite existing reports?
+          type: boolean
+          default: false
       body:
         application/octet-stream:
       responses: 
