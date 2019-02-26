@@ -7,8 +7,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.IOUtils;
@@ -560,21 +562,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   }
 
   @Override
-  public void getCounterReportsCsvProviderReportFromToByIdAndNameAndBeginAndEnd(
-      String id,
-      String name,
-      String begin,
-      String end,
-      Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler,
-      Context vertxContext) {
-    asyncResultHandler.handle(
-        Future.succeededFuture(
-            GetCounterReportsCsvProviderReportFromToByIdAndNameAndBeginAndEndResponse
-                .respond501WithTextPlain("Not implemented.")));
-  }
-
-  @Override
   public void postCounterReportsUploadProviderById(
       String id,
       boolean overwrite,
@@ -728,5 +715,83 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertFuture::handle);
           return upsertFuture;
         });
+  }
+
+  @Override
+  public void getCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEnd(
+      String id,
+      String name,
+      String version,
+      String begin,
+      String end,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+
+    String where =
+        String.format(
+            " WHERE (jsonb->>'providerId' = '%s') AND "
+                + "(jsonb->>'reportName' = '%s') AND "
+                + "(jsonb->>'release' = '%s') AND "
+                + "(jsonb->'report' IS NOT NULL) AND"
+                + "(jsonb->>'yearMonth' >= '%s') AND "
+                + "(jsonb->>'yearMonth' <= '%s')",
+            id, name, version, begin, end);
+
+    PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
+        .get(
+            TABLE_NAME_COUNTER_REPORTS,
+            CounterReport.class,
+            where,
+            true,
+            true,
+            ar -> {
+              if (ar.succeeded()) {
+                List<Report> reports =
+                    ar.result()
+                        .getResults()
+                        .stream()
+                        .map(
+                            cr -> {
+                              if (version.equals("4")) {
+                                return Counter4Utils.fromJSON(Json.encode(cr.getReport()));
+                              } else {
+                                return null;
+                              }
+                            })
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+                if (reports.isEmpty()) {
+                  asyncResultHandler.handle(
+                      Future.succeededFuture(
+                          GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+                              .respond500WithTextPlain("No valid reports found in period")));
+                  return;
+                }
+
+                String csv = null;
+                try {
+                  Report merge = Counter4Utils.merge(reports);
+                  csv = Counter4Utils.toCSV(merge);
+                } catch (Exception e) {
+                  asyncResultHandler.handle(
+                      Future.succeededFuture(
+                          GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+                              .respond500WithTextPlain(e.getMessage())));
+                  return;
+                }
+
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+                            .respond200WithTextCsv(csv)));
+              } else {
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+                            .respond500WithTextPlain("Query Error: " + ar.cause())));
+              }
+            });
   }
 }
