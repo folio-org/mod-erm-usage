@@ -166,7 +166,7 @@
           "methods": [
             "GET"
           ],
-          "pathPattern": "/counter-reports/csv/provider/{id}/report/{name}/from/{begin}/to/{end}",
+          "pathPattern": "/counter-reports/csv/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}",
           "permissionsRequired": [
             "counterreports.item.get"
           ]

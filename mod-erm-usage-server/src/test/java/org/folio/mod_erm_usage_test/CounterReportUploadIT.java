@@ -14,8 +14,10 @@ import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -118,6 +120,22 @@ public class CounterReportUploadIT {
             }));
   }
 
+  @Before
+  public void before(TestContext ctx) {
+    Async async = ctx.async();
+    PostgresClient.getInstance(vertx, TENANT)
+        .delete(
+            "counter_reports",
+            new Criterion(),
+            ar -> {
+              if (ar.failed()) ctx.fail(ar.cause());
+              async.complete();
+            });
+    async.await();
+
+    testThatDBIsEmpty();
+  }
+
   private static void postProvider(TestContext ctx) {
     String str;
     try {
@@ -138,12 +156,11 @@ public class CounterReportUploadIT {
             ar -> {
               if (ar.succeeded()) {
                 async.complete();
-                System.out.println("complete");
-                System.out.println(ar.result());
               } else {
                 ctx.fail(ar.cause());
               }
             });
+    async.await();
   }
 
   private void testThatDBSizeIsSize(int i) {
@@ -163,7 +180,7 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportR4Ok(TestContext ctx) {
+  public void testReportR4Ok() throws Exception {
     String savedReportId =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
@@ -187,13 +204,10 @@ public class CounterReportUploadIT {
     Report reportFromXML = JAXB.unmarshal(FILE_REPORT_OK, Report.class);
     Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
     assertThat(reportFromXML).isEqualToComparingFieldByFieldRecursively(reportFromDB);
-
-    given().delete("/counter-reports/" + savedReportId).then().statusCode(204);
-    testThatDBIsEmpty();
   }
 
   @Test
-  public void testReportR4OkOverwriteTrue(TestContext ctx) {
+  public void testReportR4OkOverwriteTrue() {
     String savedReportId =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
@@ -219,24 +233,17 @@ public class CounterReportUploadIT {
             .replace("Saved report with id ", "");
     assertThat(savedReportId).isEqualTo(overwriteReportId);
     testThatDBSizeIsSize(1);
-
-    given().delete("/counter-reports/" + savedReportId).then().statusCode(204);
-    testThatDBIsEmpty();
   }
 
   @Test
   public void testReportR4OkOverwriteFalse() {
-    String savedReportId =
-        given()
-            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(FILE_REPORT_OK)
-            .queryParam("overwrite", false)
-            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
-            .then()
-            .statusCode(200)
-            .extract()
-            .asString()
-            .replace("Saved report with id ", "");
+    given()
+        .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+        .body(FILE_REPORT_OK)
+        .queryParam("overwrite", false)
+        .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+        .then()
+        .statusCode(200);
 
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
@@ -246,13 +253,10 @@ public class CounterReportUploadIT {
         .then()
         .statusCode(500)
         .body(containsString("Report already exists"));
-
-    given().delete("/counter-reports/" + savedReportId).then().statusCode(204);
-    testThatDBIsEmpty();
   }
 
   @Test
-  public void testReportR4NssOk(TestContext ctx) {
+  public void testReportR4NssOk() {
     String savedReportId =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
@@ -280,9 +284,6 @@ public class CounterReportUploadIT {
             .get(0);
     Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
     assertThat(reportFromXML).isEqualToComparingFieldByFieldRecursively(reportFromDB);
-
-    given().delete("/counter-reports/" + savedReportId).then().statusCode(204);
-    testThatDBIsEmpty();
   }
 
   @Test
@@ -308,7 +309,7 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testProviderNotFound(TestContext ctx) {
+  public void testProviderNotFound() {
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
         .body(FILE_REPORT_OK)

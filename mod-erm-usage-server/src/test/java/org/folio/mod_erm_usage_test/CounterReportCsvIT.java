@@ -5,6 +5,8 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.folio.okapi.common.XOkapiHeaders;
@@ -13,9 +15,11 @@ import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.joda.time.LocalDate;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -120,6 +124,31 @@ public class CounterReportCsvIT {
             }));
   }
 
+  @Before
+  public void before(TestContext ctx) {
+    Async async = ctx.async();
+    PostgresClient.getInstance(vertx, TENANT)
+        .delete(
+            "counter_reports",
+            new Criterion(),
+            ar -> {
+              if (ar.failed()) ctx.fail(ar.cause());
+              async.complete();
+            });
+    async.await();
+
+    testThatDBIsEmpty();
+  }
+
+  private String resourceToString(String path) {
+    try {
+      return Resources.asCharSource(Resources.getResource(path), StandardCharsets.UTF_8).read();
+    } catch (IOException e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
   private void testThatDBIsEmpty() {
     int size =
         get().then().statusCode(200).extract().as(CounterReports.class).getCounterReports().size();
@@ -140,9 +169,30 @@ public class CounterReportCsvIT {
             .extract()
             .asString();
     assertThat(csvResult).isEqualToNormalizingNewlines(expected);
+  }
 
-    given().pathParam("id", counterReport.getId()).delete("/{id}").then().statusCode(204);
-    testThatDBIsEmpty();
+  @Test
+  public void testGetCSVOkJR1MultipleMonths() throws IOException {
+    String json1 = resourceToString("JR1/jr1_1.json");
+    String json2 = resourceToString("JR1/jr1_2.json");
+    String json3 = resourceToString("JR1/jr1_3.json");
+
+    given().body(json1).post().then().statusCode(201);
+    given().body(json2).post().then().statusCode(201);
+    given().body(json3).post().then().statusCode(201);
+
+    given()
+        .pathParam("id", "4b659cb9-e4bb-493d-ae30-5f5690c54802")
+        .pathParam("name", "JR1")
+        .pathParam("version", "4")
+        .pathParam("begin", "2018-12")
+        .pathParam("end", "2019-03")
+        .get("/csv/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}")
+        .then()
+        .statusCode(200)
+        .body(
+            containsString(
+                "19th-Century Music,University of California Press,Ithaka,Ithaka,Ithaka,0148-2076,1533-8606,6,3,3,2,2,2"));
   }
 
   @Test
@@ -157,9 +207,6 @@ public class CounterReportCsvIT {
         .then()
         .statusCode(500)
         .body(containsString("no mapper"));
-
-    given().pathParam("id", badReleaseNo.getId()).delete("/{id}");
-    testThatDBIsEmpty();
   }
 
   @Test
@@ -174,8 +221,5 @@ public class CounterReportCsvIT {
         .then()
         .statusCode(500)
         .body(containsString("No report"));
-
-    given().pathParam("id", noReport.getId()).delete("/{id}");
-    testThatDBIsEmpty();
   }
 }
