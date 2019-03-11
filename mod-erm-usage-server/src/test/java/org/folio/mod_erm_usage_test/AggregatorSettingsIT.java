@@ -2,21 +2,8 @@ package org.folio.mod_erm_usage_test;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.UUID;
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
-import org.folio.rest.jaxrs.model.AggregatorSetting;
-import org.folio.rest.jaxrs.model.AggregatorSettings;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+
+import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.restassured.RestAssured;
@@ -27,11 +14,31 @@ import io.restassured.parsing.Parser;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.UUID;
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.RestVerticle;
+import org.folio.rest.client.TenantClient;
+import org.folio.rest.jaxrs.model.AggregatorSetting;
+import org.folio.rest.jaxrs.model.AggregatorSettings;
+import org.folio.rest.jaxrs.model.UsageDataProviders;
+import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.NetworkUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
 public class AggregatorSettingsIT {
@@ -282,5 +289,102 @@ public class AggregatorSettingsIT {
     as = given().basePath("").get(location).then().extract().as(AggregatorSetting.class);
     assertThat(as.getMetadata()).isNotNull();
     given().basePath("").delete(location).then().statusCode(204);
+  }
+
+  private void setupTestData(TestContext ctx) throws IOException {
+    AggregatorSettings aggregatorSettings =
+        Json.decodeValue(
+            Resources.toString(
+                Resources.getResource("exportcredentials/aggregators.json"),
+                StandardCharsets.UTF_8),
+            AggregatorSettings.class);
+    AggregatorSetting aggregator1 = aggregatorSettings.getAggregatorSettings().get(0);
+
+    JsonArray providers =
+        Json.decodeValue(
+                Resources.toString(
+                    Resources.getResource("exportcredentials/providers.json"),
+                    StandardCharsets.UTF_8),
+                UsageDataProviders.class)
+            .getUsageDataProviders().stream()
+            .map(Json::encode)
+            .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
+
+    Async async = ctx.async(2);
+    PostgresClient.getInstance(vertx, TENANT)
+        .save(
+            "aggregator_settings",
+            aggregator1.getId(),
+            aggregator1,
+            ar -> {
+              assertThat(ar.succeeded()).isTrue();
+              async.countDown();
+            });
+    PostgresClient.getInstance(vertx, TENANT)
+        .saveBatch(
+            "usage_data_providers",
+            providers,
+            ar -> {
+              assertThat(ar.succeeded()).isTrue();
+              async.countDown();
+            });
+
+    AggregatorSettings as = given().get().then().extract().as(AggregatorSettings.class);
+    assertThat(as.getAggregatorSettings().size()).isEqualTo(1);
+    assertThat(as.getAggregatorSettings().get(0).getId())
+        .isEqualTo("0adec15b-8230-48fe-b4df-87106c5dc36e");
+    UsageDataProviders providersResult =
+        given()
+            .basePath("")
+            .get("/usage-data-providers")
+            .then()
+            .extract()
+            .as(UsageDataProviders.class);
+    assertThat(providersResult.getUsageDataProviders().size()).isEqualTo(4);
+  }
+
+  private void clearTestData(TestContext ctx) {
+    Async async = ctx.async(2);
+    PostgresClient.getInstance(vertx, TENANT)
+        .delete(
+            "usage_data_providers",
+            new Criterion(),
+            ar -> {
+              assertThat(ar.succeeded()).isTrue();
+              async.countDown();
+            });
+    PostgresClient.getInstance(vertx, TENANT)
+        .delete(
+            "aggregator_settings",
+            new Criterion(),
+            ar -> {
+              assertThat(ar.succeeded()).isTrue();
+              async.countDown();
+            });
+  }
+
+  @Test
+  public void testExportSushiCredentialsForAggregator(TestContext ctx) throws IOException {
+    // setup test data
+    setupTestData(ctx);
+
+    String expectedResult =
+        "customerId,requestorId,apiKey,requestorName,requestorMail\n"
+            + "CustomerId1,RequestorId1,ApiKey1,RequestorName1,RequestorMail1\n"
+            + "CustomerId2,RequestorId2,ApiKey2,\"RequestorName2,WithComma\",RequestorMail2\n"
+            + "CustomerId3,RequestorId3,ApiKey3,RequestorName3,RequestorMail3\n";
+
+    String result =
+        given()
+            .pathParam("id", "0adec15b-8230-48fe-b4df-87106c5dc36e")
+            .get("/{id}/exportcredentials")
+            .then()
+            .statusCode(200)
+            .contentType(MediaType.CSV_UTF_8.type())
+            .extract()
+            .asString();
+    assertThat(result).isEqualTo(expectedResult);
+
+    clearTestData(ctx);
   }
 }
