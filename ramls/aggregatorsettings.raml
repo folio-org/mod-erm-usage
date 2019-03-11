@@ -52,3 +52,17 @@ resourceTypes:
       description: Delete aggregator setting identified by id
     put:
       description: Put aggregator setting identified by id
+    /exportcredentials:
+      get:
+        description: Get SushiCredentials associated with this aggregator
+        responses:
+          200:
+            description: Ok
+            body:
+              text/csv:
+          500:
+            description: Error
+            body:
+              text/plain:
+
+

@@ -1,20 +1,32 @@
 package org.folio.rest.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.AggregatorSettings;
 import org.folio.rest.jaxrs.model.AggregatorSettingsGetOrder;
-import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.jaxrs.model.SushiCredentials;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
+import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
@@ -23,13 +35,6 @@ import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.AggregatorSettings {
 
@@ -515,5 +520,52 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
               PutAggregatorSettingsByIdResponse.respond500WithTextPlain(
                   messages.getMessage(lang, MessageConsts.InternalServerError))));
     }
+  }
+
+  @Override
+  public void getAggregatorSettingsExportcredentialsById(
+      String id,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+
+    String where =
+        String.format(" WHERE (jsonb->'harvestingConfig'->'aggregator'->>'id' = '%s')", id);
+
+    PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
+        .get(
+            "usage_data_providers",
+            UsageDataProvider.class,
+            where,
+            true,
+            true,
+            ar -> {
+              if (ar.succeeded()) {
+                List<UsageDataProvider> providerList = ar.result().getResults();
+                List<SushiCredentials> credentialsList =
+                    providerList.stream()
+                        .map(UsageDataProvider::getSushiCredentials)
+                        .collect(Collectors.toList());
+                try {
+                  CsvMapper csvMapper = new CsvMapper();
+                  String resultString =
+                      csvMapper
+                          .writerFor(SushiCredentials.class)
+                          .with(csvMapper.schemaFor(SushiCredentials.class).withHeader())
+                          .forType(List.class)
+                          .writeValueAsString(credentialsList);
+                  asyncResultHandler.handle(
+                      Future.succeededFuture(
+                          GetAggregatorSettingsExportcredentialsByIdResponse.respond200WithTextCsv(
+                              resultString)));
+                } catch (JsonProcessingException e) {
+                  asyncResultHandler.handle(
+                      Future.succeededFuture(
+                          Response.status(500).entity("Error creating CSV").build()));
+                }
+              } else {
+                asyncResultHandler.handle(Future.succeededFuture(Response.status(500).build()));
+              }
+            });
   }
 }
