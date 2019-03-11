@@ -65,7 +65,7 @@ $ curl -w '\n' -X POST -D - -H "Content-type: application/json" -d '{ "id": "mod
 
 Sample data resides in the folder `sample-data`. The data need to be posted in the following order:
 
-1. The folder `sample-data/reference-data/vendor/` contains vendors which are referenced by the sample data. These need to be posted to `http://okapiHost:9130/vendor-storage/vendors`
+1. The folder `sample-data/vendor-storage/vendors/` contains vendors which are referenced by the sample data. These need to be posted to `http://okapiHost:9130/vendor-storage/vendors`
 2. The folder `sample-data/aggregator-settings/` contains an aggregator. This file needs to be posted to `http://okapiHost:9130/aggregator-settings`
 3. The folder `sample-data/usage-data-providers/` contains the usage-data-providers. A usage-data-provider references a vendor and eventually an aggregator. These files need to be posted to `http://okapiHost:9130/usage-data-providers`
 
