@@ -1,17 +1,30 @@
 {
   "id": null,
   "label": "Carl Hanser Verlag",
-  "vendorId": "2a060505-dd89-4540-9aa5-a49f7da8ab7f",
-  "platformId": "00000000-0000-0000-0000-000000000000",
-  "harvestingStart": "2015-01",
-  "harvestingStatus": "inactive",
-  "aggregator": {
-    "id": "5b6ba83e-d7e5-414e-ba7b-134749c0d950",
-    "vendorCode": "CHV"
+  "vendor": {
+    "id": "2a060505-dd89-4540-9aa5-a49f7da8ab7f"
   },
-  "reportRelease": 4,
-  "requestedReports": ["JR5", "JR1"],
-  "customerId": "0000000",
-  "requestorId": "electronic@lib.opentown.edu",
+  "platform": {
+    "id": "00000000-0000-0000-0000-000000000000"
+  },
+  "harvestingConfig": {
+    "harvestingStatus": "inactive",
+    "harvestVia": "aggregator",
+    "aggregator": {
+      "id": "5b6ba83e-d7e5-414e-ba7b-134749c0d950",
+      "vendorCode": "CHV"
+    },
+    "reportRelease": 4,
+    "requestedReports": [
+      "JR5",
+      "JR1"
+    ],
+    "harvestingStart": "2015-01"
+  },
+  "sushiCredentials": {
+    "customerId": "0000000",
+    "requestorId": "electronic@lib.opentown.edu",
+    "requestorMail": "electronic@lib.optentown.edu"
+  },
   "notes": "Please fill in your own credentials: customer ID and requestor ID, name and mail are only demonstrational."
 }

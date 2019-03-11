@@ -1,17 +1,30 @@
 {
   "id": null,
   "label": "Lexis Nexis",
-  "vendorId": "54910f4c-34eb-4154-9ee6-9d9784605da2",
-  "platformId": "00000000-0000-0000-0000-000000000000",
-  "harvestingStart": "2018-01",
-  "harvestingStatus": "inactive",
-  "serviceType": "cs41",
-  "serviceUrl": "http://usage.lexisnexis.com/SushiServer",
-  "reportRelease": 4,
-  "requestedReports": ["DR1"],
-  "customerId": "0000",
-  "requestorId": "00000000-0000-0000-0000-000000000000",
-  "requestorName": "Opentown Libraries",
-  "requestorMail": "electronic@lib.opentown.edu",
+  "vendor": {
+    "id": "54910f4c-34eb-4154-9ee6-9d9784605da2"
+  },
+  "platform": {
+    "id": "00000000-0000-0000-0000-000000000000"
+  },
+  "harvestingConfig": {
+    "harvestingStatus": "inactive",
+    "harvestVia": "sushi",
+    "sushiConfig": {
+      "serviceType": "cs41",
+      "serviceUrl": "http://usage.lexisnexis.com/SushiServer"
+    },
+    "reportRelease": 4,
+    "requestedReports": [
+      "DR1"
+    ],
+    "harvestingStart": "2018-01"
+  },
+  "sushiCredentials": {
+    "customerId": "0000000000",
+    "requestorId": "00000000-0000-0000-0000-000000000000",
+    "requestorName": "Opentown Libraries",
+    "requestorMail": "electronic@lib.optentown.edu"
+  },
   "notes": "Please fill in your own credentials: customer ID and requestor ID, name and mail are only demonstrational."
 }
