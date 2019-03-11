@@ -1,30 +1,10 @@
-package org.folio.mod_erm_usage_test;
+package org.folio.rest.impl;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import javax.xml.bind.JAXB;
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
-import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.jaxrs.model.CounterReports;
-import org.folio.rest.jaxrs.model.UsageDataProvider;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.niso.schemas.counter.Report;
-import org.niso.schemas.sushi.counter.CounterReportResponse;
-import org.olf.erm.usage.counter41.Counter4Utils;
+
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
 import io.restassured.RestAssured;
@@ -41,6 +21,27 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import javax.xml.bind.JAXB;
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.RestVerticle;
+import org.folio.rest.client.TenantClient;
+import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.CounterReports;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.NetworkUtils;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.niso.schemas.counter.Report;
+import org.niso.schemas.sushi.counter.CounterReportResponse;
+import org.olf.erm.usage.counter41.Counter4Utils;
 
 @RunWith(VertxUnitRunner.class)
 public class CounterReportUploadIT {
