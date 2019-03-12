@@ -1,0 +1,93 @@
+{
+  "usageDataProviders": [
+    {
+      "label": "Provider1",
+      "harvestingConfig": {
+        "harvestingStatus": "inactive",
+        "harvestVia": "aggregator",
+        "aggregator": {
+          "id": "0adec15b-8230-48fe-b4df-87106c5dc36e"
+        },
+        "reportRelease": 4,
+        "requestedReports": [
+          "JR1",
+          "JR4"
+        ]
+      },
+      "sushiCredentials": {
+        "customerId": "CustomerId1",
+        "requestorId": "RequestorId1",
+        "apiKey": "ApiKey1",
+        "requestorName": "RequestorName1",
+        "requestorMail": "RequestorMail1"
+      }
+    },
+    {
+      "label": "Provider2",
+      "harvestingConfig": {
+        "harvestingStatus": "active",
+        "harvestVia": "aggregator",
+        "aggregator": {
+          "id": "0adec15b-8230-48fe-b4df-87106c5dc36e"
+        },
+        "reportRelease": 4,
+        "requestedReports": [
+          "JR1",
+          "JR4"
+        ]
+      },
+      "sushiCredentials": {
+        "customerId": "CustomerId2",
+        "requestorId": "RequestorId2",
+        "apiKey": "ApiKey2",
+        "requestorName": "RequestorName2,WithComma",
+        "requestorMail": "RequestorMail2"
+      }
+    },
+    {
+      "label": "Provider3",
+      "harvestingConfig": {
+        "harvestingStatus": "active",
+        "harvestVia": "aggregator",
+        "aggregator": {
+          "id": "0adec15b-8230-48fe-b4df-87106c5dc36e"
+        },
+        "reportRelease": 4,
+        "requestedReports": [
+          "JR1",
+          "JR4"
+        ]
+      },
+      "sushiCredentials": {
+        "customerId": "CustomerId3",
+        "requestorId": "RequestorId3",
+        "apiKey": "ApiKey3",
+        "requestorName": "RequestorName3",
+        "requestorMail": "RequestorMail3"
+      }
+    },
+    {
+      "label": "Provider4",
+      "harvestingConfig": {
+        "harvestingStatus": "active",
+        "harvestVia": "aggregator",
+        "aggregator": {
+          "id": "fe965f77-d9d1-4127-b057-3c76b56b3e6a"
+        },
+        "reportRelease": 4,
+        "requestedReports": [
+          "JR1",
+          "JR4"
+        ]
+      },
+      "sushiCredentials": {
+        "customerId": "CustomerId4",
+        "requestorId": "RequestorId4",
+        "apiKey": "ApiKey4",
+        "requestorName": "RequestorName4",
+        "requestorMail": "RequestorMail4"
+      }
+    }
+  ],
+  "totalRecords": 4
+}

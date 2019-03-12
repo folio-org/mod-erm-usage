@@ -55,7 +55,7 @@
     },
     {
       "id": "aggregator-settings",
-      "version": "1.0",
+      "version": "1.1",
       "handlers": [
         {
           "methods": [
@@ -101,12 +101,31 @@
           "permissionsRequired": [
             "aggregatorsettings.item.delete"
           ]
+        },
+        {
+          "methods": [
+            "DELETE"
+          ],
+          "pathPattern": "/aggregator-settings/{id}",
+          "permissionsRequired": [
+            "aggregatorsettings.item.delete"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/aggregator-settings/{id}/exportcredentials",
+          "permissionsRequired": [
+            "usagedataproviders.item.get",
+            "aggregatorsettings.item.get"
+          ]
         }
       ]
     },
     {
       "id": "counter-reports",
-      "version": "1.0",
+      "version": "1.1",
       "handlers": [
         {
           "methods": [
