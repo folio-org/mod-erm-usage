@@ -329,6 +329,8 @@ public class AggregatorSettingsIT {
               async.countDown();
             });
 
+    async.await(5000);
+
     AggregatorSettings as = given().get().then().extract().as(AggregatorSettings.class);
     assertThat(as.getAggregatorSettings().size()).isEqualTo(1);
     assertThat(as.getAggregatorSettings().get(0).getId())
@@ -361,6 +363,24 @@ public class AggregatorSettingsIT {
               assertThat(ar.succeeded()).isTrue();
               async.countDown();
             });
+    async.await(5000);
+
+    AggregatorSettings aggregators =
+        given()
+            .basePath("")
+            .get("/aggregator-settings")
+            .then()
+            .extract()
+            .as(AggregatorSettings.class);
+    assertThat(aggregators.getAggregatorSettings().size()).isEqualTo(0);
+    UsageDataProviders providers =
+        given()
+            .basePath("")
+            .get("/usage-data-providers")
+            .then()
+            .extract()
+            .as(UsageDataProviders.class);
+    assertThat(aggregators.getAggregatorSettings().size()).isEqualTo(0);
   }
 
   @Test
