@@ -20,7 +20,6 @@ import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.AggregatorSettings;
 import org.folio.rest.jaxrs.model.AggregatorSettingsGetOrder;
-import org.folio.rest.jaxrs.model.SushiCredentials;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -33,6 +32,7 @@ import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.OutStream;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.tools.utils.ValidationHelper;
+import org.folio.rest.util.ExportObject;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
 
@@ -542,18 +542,16 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
             ar -> {
               if (ar.succeeded()) {
                 List<UsageDataProvider> providerList = ar.result().getResults();
-                List<SushiCredentials> credentialsList =
-                    providerList.stream()
-                        .map(UsageDataProvider::getSushiCredentials)
-                        .collect(Collectors.toList());
+                List<ExportObject> exportObjectList =
+                    providerList.stream().map(ExportObject::new).collect(Collectors.toList());
                 try {
                   CsvMapper csvMapper = new CsvMapper();
                   String resultString =
                       csvMapper
-                          .writerFor(SushiCredentials.class)
-                          .with(csvMapper.schemaFor(SushiCredentials.class).withHeader())
+                          .writerFor(ExportObject.class)
+                          .with(csvMapper.schemaFor(ExportObject.class).withHeader())
                           .forType(List.class)
-                          .writeValueAsString(credentialsList);
+                          .writeValueAsString(exportObjectList);
                   asyncResultHandler.handle(
                       Future.succeededFuture(
                           GetAggregatorSettingsExportcredentialsByIdResponse.respond200WithTextCsv(
@@ -561,10 +559,14 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
                 } catch (JsonProcessingException e) {
                   asyncResultHandler.handle(
                       Future.succeededFuture(
-                          Response.status(500).entity("Error creating CSV").build()));
+                          GetAggregatorSettingsExportcredentialsByIdResponse
+                              .respond500WithTextPlain("Error creating CSV")));
                 }
               } else {
-                asyncResultHandler.handle(Future.succeededFuture(Response.status(500).build()));
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        GetAggregatorSettingsExportcredentialsByIdResponse.respond500WithTextPlain(
+                            "Error creating CSV")));
               }
             });
   }

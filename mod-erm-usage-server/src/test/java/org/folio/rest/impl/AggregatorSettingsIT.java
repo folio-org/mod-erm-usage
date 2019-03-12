@@ -378,10 +378,10 @@ public class AggregatorSettingsIT {
             .extract()
             .asString();
     String expectedResult =
-        "customerId,requestorId,apiKey,requestorName,requestorMail\n"
-            + "CustomerId1,RequestorId1,ApiKey1,RequestorName1,RequestorMail1\n"
-            + "CustomerId2,RequestorId2,ApiKey2,\"RequestorName2,WithComma\",RequestorMail2\n"
-            + "CustomerId3,RequestorId3,ApiKey3,RequestorName3,RequestorMail3\n";
+        "providerName,harvestingStatus,reportRelease,requestedReports,customerId,requestorId,apiKey,requestorName,requestorMail\n"
+            + "Provider1,inactive,4,\"JR1, JR4\",CustomerId1,RequestorId1,ApiKey1,RequestorName1,RequestorMail1\n"
+            + "Provider2,active,4,\"JR1, JR4\",CustomerId2,RequestorId2,ApiKey2,\"RequestorName2,WithComma\",RequestorMail2\n"
+            + "Provider3,active,4,\"JR1, JR4\",CustomerId3,RequestorId3,ApiKey3,RequestorName3,RequestorMail3\n";
     assertThat(result).isEqualTo(expectedResult);
 
     // no providers for id
@@ -394,7 +394,8 @@ public class AggregatorSettingsIT {
             .contentType(MediaType.CSV_UTF_8.type())
             .extract()
             .asString();
-    String expectedResult2 = "customerId,requestorId,apiKey,requestorName,requestorMail\n";
+    String expectedResult2 =
+        "providerName,harvestingStatus,reportRelease,requestedReports,customerId,requestorId,apiKey,requestorName,requestorMail\n";
     assertThat(result2).isEqualTo(expectedResult2);
 
     clearTestData(ctx);
