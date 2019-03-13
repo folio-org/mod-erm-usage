@@ -1,11 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "List of AggregatorSettings",
   "type": "object",
   "properties": {
     "aggregatorSettings": {
       "type": "array",
       "id": "aggregatorsettings",
       "items": {
+        "description": "Entries",
         "type": "object",
         "$ref": "aggregatorsetting.json"
       }
