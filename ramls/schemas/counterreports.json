@@ -5,9 +5,9 @@
   "properties": {
     "counterReports": {
       "type": "array",
+      "description": "Entries",
       "id": "counterReportData",
       "items": {
-        "description": "Entries",
         "type": "object",
         "$ref": "counterreport.json"
       }

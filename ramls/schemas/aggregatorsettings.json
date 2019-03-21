@@ -5,9 +5,9 @@
   "properties": {
     "aggregatorSettings": {
       "type": "array",
+      "description": "Entries",
       "id": "aggregatorsettings",
       "items": {
-        "description": "Entries",
         "type": "object",
         "$ref": "aggregatorsetting.json"
       }
