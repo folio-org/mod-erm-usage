@@ -1,9 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "List of CounterReports",
   "type": "object",
   "properties": {
     "counterReports": {
       "type": "array",
+      "description": "Entries",
       "id": "counterReportData",
       "items": {
         "type": "object",

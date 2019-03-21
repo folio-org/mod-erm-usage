@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Usage Data Provider Schema",
   "title": "Usage Data Provider Schema",
   "type": "object",
   "properties": {
@@ -7,9 +8,11 @@
       "type": "string"
     },
     "label": {
+      "description": "Usage Data Provider name",
       "type": "string"
     },
     "vendor": {
+      "description": "Vendor properties",
       "type": "object",
       "properties": {
         "id": {
@@ -26,6 +29,7 @@
       ]
     },
     "platform": {
+      "description": "Platform properties",
       "type": "object",
       "properties": {
         "id": {
@@ -46,6 +50,7 @@
       "description": "Specifies harvesting configuration",
       "properties": {
         "harvestingStatus": {
+          "description": "Enables or disables automatic harvesting for this provider",
           "type": "string",
           "enum": [
             "active",
@@ -61,6 +66,7 @@
           ]
         },
         "sushiConfig": {
+          "description": "SUSHI service properties",
           "type": "object",
           "properties": {
             "serviceType": {
@@ -103,6 +109,7 @@
           "description": "Specifies the counter report version."
         },
         "requestedReports": {
+          "description": "Report types that are harvested",
           "type": "array",
           "minItems": 0,
           "items": {
@@ -110,10 +117,12 @@
           }
         },
         "harvestingStart": {
+          "description": "First month getting harvested",
           "type": "string",
           "format": "date-month"
         },
         "harvestingEnd": {
+          "description": "Last month getting harvested",
           "type": "string",
           "format": "date-month"
         }
@@ -131,18 +140,23 @@
       "description": "Defines credentials to access SUSHI service of usage data provider",
       "properties": {
         "customerId": {
+          "description": "Customer identifier",
           "type": "string"
         },
         "requestorId": {
+          "description": "Requestor identifier",
           "type": "string"
         },
         "apiKey": {
+          "description": "API Key",
           "type": "string"
         },
         "requestorName": {
+          "description": "Requestor name",
           "type": "string"
         },
         "requestorMail": {
+          "description": "Requestor mail",
           "type": "string"
         }
       },
@@ -152,12 +166,15 @@
       ]
     },
     "latestReport": {
+      "description": "Newest report available for provider",
       "type": "string"
     },
     "earliestReport": {
+      "description": "Oldest report available for provider",
       "type": "string"
     },
     "notes": {
+      "description": "Notes for provider",
       "type": "string"
     },
     "metadata": {

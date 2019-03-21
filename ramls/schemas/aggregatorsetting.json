@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Aggregator Settings Schema",
   "title": "Aggregator Settings Schema",
   "type": "object",
   "properties": {
@@ -7,6 +8,7 @@
       "type": "string"
     },
     "label": {
+      "description": "Aggregator label",
       "type": "string"
     },
     "serviceType": {
@@ -22,6 +24,7 @@
       "description": "Additional key/value pairs for aggregator configuration"
     },
     "accountConfig": {
+      "description": "Account configuration",
       "type": "object",
       "properties": {
         "configType": {
