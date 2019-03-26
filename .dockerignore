@@ -1,4 +1,6 @@
 *
-!Dockerfile
-!docker*
-!mod-erm-usage-server/target/*.jar
+!/Dockerfile
+!/docker*
+!/mod-erm-usage-server/target/*.jar
+!/target/ModuleDescriptor.json
+!/backend-modules/assets/docker-entrypoint
