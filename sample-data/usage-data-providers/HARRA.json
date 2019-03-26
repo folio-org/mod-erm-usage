@@ -1,8 +1,8 @@
 {
-  "id": null,
-  "label": "Lexis Nexis",
+  "id": "00db3e61-e08e-4f8b-93ee-8e60fd402fc8",
+  "label": "Otto Harrassowitz GmbH & Co. KG",
   "vendor": {
-    "id": "54910f4c-34eb-4154-9ee6-9d9784605da2"
+    "id": "c0fb5956-cdf1-11e8-a8d5-f2801f1b9fd1"
   },
   "platform": {
     "id": "00000000-0000-0000-0000-000000000000"
@@ -12,13 +12,13 @@
     "harvestVia": "sushi",
     "sushiConfig": {
       "serviceType": "cs41",
-      "serviceUrl": "http://usage.lexisnexis.com/SushiServer"
+      "serviceUrl": "https://counter.harra.de/counter/webservice/sushi"
     },
     "reportRelease": 4,
     "requestedReports": [
-      "DR1"
+      "JR1"
     ],
-    "harvestingStart": "2018-01"
+    "harvestingStart": "2016-01"
   },
   "sushiCredentials": {
     "customerId": "0000000000",

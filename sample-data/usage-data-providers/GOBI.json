@@ -1,29 +1,28 @@
 {
-  "id": null,
-  "label": "Beck",
+  "id": "0ba00047-b6cb-417a-a735-e2c1e45e30f1",
+  "label": "GOBI Library Solutions",
   "vendor": {
-    "id": "94c706e0-908f-4347-98b9-67d8348d49c7"
+    "id": "d0fb5aa0-cdf1-11e8-a8d5-f2801f1b9fd1"
   },
   "platform": {
     "id": "00000000-0000-0000-0000-000000000000"
   },
   "harvestingConfig": {
     "harvestingStatus": "inactive",
-    "harvestVia": "aggregator",
-    "aggregator": {
-      "id": "5b6ba83e-d7e5-414e-ba7b-134749c0d950",
-      "vendorCode": "BECK"
+    "harvestVia": "sushi",
+    "sushiConfig": {
+      "serviceType": "cs41",
+      "serviceUrl": "http://usage.gobi.com/SushiServer"
     },
-    "reportRelease": 5,
+    "reportRelease": 4,
     "requestedReports": [
-      "IR",
-      "TR"
+      "DR1"
     ],
-    "harvestingStart": "2019-01"
+    "harvestingStart": "2018-01"
   },
   "sushiCredentials": {
     "customerId": "0000000000",
-    "requestorId": "00000",
+    "requestorId": "00000000-0000-0000-0000-000000000000",
     "requestorName": "Opentown Libraries",
     "requestorMail": "electronic@lib.optentown.edu"
   },

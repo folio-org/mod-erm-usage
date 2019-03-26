@@ -1,8 +1,8 @@
 {
-  "id": null,
-  "label": "Carl Hanser Verlag",
+  "id": "9362de60-f8b2-4073-bee3-01fa5fc8462f",
+  "label": "Alexander Street Press",
   "vendor": {
-    "id": "2a060505-dd89-4540-9aa5-a49f7da8ab7f"
+    "id": "11fb627a-cdf1-11e8-a8d5-f2801f1b9fd1"
   },
   "platform": {
     "id": "00000000-0000-0000-0000-000000000000"
@@ -12,7 +12,7 @@
     "harvestVia": "aggregator",
     "aggregator": {
       "id": "5b6ba83e-d7e5-414e-ba7b-134749c0d950",
-      "vendorCode": "CHV"
+      "vendorCode": "ALEXS"
     },
     "reportRelease": 4,
     "requestedReports": [
