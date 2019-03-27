@@ -4,6 +4,8 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import java.util.Map;
+import org.apache.commons.lang3.ObjectUtils;
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.Vendor;
@@ -18,7 +20,7 @@ public class AttributeNameAdder {
 
   public static Future<UsageDataProvider> resolveAndAddAttributeNames(
       UsageDataProvider udp, Map<String, String> okapiHeaders, Vertx vertx) {
-    String okapiUrl = okapiHeaders.get("x-okapi-url");
+    String okapiUrl = okapiHeaders.get(XOkapiHeaders.URL);
 
     String vendorId = udp.getVendor().getId();
     Future<String> vendorNameFuture =
@@ -26,7 +28,13 @@ public class AttributeNameAdder {
 
     String aggregatorId = getAggregatorId(udp);
     Future<String> aggregatorNameFuture =
-        AggregatorNameResolver.resolveName(aggregatorId, okapiUrl, okapiHeaders, vertx);
+        AggregatorNameResolver.resolveName(
+            aggregatorId,
+            ObjectUtils.firstNonNull(
+                okapiHeaders.get(XOkapiHeaders.URL_TO),
+                okapiUrl), // FIXME: workaround for loading sample-data
+            okapiHeaders,
+            vertx);
 
     Future<UsageDataProvider> future = Future.future();
     CompositeFuture.all(vendorNameFuture, aggregatorNameFuture)
