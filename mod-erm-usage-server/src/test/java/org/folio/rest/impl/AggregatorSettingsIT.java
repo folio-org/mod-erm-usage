@@ -210,7 +210,7 @@ public class AggregatorSettingsIT {
     assertThat(as.getTotalRecords()).isEqualTo(0);
     assertThat(as.getAggregatorSettings()).isEmpty();
 
-    given().basePath("").delete(location).then().statusCode(204);
+    given().delete(location).then().statusCode(204);
   }
 
   @Test
@@ -235,7 +235,7 @@ public class AggregatorSettingsIT {
             .statusCode(201)
             .extract()
             .header(HttpHeaders.LOCATION);
-    given().basePath("").delete(location).then().statusCode(204);
+    given().delete(location).then().statusCode(204);
   }
 
   @Test
@@ -249,15 +249,9 @@ public class AggregatorSettingsIT {
             .extract()
             .header(HttpHeaders.LOCATION);
     AggregatorSetting as =
-        given()
-            .basePath("")
-            .get(location)
-            .then()
-            .statusCode(200)
-            .extract()
-            .as(AggregatorSetting.class);
+        given().get(location).then().statusCode(200).extract().as(AggregatorSetting.class);
     assertThat(as).isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
-    given().basePath("").delete(location).then().statusCode(204);
+    given().delete(location).then().statusCode(204);
   }
 
   @Test
@@ -270,11 +264,10 @@ public class AggregatorSettingsIT {
             .then()
             .statusCode(201)
             .extract()
-            .header("location");
-    AggregatorSetting as =
-        given().basePath("").get(location).then().extract().as(AggregatorSetting.class);
+            .header("Location");
+    AggregatorSetting as = given().get(location).then().extract().as(AggregatorSetting.class);
     assertThat(as.getMetadata()).isNull();
-    given().basePath("").delete(location).then().statusCode(204);
+    given().delete(location).then().statusCode(204);
 
     // with user header
     location =
@@ -285,10 +278,10 @@ public class AggregatorSettingsIT {
             .then()
             .statusCode(201)
             .extract()
-            .header("location");
-    as = given().basePath("").get(location).then().extract().as(AggregatorSetting.class);
+            .header("Location");
+    as = given().get(location).then().extract().as(AggregatorSetting.class);
     assertThat(as.getMetadata()).isNotNull();
-    given().basePath("").delete(location).then().statusCode(204);
+    given().delete(location).then().statusCode(204);
   }
 
   private void setupTestData(TestContext ctx) throws IOException {
@@ -337,8 +330,8 @@ public class AggregatorSettingsIT {
         .isEqualTo("0adec15b-8230-48fe-b4df-87106c5dc36e");
     UsageDataProviders providersResult =
         given()
-            .basePath("")
-            .get("/usage-data-providers")
+            .basePath("/usage-data-providers")
+            .get()
             .then()
             .extract()
             .as(UsageDataProviders.class);
@@ -367,16 +360,16 @@ public class AggregatorSettingsIT {
 
     AggregatorSettings aggregators =
         given()
-            .basePath("")
-            .get("/aggregator-settings")
+            .basePath("/aggregator-settings")
+            .get()
             .then()
             .extract()
             .as(AggregatorSettings.class);
     assertThat(aggregators.getAggregatorSettings().size()).isEqualTo(0);
     UsageDataProviders providers =
         given()
-            .basePath("")
-            .get("/usage-data-providers")
+            .basePath("/usage-data-providers")
+            .get()
             .then()
             .extract()
             .as(UsageDataProviders.class);
