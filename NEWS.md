@@ -1,3 +1,8 @@
+# 2.1.0
+* Fix vendor permissions (MODEUS-14)
+* Use RMBs PgUtil
+* Use loadSample parameter in tenant init to load sample data (MODEUS-12)
+
 # 2.0.0
 * Added endpoint for exporting the sushi credentials that are associated with an aggregator (MODEUS-7)
 * Added endpoint for exporting counter reports as CSV (MODEUS-5)
