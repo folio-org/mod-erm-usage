@@ -1,0 +1,78 @@
+version: '2'
+
+services:
+  docker:
+    image: docker:dind
+    privileged: true
+
+  build_jar:
+    image: maven:3.6.0-jdk-8
+    volumes:
+    - './:/app'
+    - './.maven:/home/maven'
+    working_dir: /app
+    entrypoint: /bin/sh -c
+    command:
+    - apt-get update && apt-get install locales -y;
+      echo "en_US.UTF-8 UTF-8">/etc/locale.gen;
+      /usr/sbin/locale-gen;
+      echo "maven:x:1000:1000::/home/maven:/bin/bash">>/etc/passwd;
+      su maven -c "mvn clean install -e";
+
+  build_image:
+    image: ubleipzig/deployer:1.4.6
+    volumes:
+    - './:/app'
+    environment:
+      DOCKER_HOST: docker
+    working_dir: /app
+    entrypoint: /bin/sh -c
+    user: root
+    depends_on:
+    - docker
+    command:
+    - echo "deployer:x:1000:1000::/home/deployer:/bin/bash">>/etc/passwd;
+      chown deployer /app;
+      su deployer -c "deployer build --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg NO_PROXY=${NO_PROXY}";
+      su deployer -c "git clone https://git.sc.uni-leipzig.de/ubl/amsl/deployment/images/backend-modules.git";
+      su deployer -c "deployer build --build-arg HTTP_PROXY=${HTTP_PROXY} --build-arg HTTPS_PROXY=${HTTPS_PROXY} --build-arg NO_PROXY=${NO_PROXY} --build-arg ORG=ubl --build-arg MODULE=mod-erm-usage --build-arg TAG=latest --docker-file ubl/Dockerfile --output image.tar.gz";
+
+  deploy-test:
+    image: ubleipzig/deployer:1.4.6
+    volumes:
+    - ./:/app
+    - ~/.kube:/home/deployer/.kube
+    - ~/.docker:/home/deployer/.docker
+    working_dir: /app
+    entrypoint: /bin/sh -c
+    user: root
+    command:
+    - echo "deployer:x:1000:1000::/home/deployer:/bin/bash">/etc/passwd;
+      chown deployer /home/deployer -R;
+      su deployer -c "helm --tiller-namespace=folio-alpha --namespace=folio-alpha install --name issue-add-gitlab-ci --debug --dry-run --set-string app.image.repository=services.ub.uni-leipzig.de:10443/bdd_dev/folio/mod-erm-usage --set-string app.image.tag=add-gitlab-ci --set-string dockerconfigjson=$$(echo $$(cat /home/deployer/.docker/config.json|base64)|tr -d ' ') --set-string okapi.host=okapi-app-service-alpha-base --set-string app.environment.SERVICE_ID=mod-erm-usage-2.1.0-SNAPSHOT --set-string app.environment.INSTALL_ID=mod-erm-usage-2.1.0-SNAPSHOT --set-string app.environment.DEBUG=true /app/ubl/helmchart"
+
+  deploy:
+    image: ubleipzig/deployer:1.4.6
+    volumes:
+    - ./:/app
+    - ~/.kube:/home/deployer/.kube
+    - ~/.docker:/home/deployer/.docker
+    working_dir: /app
+    entrypoint: /bin/sh -c
+    user: root
+    command:
+    - echo "deployer:x:1000:1000::/home/deployer:/bin/bash">/etc/passwd;
+      chown deployer /home/deployer -R;
+      su deployer -c "helm --tiller-namespace=folio-alpha --namespace=folio-alpha install --name issue-add-gitlab-ci --set-string app.image.repository=services.ub.uni-leipzig.de:10443/bdd_dev/folio/mod-erm-usage --set-string app.image.tag=add-gitlab-ci --set-string dockerconfigjson=$$(echo $$(cat /home/deployer/.docker/config.json|base64)|tr -d ' ') --set-string okapi.host=okapi-app-service-alpha-base --set-string app.environment.SERVICE_ID=mod-erm-usage-2.1.0-SNAPSHOT --set-string app.environment.INSTALL_ID=mod-erm-usage-2.1.0-SNAPSHOT --set-string app.environment.DEBUG=true /app/ubl/helmchart"
+
+  undeploy:
+    image: ubleipzig/deployer:1.4.6
+    volumes:
+    - ./:/app
+    - ~/.kube:/home/deployer/.kube
+    working_dir: /app
+    entrypoint: /bin/sh -c
+    user: root
+    command:
+    - echo "deployer:x:1000:1000::/home/deployer:/bin/bash">/etc/passwd;
+      su deployer -c "helm --tiller-namespace=folio-alpha delete --purge issue-add-gitlab-ci"
