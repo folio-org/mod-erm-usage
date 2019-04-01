@@ -211,7 +211,10 @@
             "POST",
             "DELETE"
           ],
-          "pathPattern": "/_/tenant"
+          "pathPattern": "/_/tenant",
+          "modulePermissions": [
+             "vendor-storage.vendors.item.get"
+          ]
         }
       ]
     }
@@ -303,12 +306,12 @@
       "displayName": "ermusage vendors get",
       "description": "Permissions to get vendors",
       "subPermissions": [
-        "vendor.collection.get",
-        "vendor.item.get",
-        "contact_category.collection.get",
-        "contact_category.item.get",
-        "vendor_category.collection.get",
-        "vendor_category.item.get"
+        "vendor-storage.vendors.collection.get",
+        "vendor-storage.vendors.item.get",
+        "vendor-storage.categories.collection.get",
+        "vendor-storage.categories.item.get",
+        "vendor-storage.contacts.collection.get",
+        "vendor-storage.contacts.item.get"
       ]
     },
     {
