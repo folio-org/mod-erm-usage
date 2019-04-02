@@ -15,8 +15,8 @@ data:
   {{ $index }}: '{{ $element }}'
   {{- end }}
   {{- with .Values.proxy.no_proxy }}
-  NO_PROXY: {{ .Values.okapi.host }},{{ . }}
-  no_proxy: {{ .Values.okapi.host }},{{ . }}
+  NO_PROXY: {{ $.Values.okapi.host }},{{ . }}
+  no_proxy: {{ $.Values.okapi.host }},{{ . }}
   {{- end }}
   {{- with .Values.proxy.http_proxy }}
   HTTP_PROXY: {{ . }}
