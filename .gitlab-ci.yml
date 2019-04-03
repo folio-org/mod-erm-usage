@@ -191,8 +191,8 @@ deploy_staging:
       --charts ubl/helmchart \
       --timeout 300 \
       --set-string dockerconfigjson=$(echo $(echo "${DOCKER_STAGING_AUTH_CONFIG}"|base64)|tr -d " ") \
-      --set-string app.environment.SERVICE_ID=mod-erm-usage-2.1.0-SNAPSHOT \
-      --set-string app.environment.INSTALL_ID=mod-erm-usage-2.1.0-SNAPSHOT \
+      --set-string app.environment.SERVICE_ID=mod-erm-usage-2.2.0-SNAPSHOT \
+      --set-string app.environment.INSTALL_ID=mod-erm-usage-2.2.0-SNAPSHOT \
       --set-string app.image.repository=${staging_repo} \
       --set-string app.image.tag=staging \
       --set-string okapi.host=okapi-app-service-staging.folio-base-staging.svc.cluster.local

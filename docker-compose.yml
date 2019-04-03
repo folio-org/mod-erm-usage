@@ -49,7 +49,7 @@ services:
     command:
     - echo "deployer:x:1000:1000::/home/deployer:/bin/bash">/etc/passwd;
       chown deployer /home/deployer -R;
-      su deployer -c "helm --tiller-namespace=folio-alpha --namespace=folio-alpha install --name issue-add-gitlab-ci --debug --dry-run --set-string app.image.repository=services.ub.uni-leipzig.de:10443/bdd_dev/folio/mod-erm-usage --set-string app.image.tag=add-gitlab-ci --set-string dockerconfigjson=$$(echo $$(cat /home/deployer/.docker/config.json|base64)|tr -d ' ') --set-string okapi.host=okapi-app-service-alpha-base --set-string app.environment.SERVICE_ID=mod-erm-usage-2.1.0-SNAPSHOT --set-string app.environment.INSTALL_ID=mod-erm-usage-2.1.0-SNAPSHOT --set-string app.environment.DEBUG=true /app/ubl/helmchart"
+      su deployer -c "helm --tiller-namespace=folio-alpha --namespace=folio-alpha install --name issue-add-gitlab-ci --debug --dry-run --set-string app.image.repository=services.ub.uni-leipzig.de:10443/bdd_dev/folio/mod-erm-usage --set-string app.image.tag=add-gitlab-ci --set-string dockerconfigjson=$$(echo $$(cat /home/deployer/.docker/config.json|base64)|tr -d ' ') --set-string okapi.host=okapi-app-service-alpha-base --set-string app.environment.SERVICE_ID=mod-erm-usage-2.2.0-SNAPSHOT --set-string app.environment.INSTALL_ID=mod-erm-usage-2.2.0-SNAPSHOT --set-string app.environment.DEBUG=true /app/ubl/helmchart"
 
   deploy:
     image: ubleipzig/deployer:1.4.6
@@ -63,7 +63,7 @@ services:
     command:
     - echo "deployer:x:1000:1000::/home/deployer:/bin/bash">/etc/passwd;
       chown deployer /home/deployer -R;
-      su deployer -c "helm --tiller-namespace=folio-alpha --namespace=folio-alpha install --name issue-add-gitlab-ci --set-string app.image.repository=services.ub.uni-leipzig.de:10443/bdd_dev/folio/mod-erm-usage --set-string app.image.tag=add-gitlab-ci --set-string dockerconfigjson=$$(echo $$(cat /home/deployer/.docker/config.json|base64)|tr -d ' ') --set-string okapi.host=okapi-app-service-alpha-base --set-string app.environment.SERVICE_ID=mod-erm-usage-2.1.0-SNAPSHOT --set-string app.environment.INSTALL_ID=mod-erm-usage-2.1.0-SNAPSHOT --set-string app.environment.DEBUG=true /app/ubl/helmchart"
+      su deployer -c "helm --tiller-namespace=folio-alpha --namespace=folio-alpha install --name issue-add-gitlab-ci --set-string app.image.repository=services.ub.uni-leipzig.de:10443/bdd_dev/folio/mod-erm-usage --set-string app.image.tag=add-gitlab-ci --set-string dockerconfigjson=$$(echo $$(cat /home/deployer/.docker/config.json|base64)|tr -d ' ') --set-string okapi.host=okapi-app-service-alpha-base --set-string app.environment.SERVICE_ID=mod-erm-usage-2.2.0-SNAPSHOT --set-string app.environment.INSTALL_ID=mod-erm-usage-2.2.0-SNAPSHOT --set-string app.environment.DEBUG=true /app/ubl/helmchart"
 
   undeploy:
     image: ubleipzig/deployer:1.4.6
