@@ -51,23 +51,14 @@ openjdk_8:
 
 build_image:
   stage: build_image
-  image: ubleipzig/deployer:1.4.6
+  image: ubleipzig/deployer:1.4.7
   services:
   - docker:dind
   script: |
-    deployer build \
-      --build-arg HTTP_PROXY="${HTTP_PROXY}" \
-      --build-arg HTTPS_PROXY="${HTTPS_PROXY}" \
-      --build-arg NO_PROXY="${NO_PROXY}"
-
+    deployer build
     git clone https://git.sc.uni-leipzig.de/ubl/amsl/deployment/images/backend-modules.git
     deployer build \
-      --build-arg HTTP_PROXY="${HTTP_PROXY}" \
-      --build-arg HTTPS_PROXY="${HTTPS_PROXY}" \
-      --build-arg NO_PROXY="${NO_PROXY}" \
-      --build-arg ORG=ubl \
-      --build-arg MODULE=mod-erm-usage \
-      --build-arg TAG=latest \
+      --build-arg ID=$(jq -r '.id' < target/ModuleDescriptor.json) \
       --docker-file ubl/Dockerfile \
       --output image.tar.gz
   tags:
@@ -80,7 +71,7 @@ build_image:
 
 publish_alpha_image:
   stage: publish
-  image: ubleipzig/deployer:1.4.6
+  image: ubleipzig/deployer:1.4.7
   services:
   - docker:dind
   script: |
@@ -98,7 +89,7 @@ publish_alpha_image:
 
 publish_staging_image:
   stage: publish
-  image: ubleipzig/deployer:1.4.6
+  image: ubleipzig/deployer:1.4.7
   services:
   - docker:dind
   script: |
@@ -114,7 +105,7 @@ publish_staging_image:
 
 publish_production_image:
   stage: publish
-  image: ubleipzig/deployer:1.4.6
+  image: ubleipzig/deployer:1.4.7
   services:
   - docker:dind
   script: |
@@ -138,7 +129,7 @@ publish_production_image:
 
 deploy_alpha:
   stage: deploy
-  image: ubleipzig/deployer:1.4.6
+  image: ubleipzig/deployer:1.4.7
   environment:
     name: alpha/${CI_COMMIT_REF_SLUG}
     on_stop: undeploy_alpha
@@ -154,9 +145,7 @@ deploy_alpha:
       --set-string dockerconfigjson=$(echo $(echo "${DOCKER_ALPHA_AUTH_CONFIG}"|base64)|tr -d " ") \
       --set-string app.image.repository=${alpha_repo} \
       --set-string app.image.tag=${CI_COMMIT_REF_SLUG} \
-      --set-string app.environment.SERVICE_ID=mod-erm-usage-2.1.0-SNAPSHOT \
-      --set-string app.environment.INSTALL_ID=mod-erm-usage-2.1.0-SNAPSHOT \
-      --set-string okapi.host=okapi-app-service-alpha-base
+      --set-string okapi.host=okapi-app-service-alpha.folio-base-alpha.svc.cluster.local
   tags:
   - docker
   only:
@@ -166,7 +155,7 @@ deploy_alpha:
 
 undeploy_alpha:
   stage: deploy
-  image: ubleipzig/deployer:1.4.6
+  image: ubleipzig/deployer:1.4.7
   environment:
     name: alpha/${CI_COMMIT_REF_SLUG}
     action: stop
@@ -188,7 +177,7 @@ undeploy_alpha:
 
 deploy_staging:
   stage: deploy
-  image: ubleipzig/deployer:1.4.6
+  image: ubleipzig/deployer:1.4.7
   environment:
     name: staging
     on_stop: undeploy_staging
@@ -206,7 +195,7 @@ deploy_staging:
       --set-string app.environment.INSTALL_ID=mod-erm-usage-2.1.0-SNAPSHOT \
       --set-string app.image.repository=${staging_repo} \
       --set-string app.image.tag=staging \
-      --set-string okapi.host=okapi-app-service-staging
+      --set-string okapi.host=okapi-app-service-staging.folio-base-staging.svc.cluster.local
   tags:
   - docker
   only:
@@ -214,7 +203,7 @@ deploy_staging:
 
 undeploy_staging:
   stage: deploy
-  image: ubleipzig/deployer:1.4.6
+  image: ubleipzig/deployer:1.4.7
   environment:
     name: staging
     action: stop
@@ -225,7 +214,7 @@ undeploy_staging:
       --token "${K8S_STAGING_DEPLOY_TOKEN}" \
       --namespace "${K8S_STAGING_CLUSTER_NAMESPACE}" \
       --service-account "${K8S_STAGING_DEPLOY_USER}" \
-      --name issue-${CI_COMMIT_REF_SLUG}
+      --name staging
   tags:
   - docker
   when: manual

@@ -73,9 +73,7 @@ app:
 
   affinity: {}
 
-  environment:
-    SERVICE_ID: mod-erm-usage-1.1.0
-    INSTALL_ID: mod-erm-usage-1.1.0
+  environment: {}
 
   database:
     host: okapi
