@@ -145,7 +145,8 @@ deploy_alpha:
       --set-string dockerconfigjson=$(echo $(echo "${DOCKER_ALPHA_AUTH_CONFIG}"|base64)|tr -d " ") \
       --set-string app.image.repository=${alpha_repo} \
       --set-string app.image.tag=${CI_COMMIT_REF_SLUG} \
-      --set-string okapi.host=okapi-app-service-alpha.folio-base-alpha.svc.cluster.local
+      --set-string okapi.host=okapi-app-service-alpha.folio-base-alpha \
+      --set-string namespace=${K8S_ALPHA_CLUSTER_NAMESPACE}
   tags:
   - docker
   only:
@@ -191,11 +192,10 @@ deploy_staging:
       --charts ubl/helmchart \
       --timeout 300 \
       --set-string dockerconfigjson=$(echo $(echo "${DOCKER_STAGING_AUTH_CONFIG}"|base64)|tr -d " ") \
-      --set-string app.environment.SERVICE_ID=mod-erm-usage-2.2.0-SNAPSHOT \
-      --set-string app.environment.INSTALL_ID=mod-erm-usage-2.2.0-SNAPSHOT \
       --set-string app.image.repository=${staging_repo} \
       --set-string app.image.tag=staging \
-      --set-string okapi.host=okapi-app-service-staging.folio-base-staging.svc.cluster.local
+      --set-string okapi.host=okapi-app-service-staging.folio-base-staging \
+      --set-string namespace=${K8S_STAGING_CLUSTER_NAMESPACE}
   tags:
   - docker
   only:
