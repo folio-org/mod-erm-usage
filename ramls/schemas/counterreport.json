@@ -69,9 +69,7 @@
     "release",
     "reportName",
     "yearMonth",
-    "customerId",
-    "vendorId",
-    "platformId"
+    "customerId"
   ],
   "additionalProperties": true
 }

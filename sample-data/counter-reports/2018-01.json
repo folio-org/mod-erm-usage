@@ -1,0 +1,293 @@
+{
+  "id": "6f75e408-b853-428e-85b4-38be91ab3ab4",
+  "downloadTime": "2019-04-12T13:33:22.610+0000",
+  "release": "4",
+  "reportName": "JR1",
+  "yearMonth": "2018-01",
+  "customerId": "FAKE CUSTOMER ID",
+  "providerId": "e67924ee-aa00-454e-8fd0-c3f81339d20e",
+  "report": {
+    "vendor": {
+      "id": "This is a fake vendor",
+      "contact": [
+      ]
+    },
+    "created": "2019-02-27T10:21:56.000+01:00",
+    "name": "JR1",
+    "id": "17:67:17:2018-01-01:2018-01-31",
+    "title": "Journal Report 1",
+    "version": "4",
+    "customer": [
+      {
+        "id": "FAKE CUSTOMER ID",
+        "contact": [
+        ],
+        "reportItems": [
+          {
+            "itemDate": [
+            ],
+            "itemName": "The cats journal",
+            "itemDataType": "JOURNAL",
+            "itemPlatform": "platform.com",
+            "itemAttribute": [
+            ],
+            "itemPublisher": "Cats and Dogs Publishing",
+            "itemIdentifier": [
+              {
+                "type": "DOI",
+                "value": "10.10XX"
+              },
+              {
+                "type": "PROPRIETARY",
+                "value": "XXX"
+              },
+              {
+                "type": "PRINT_ISSN",
+                "value": "1111-2222"
+              },
+              {
+                "type": "ONLINE_ISSN",
+                "value": "3333-4444"
+              }
+            ],
+            "itemContributor": [
+            ],
+            "itemPerformance": [
+              {
+                "period": {
+                  "end": "2018-01-31",
+                  "begin": "2018-01-01"
+                },
+                "category": "REQUESTS",
+                "instance": [
+                  {
+                    "count": 6,
+                    "metricType": "FT_TOTAL"
+                  },
+                  {
+                    "count": 0,
+                    "metricType": "FT_PDF"
+                  },
+                  {
+                    "count": 6,
+                    "metricType": "FT_HTML"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "itemDate": [
+            ],
+            "itemName": "The dogs journal",
+            "itemDataType": "JOURNAL",
+            "itemPlatform": "platform.com",
+            "itemAttribute": [
+            ],
+            "itemPublisher": "Cats and Dogs Publishing",
+            "itemIdentifier": [
+              {
+                "type": "DOI",
+                "value": "10.10YY"
+              },
+              {
+                "type": "PROPRIETARY",
+                "value": "YYY"
+              },
+              {
+                "type": "PRINT_ISSN",
+                "value": "1111-2222"
+              },
+              {
+                "type": "ONLINE_ISSN",
+                "value": "3333-4444"
+              }
+            ],
+            "itemContributor": [
+            ],
+            "itemPerformance": [
+              {
+                "period": {
+                  "end": "2018-01-31",
+                  "begin": "2018-01-01"
+                },
+                "category": "REQUESTS",
+                "instance": [
+                  {
+                    "count": 2,
+                    "metricType": "FT_TOTAL"
+                  },
+                  {
+                    "count": 2,
+                    "metricType": "FT_PDF"
+                  },
+                  {
+                    "count": 0,
+                    "metricType": "FT_HTML"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "itemDate": [
+            ],
+            "itemName": "Cats and Dogs",
+            "itemDataType": "JOURNAL",
+            "itemPlatform": "platform.com",
+            "itemAttribute": [
+            ],
+            "itemPublisher": "Cats and Dogs Publishing",
+            "itemIdentifier": [
+              {
+                "type": "DOI",
+                "value": "10.10ZZ"
+              },
+              {
+                "type": "PROPRIETARY",
+                "value": "ZZZ"
+              },
+              {
+                "type": "PRINT_ISSN",
+                "value": "1111-2222"
+              },
+              {
+                "type": "ONLINE_ISSN",
+                "value": "3333-4444"
+              }
+            ],
+            "itemContributor": [
+            ],
+            "itemPerformance": [
+              {
+                "period": {
+                  "end": "2018-01-31",
+                  "begin": "2018-01-01"
+                },
+                "category": "REQUESTS",
+                "instance": [
+                  {
+                    "count": 5,
+                    "metricType": "FT_TOTAL"
+                  },
+                  {
+                    "count": 4,
+                    "metricType": "FT_PDF"
+                  },
+                  {
+                    "count": 1,
+                    "metricType": "FT_HTML"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "itemDate": [
+            ],
+            "itemName": "Why do not cats and dogs like each other",
+            "itemDataType": "JOURNAL",
+            "itemPlatform": "platform.com",
+            "itemAttribute": [
+            ],
+            "itemPublisher": "Cats and Dogs Publishing",
+            "itemIdentifier": [
+              {
+                "type": "DOI",
+                "value": "10.10??"
+              },
+              {
+                "type": "PROPRIETARY",
+                "value": "???"
+              },
+              {
+                "type": "PRINT_ISSN",
+                "value": "1111-2222"
+              }
+            ],
+            "itemContributor": [
+            ],
+            "itemPerformance": [
+              {
+                "period": {
+                  "end": "2018-01-31",
+                  "begin": "2018-01-01"
+                },
+                "category": "REQUESTS",
+                "instance": [
+                  {
+                    "count": 1,
+                    "metricType": "FT_PDF"
+                  },
+                  {
+                    "count": 8,
+                    "metricType": "FT_TOTAL"
+                  },
+                  {
+                    "count": 7,
+                    "metricType": "FT_HTML"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "itemDate": [
+            ],
+            "itemName": "What if cats and dogs liked each other",
+            "itemDataType": "JOURNAL",
+            "itemPlatform": "platform.com",
+            "itemAttribute": [
+            ],
+            "itemPublisher": "Cats and Dogs Publishing",
+            "itemIdentifier": [
+              {
+                "type": "DOI",
+                "value": "10.10!!!"
+              },
+              {
+                "type": "PROPRIETARY",
+                "value": "!!!"
+              },
+              {
+                "type": "PRINT_ISSN",
+                "value": "1111-2222"
+              },
+              {
+                "type": "ONLINE_ISSN",
+                "value": "3333-4444"
+              }
+            ],
+            "itemContributor": [
+            ],
+            "itemPerformance": [
+              {
+                "period": {
+                  "end": "2018-01-31",
+                  "begin": "2018-01-01"
+                },
+                "category": "REQUESTS",
+                "instance": [
+                  {
+                    "count": 20,
+                    "metricType": "FT_HTML"
+                  },
+                  {
+                    "count": 6,
+                    "metricType": "FT_PDF"
+                  },
+                  {
+                    "count": 26,
+                    "metricType": "FT_TOTAL"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "institutionalIdentifier": [
+        ]
+      }
+    ]
+  }
+}
