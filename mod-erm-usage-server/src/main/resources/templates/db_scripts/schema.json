@@ -7,13 +7,7 @@
       "fromModuleVersion": "1.0",
       "populateJsonWithId": true,
       "pkColumnName": "_id",
-      "withMetadata": true,
-      "uniqueIndex": [
-        {
-          "fieldName": "label",
-          "tOps": "ADD"
-        }
-      ]
+      "withMetadata": true
     },
     {
       "tableName": "usage_data_providers",
@@ -22,12 +16,6 @@
       "populateJsonWithId": true,
       "pkColumnName": "_id",
       "withMetadata": true,
-      "uniqueIndex": [
-        {
-          "fieldName": "label",
-          "tOps": "ADD"
-        }
-      ],
       "foreignKeys": [
         {
           "fieldName": "aggregator.id",

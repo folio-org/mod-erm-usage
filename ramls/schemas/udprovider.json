@@ -151,6 +151,10 @@
           "description": "API Key",
           "type": "string"
         },
+        "platform": {
+          "description": "Name of the Platform the usage is being requested for",
+          "type": "string"
+        },
         "requestorName": {
           "description": "Requestor name",
           "type": "string"
@@ -161,8 +165,7 @@
         }
       },
       "required": [
-        "customerId",
-        "requestorId"
+        "customerId"
       ]
     },
     "latestReport": {
