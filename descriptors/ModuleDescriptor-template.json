@@ -306,6 +306,10 @@
       "displayName": "ermusage organization get",
       "description": "Permissions to get organizations",
       "subPermissions": [
+        "organizations-storage.contacts.collection.get",
+        "organizations-storage.contacts.item.get",
+        "organizations-storage.categories.collection.get",
+        "organizations-storage.categories.item.get",
         "organizations-storage.organizations.collection.get",
         "organizations-storage.organizations.item.get"
       ]
