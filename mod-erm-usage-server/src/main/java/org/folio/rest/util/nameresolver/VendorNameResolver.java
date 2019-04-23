@@ -46,9 +46,11 @@ public class VendorNameResolver {
               future.complete(vendorName);
             } else {
               future.fail(
-                  "Got status code != 200 when fetching vendor. Got code: "
-                      + ar.result().statusCode()
-                      + ". May vendor id is not correct?");
+                  String.format(
+                      "%s %s: %s",
+                      ar.result().statusCode(),
+                      ar.result().statusMessage(),
+                      ar.result().bodyAsString()));
             }
           } else {
             future.fail(ar.cause());

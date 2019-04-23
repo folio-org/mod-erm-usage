@@ -166,6 +166,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
                 PostUsageDataProvidersResponse.class,
                 asyncResultHandler);
           } else {
+            logger.error(ar.cause());
             asyncResultHandler.handle(
                 Future.succeededFuture(
                     PostUsageDataProvidersResponse.respond500WithTextPlain(ar.cause())));
@@ -234,6 +235,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
                 PutUsageDataProvidersByIdResponse.class,
                 asyncResultHandler);
           } else {
+            logger.error(ar.cause());
             asyncResultHandler.handle(
                 Future.succeededFuture(
                     PutUsageDataProvidersByIdResponse.respond500WithTextPlain(ar.cause())));
