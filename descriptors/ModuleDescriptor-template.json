@@ -213,7 +213,7 @@
           ],
           "pathPattern": "/_/tenant",
           "modulePermissions": [
-            "vendor-storage.vendors.item.get"
+            "organizations-storage.organizations.item.get"
           ]
         }
       ]
@@ -221,7 +221,7 @@
   ],
   "requires": [
     {
-      "id": "vendor-storage.vendors",
+      "id": "organizations-storage.organizations",
       "version": "1.0"
     }
   ],
@@ -302,16 +302,12 @@
       "description": "Delete an counter report"
     },
     {
-      "permissionName": "ermusage.vendors.get",
-      "displayName": "ermusage vendors get",
-      "description": "Permissions to get vendors",
+      "permissionName": "ermusage.organizations.get",
+      "displayName": "ermusage organization get",
+      "description": "Permissions to get organizations",
       "subPermissions": [
-        "vendor-storage.vendors.collection.get",
-        "vendor-storage.vendors.item.get",
-        "vendor-storage.categories.collection.get",
-        "vendor-storage.categories.item.get",
-        "vendor-storage.contacts.collection.get",
-        "vendor-storage.contacts.item.get"
+        "organizations-storage.organizations.collection.get",
+        "organizations-storage.organizations.item.get"
       ]
     },
     {
@@ -334,7 +330,7 @@
         "counterreports.item.post",
         "counterreports.item.put",
         "counterreports.item.delete",
-        "ermusage.vendors.get"
+        "ermusage.organizations.get"
       ],
       "visible": true
     },
@@ -355,7 +351,7 @@
         "counterreports.item.post",
         "counterreports.item.put",
         "counterreports.item.delete",
-        "ermusage.vendors.get"
+        "ermusage.organizations.get"
       ],
       "visible": true
     },
@@ -370,7 +366,7 @@
         "aggregatorsettings.item.get",
         "counterreports.collection.get",
         "counterreports.item.get",
-        "ermusage.vendors.get"
+        "ermusage.organizations.get"
       ],
       "visible": true
     }
