@@ -36,28 +36,13 @@ public class AttributeNameAdder {
             okapiHeaders,
             vertx);
 
-    Future<UsageDataProvider> future = Future.future();
-    CompositeFuture.all(vendorNameFuture, aggregatorNameFuture)
-        .setHandler(
-            ar -> {
-              if (ar.succeeded()) {
-                if (ar instanceof CompositeFuture) {
-                  CompositeFuture cf = (CompositeFuture) ar;
-                  String vendorName = cf.resultAt(0);
-                  String aggName = cf.resultAt(1);
-
-                  setVendorName(udp, vendorName);
-                  setAggregatorName(udp, aggName);
-
-                  future.complete(udp);
-                } else {
-                  future.fail("Error while adding names to udp. No composite future.");
-                }
-              } else {
-                future.fail("Error while adding names to udp: " + ar.cause());
-              }
+    return CompositeFuture.all(vendorNameFuture, aggregatorNameFuture)
+        .map(
+            cf -> {
+              setVendorName(udp, cf.resultAt(0));
+              setAggregatorName(udp, cf.resultAt(1));
+              return udp;
             });
-    return future;
   }
 
   private static String getAggregatorId(UsageDataProvider udp) {

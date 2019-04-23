@@ -13,7 +13,7 @@ public class VendorNameResolver {
 
   private static final Logger LOG = Logger.getLogger(VendorNameResolver.class);
 
-    private static final String VENDOR_ENDPOINT = "/vendor-storage/vendors/";
+  private static final String VENDOR_ENDPOINT = "/organizations-storage/organizations/";
 
   private VendorNameResolver() {
     throw new IllegalStateException("Utility class");
@@ -46,9 +46,11 @@ public class VendorNameResolver {
               future.complete(vendorName);
             } else {
               future.fail(
-                  "Got status code != 200 when fetching vendor. Got code: "
-                      + ar.result().statusCode()
-                      + ". May vendor id is not correct?");
+                  String.format(
+                      "%s %s: %s",
+                      ar.result().statusCode(),
+                      ar.result().statusMessage(),
+                      ar.result().bodyAsString()));
             }
           } else {
             future.fail(ar.cause());

@@ -46,9 +46,11 @@ public class AggregatorNameResolver {
               future.complete(aggregatorName);
             } else {
               future.fail(
-                  "Got status code != 200 when fetching aggregator. Got code: "
-                      + ar.result().statusCode()
-                      + ". Maybe aggregator id is not correct?");
+                  String.format(
+                      "%s %s: %s",
+                      ar.result().statusCode(),
+                      ar.result().statusMessage(),
+                      ar.result().bodyAsString()));
             }
           } else {
             future.fail(ar.cause());
