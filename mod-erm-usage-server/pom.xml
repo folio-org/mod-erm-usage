@@ -37,7 +37,7 @@
     <dependency>
       <groupId>org.olf</groupId>
       <artifactId>mod-erm-usage-counter41</artifactId>
-      <version>1.0.0</version>
+      <version>${erm.usage.counter.version}</version>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
