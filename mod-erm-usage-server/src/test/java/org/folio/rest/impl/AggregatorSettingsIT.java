@@ -378,39 +378,41 @@ public class AggregatorSettingsIT {
 
   @Test
   public void testExportSushiCredentialsForAggregator(TestContext ctx) throws IOException {
-    setupTestData(ctx);
+    try {
+      setupTestData(ctx);
 
-    // three providers for id
-    String result =
-        given()
-            .pathParam("id", "0adec15b-8230-48fe-b4df-87106c5dc36e")
-            .get("/{id}/exportcredentials")
-            .then()
-            .statusCode(200)
-            .contentType(MediaType.CSV_UTF_8.type())
-            .extract()
-            .asString();
-    String expectedResult =
-        "providerName,harvestingStatus,reportRelease,requestedReports,customerId,requestorId,apiKey,requestorName,requestorMail\n"
-            + "Provider1,inactive,4,\"JR1, JR4\",CustomerId1,RequestorId1,ApiKey1,RequestorName1,RequestorMail1\n"
-            + "Provider2,active,4,\"JR1, JR4\",CustomerId2,RequestorId2,ApiKey2,\"RequestorName2,WithComma\",RequestorMail2\n"
-            + "Provider3,active,4,\"JR1, JR4\",CustomerId3,RequestorId3,ApiKey3,RequestorName3,RequestorMail3\n";
-    assertThat(result).isEqualTo(expectedResult);
+      // three providers for id
+      String result =
+          given()
+              .pathParam("id", "0adec15b-8230-48fe-b4df-87106c5dc36e")
+              .get("/{id}/exportcredentials")
+              .then()
+              .statusCode(200)
+              .contentType(MediaType.CSV_UTF_8.type())
+              .extract()
+              .asString();
+      String expectedResult =
+          "providerName,harvestingStatus,reportRelease,requestedReports,customerId,requestorId,apiKey,requestorName,requestorMail,createdDate,updatedDate\n"
+              + "Provider1,inactive,4,\"JR1, JR4\",CustomerId1,RequestorId1,ApiKey1,RequestorName1,RequestorMail1,,\n"
+              + "Provider2,active,4,\"JR1, JR4\",CustomerId2,RequestorId2,ApiKey2,\"RequestorName2,WithComma\",RequestorMail2,,\n"
+              + "Provider3,active,4,\"JR1, JR4\",CustomerId3,RequestorId3,ApiKey3,RequestorName3,RequestorMail3,,\n";
+      assertThat(result).isEqualTo(expectedResult);
 
-    // no providers for id
-    String result2 =
-        given()
-            .pathParam("id", "c53dfc71-5086-4bbe-b592-26b2c977bc1f")
-            .get("/{id}/exportcredentials")
-            .then()
-            .statusCode(200)
-            .contentType(MediaType.CSV_UTF_8.type())
-            .extract()
-            .asString();
-    String expectedResult2 =
-        "providerName,harvestingStatus,reportRelease,requestedReports,customerId,requestorId,apiKey,requestorName,requestorMail\n";
-    assertThat(result2).isEqualTo(expectedResult2);
-
-    clearTestData(ctx);
+      // no providers for id
+      String result2 =
+          given()
+              .pathParam("id", "c53dfc71-5086-4bbe-b592-26b2c977bc1f")
+              .get("/{id}/exportcredentials")
+              .then()
+              .statusCode(200)
+              .contentType(MediaType.CSV_UTF_8.type())
+              .extract()
+              .asString();
+      String expectedResult2 =
+          "providerName,harvestingStatus,reportRelease,requestedReports,customerId,requestorId,apiKey,requestorName,requestorMail,createdDate,updatedDate\n";
+      assertThat(result2).isEqualTo(expectedResult2);
+    } finally {
+      clearTestData(ctx);
+    }
   }
 }
