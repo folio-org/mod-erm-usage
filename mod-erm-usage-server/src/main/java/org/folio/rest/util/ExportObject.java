@@ -1,12 +1,14 @@
 package org.folio.rest.util;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import java.text.SimpleDateFormat;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.TimeZone;
 import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.SushiCredentials;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @JsonPropertyOrder({
   "providerName",
@@ -17,9 +19,13 @@ import org.folio.rest.jaxrs.model.UsageDataProvider;
   "requestorId",
   "apiKey",
   "requestorName",
-  "requestorMail"
+  "requestorMail",
+  "createdDate",
+  "updatedDate"
 })
 public class ExportObject {
+  private static final Logger LOG = LoggerFactory.getLogger(ExportObject.class);
+
   private String providerName;
   private String harvestingStatus;
   private String reportRelease;
@@ -29,6 +35,8 @@ public class ExportObject {
   private String apiKey;
   private String requestorName;
   private String requestorMail;
+  private String createdDate;
+  private String updatedDate;
 
   public String getHarvestingStatus() {
     return harvestingStatus;
@@ -62,9 +70,16 @@ public class ExportObject {
     return requestorName;
   }
 
-  @JsonProperty("requestorMail")
   public String getRequestorMail() {
     return requestorMail;
+  }
+
+  public String getCreatedDate() {
+    return createdDate;
+  }
+
+  public String getUpdatedDate() {
+    return updatedDate;
   }
 
   public ExportObject(UsageDataProvider provider) {
@@ -75,15 +90,23 @@ public class ExportObject {
 
     this.providerName = provider.getLabel();
     this.harvestingStatus =
-        Objects.toString(provider.getHarvestingConfig().getHarvestingStatus(), "");
-    this.reportRelease = Objects.toString(provider.getHarvestingConfig().getReportRelease(), "");
-    this.requestedReports =
-        provider.getHarvestingConfig().getRequestedReports().stream()
-            .collect(Collectors.joining(", "));
+        Objects.toString(provider.getHarvestingConfig().getHarvestingStatus(), null);
+    this.reportRelease = Objects.toString(provider.getHarvestingConfig().getReportRelease(), null);
+    this.requestedReports = String.join(", ", provider.getHarvestingConfig().getRequestedReports());
     this.customerId = provider.getSushiCredentials().getCustomerId();
     this.requestorId = provider.getSushiCredentials().getRequestorId();
     this.apiKey = provider.getSushiCredentials().getApiKey();
     this.requestorName = provider.getSushiCredentials().getRequestorName();
     this.requestorMail = provider.getSushiCredentials().getRequestorMail();
+    if (provider.getMetadata() != null) {
+      try {
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        this.createdDate = dateFormat.format(provider.getMetadata().getCreatedDate());
+        this.updatedDate = dateFormat.format(provider.getMetadata().getUpdatedDate());
+      } catch (Exception e) {
+        LOG.error("Error getting Metadata", e);
+      }
+    }
   }
 }

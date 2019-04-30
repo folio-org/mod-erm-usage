@@ -233,6 +233,18 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
         asyncResultHandler);
   }
 
+  public static String getCredentialsCSV(List<UsageDataProvider> udps)
+      throws JsonProcessingException {
+    List<ExportObject> exportObjectList =
+        udps.stream().map(ExportObject::new).collect(Collectors.toList());
+    CsvMapper csvMapper = new CsvMapper();
+    return csvMapper
+        .writerFor(ExportObject.class)
+        .with(csvMapper.schemaFor(ExportObject.class).withHeader())
+        .forType(List.class)
+        .writeValueAsString(exportObjectList);
+  }
+
   @Override
   public void getAggregatorSettingsExportcredentialsById(
       String id,
@@ -253,16 +265,8 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
             ar -> {
               if (ar.succeeded()) {
                 List<UsageDataProvider> providerList = ar.result().getResults();
-                List<ExportObject> exportObjectList =
-                    providerList.stream().map(ExportObject::new).collect(Collectors.toList());
                 try {
-                  CsvMapper csvMapper = new CsvMapper();
-                  String resultString =
-                      csvMapper
-                          .writerFor(ExportObject.class)
-                          .with(csvMapper.schemaFor(ExportObject.class).withHeader())
-                          .forType(List.class)
-                          .writeValueAsString(exportObjectList);
+                  String resultString = getCredentialsCSV(providerList);
                   asyncResultHandler.handle(
                       Future.succeededFuture(
                           GetAggregatorSettingsExportcredentialsByIdResponse.respond200WithTextCsv(
