@@ -1,3 +1,9 @@
+# 2.2.0
+* Add `createdDate`/`updatedDate` metadata to credentials csv export (MODEUS-18)
+* Use latest `mod-erm-usage-counter` version
+* Replace `mod-vendors` with `mod-organizations-storage` (MODEUS-19)
+* Add reports to sample data
+
 # 2.1.0
 * Fix vendor permissions (MODEUS-14)
 * Use RMBs PgUtil
