@@ -193,8 +193,7 @@
     "label",
     "vendor",
     "platform",
-    "harvestingConfig",
-    "sushiCredentials"
+    "harvestingConfig"
   ],
   "additionalProperties": true
 }
