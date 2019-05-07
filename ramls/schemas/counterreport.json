@@ -33,24 +33,8 @@
       "type": "string",
       "format": "date-month"
     },
-    "customerId": {
-      "description": "Customer identifier",
-      "type": "string"
-    },
-    "vendorId": {
-      "description": "Vendor identifier",
-      "type": "string"
-    },
-    "platformId": {
-      "description": "Platform identifier",
-      "type": "string"
-    },
     "providerId": {
       "description": "Provider identifier",
-      "type": "string"
-    },
-    "format": {
-      "description": "Format the report is in",
       "type": "string"
     },
     "report": {
@@ -68,8 +52,7 @@
     "downloadTime",
     "release",
     "reportName",
-    "yearMonth",
-    "customerId"
+    "yearMonth"
   ],
   "additionalProperties": true
 }
