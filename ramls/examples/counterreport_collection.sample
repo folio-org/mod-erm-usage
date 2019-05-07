@@ -7,10 +7,6 @@
     	"release": "4",
     	"reportName": "JR1",
     	"yearMonth": "2018-07",
-    	"customerId": "Customer123Id",
-    	"vendorId": "5fb03fb5-56c0-4a6e-9f4e-194d1b540140",
-    	"platformId": "19b535aa-7007-435a-96da-a390853e6666",
-    	"format": "xml",
     	"report": {}
     },
     {
@@ -20,10 +16,6 @@
     	"release": "5",
     	"reportName": "TR_J1",
     	"yearMonth": "2018-07",
-    	"customerId": "Customer123Id",
-    	"vendorId": "5fb03fb5-56c0-4a6e-9f4e-194d1b540140",
-    	"platformId": "19b535aa-7007-435a-96da-a390853e6666",
-    	"format": "json",
     	"report": {}
     }
   ],
