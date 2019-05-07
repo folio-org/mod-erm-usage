@@ -4,11 +4,7 @@
   "release": "4",
   "reportName": "JR1",
   "yearMonth": "2018-12",
-  "customerId": "customer1234",
-  "vendorId": "48b1c9c4-cfb6-47fc-b34f-cff9cd2f8240",
-  "platformId": "uuid-123456789",
   "providerId": "4b659cb9-e4bb-493d-ae30-5f5690c54802",
-  "format": "???",
   "report": {
     "vendor": {
       "id": "SEM001",

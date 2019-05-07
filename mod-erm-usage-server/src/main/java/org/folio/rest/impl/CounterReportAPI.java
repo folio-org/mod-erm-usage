@@ -359,7 +359,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             "Provided report can only cover a period of exactly one month");
       }
       return new CounterReport()
-          .withCustomerId(report.getCustomer().get(0).getID())
           .withRelease(report.getVersion())
           .withReportName(Counter4Utils.getNameForReportTitle(report.getName()))
           .withReport(
