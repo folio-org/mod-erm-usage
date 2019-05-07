@@ -47,8 +47,7 @@ public class CounterReportIT {
       String reportStr =
           new String(Files.readAllBytes(Paths.get("../ramls/examples/counterreport.sample")));
       report = Json.decodeValue(reportStr, CounterReport.class);
-      reportChanged =
-          Json.decodeValue(reportStr, CounterReport.class).withCustomerId("CUSTOMER_ID_CHANGED");
+      reportChanged = Json.decodeValue(reportStr, CounterReport.class).withRelease("5");
     } catch (Exception ex) {
       context.fail(ex);
     }
@@ -113,7 +112,6 @@ public class CounterReportIT {
         .then()
         .statusCode(201)
         .body("release", equalTo(report.getRelease()))
-        .body("customerId", equalTo(report.getCustomerId()))
         .body("id", equalTo(report.getId()));
 
     // GET
@@ -125,8 +123,7 @@ public class CounterReportIT {
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
-        .body("id", equalTo(report.getId()))
-        .body("customerId", equalTo(report.getCustomerId()));
+        .body("id", equalTo(report.getId()));
 
     // PUT
     given()
@@ -147,7 +144,7 @@ public class CounterReportIT {
         .then()
         .statusCode(200)
         .body("id", equalTo(reportChanged.getId()))
-        .body("customerId", equalTo(reportChanged.getCustomerId()));
+        .body("release", equalTo(reportChanged.getRelease()));
 
     // DELETE
     given()
@@ -191,7 +188,6 @@ public class CounterReportIT {
         .statusCode(200)
         .body("counterReports.size()", equalTo(1))
         .body("counterReports[0].id", equalTo(report.getId()))
-        .body("counterReports[0].customerId", equalTo(report.getCustomerId()))
         .body("counterReports[0].release", equalTo(report.getRelease()));
 
     String cqlReport2 = "?query=(report=\"someStringThatIsNotInTheReport*\")";
@@ -216,7 +212,6 @@ public class CounterReportIT {
         .statusCode(200)
         .body("counterReports.size()", equalTo(1))
         .body("counterReports[0].id", equalTo(report.getId()))
-        .body("counterReports[0].customerId", equalTo(report.getCustomerId()))
         .body("counterReports[0].release", equalTo(report.getRelease()));
 
     // DELETE
