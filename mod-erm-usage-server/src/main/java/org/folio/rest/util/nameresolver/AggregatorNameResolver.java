@@ -1,17 +1,19 @@
 package org.folio.rest.util.nameresolver;
 
+import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.HttpRequest;
 import io.vertx.ext.web.client.WebClient;
 import java.util.Map;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.log4j.Logger;
+import org.folio.okapi.common.XOkapiHeaders;
 
 public class AggregatorNameResolver {
 
-  private static final Logger LOG = Logger.getLogger(VendorNameResolver.class);
+  private static final Logger LOG = Logger.getLogger(AggregatorNameResolver.class);
 
   private static final String AGGREGATOR_ENDPOINT = "/aggregator-settings/";
 
@@ -20,17 +22,19 @@ public class AggregatorNameResolver {
   }
 
   public static Future<String> resolveName(
-      String aggregatorId, String okapiUrl, Map<String, String> okapiHeaders, Vertx vertx) {
+      String aggregatorId, Map<String, String> okapiHeaders, Context vertxContext) {
     Future<String> future = Future.future();
 
     if (aggregatorId == null) {
-      future.complete();
-      return future;
+      return Future.succeededFuture();
     }
 
     String endpoint = AGGREGATOR_ENDPOINT + aggregatorId;
-    WebClient webClient = WebClient.create(vertx);
-    String url = okapiUrl + endpoint;
+    WebClient webClient = WebClient.create(vertxContext.owner());
+    String url =
+        ObjectUtils.firstNonNull(
+                okapiHeaders.get(XOkapiHeaders.URL_TO), okapiHeaders.get(XOkapiHeaders.URL))
+            + endpoint;
     HttpRequest<Buffer> request = webClient.getAbs(url);
 
     okapiHeaders.forEach(request::putHeader);

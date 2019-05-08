@@ -135,7 +135,6 @@ public class UsageDataProvidersIT {
 
   @Test
   public void checkThatWeCanAddAProviderWithAggregatorSettings() {
-    mockVendorFound();
     String mockedOkapiUrl = "http://localhost:" + wireMockRule.port();
 
     // POST provider with aggregator, should fail
@@ -186,8 +185,6 @@ public class UsageDataProvidersIT {
 
   @Test
   public void checkThatWeCanAddGetPutAndDeleteUsageDataProviders() {
-
-    mockVendorFound();
     String mockedOkapiUrl = "http://localhost:" + wireMockRule.port();
 
     // POST provider without aggregator
@@ -265,8 +262,6 @@ public class UsageDataProvidersIT {
 
   @Test
   public void checkThatWeCanSearchByCQL() {
-
-    mockVendorFound();
     String mockedOkapiUrl = "http://localhost:" + wireMockRule.port();
 
     // POST provider without aggregator
@@ -320,18 +315,6 @@ public class UsageDataProvidersIT {
         .post(BASE_URI)
         .then()
         .statusCode(422);
-  }
-
-  private void mockVendorFound() {
-    String vendorId = udprovider.getVendor().getId();
-    String vendorUrl = VENDOR_PATH + "/" + vendorId;
-    givenThat(
-        get(urlPathEqualTo(vendorUrl))
-            .willReturn(
-                aResponse()
-                    .withHeader("Content-type", "application/json")
-                    .withBodyFile("vendor.json")
-                    .withStatus(200)));
   }
 
   private void mockAggregatorFound() {

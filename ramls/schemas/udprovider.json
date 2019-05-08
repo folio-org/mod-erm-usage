@@ -11,40 +11,6 @@
       "description": "Usage Data Provider name",
       "type": "string"
     },
-    "vendor": {
-      "description": "Vendor properties",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Id of the the reports content’s vendor, linked via uuid from vendor app."
-        },
-        "name": {
-          "type": "string",
-          "description": "Vendor's name. If not given, it will be determined by backend module."
-        }
-      },
-      "required": [
-        "id"
-      ]
-    },
-    "platform": {
-      "description": "Platform properties",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Id of the the reports content’s platform, linked via uuid from ERM app."
-        },
-        "name": {
-          "type": "string",
-          "description": "Platform's name. If not given, it will be determined by backend module."
-        }
-      },
-      "required": [
-        "id"
-      ]
-    },
     "harvestingConfig": {
       "type": "object",
       "description": "Specifies harvesting configuration",
@@ -191,8 +157,6 @@
   },
   "required": [
     "label",
-    "vendor",
-    "platform",
     "harvestingConfig"
   ],
   "additionalProperties": true

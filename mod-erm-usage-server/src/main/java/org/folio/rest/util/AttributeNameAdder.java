@@ -1,16 +1,11 @@
 package org.folio.rest.util;
 
-import io.vertx.core.CompositeFuture;
+import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import java.util.Map;
-import org.apache.commons.lang3.ObjectUtils;
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.rest.jaxrs.model.Aggregator;
+import java.util.Objects;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
-import org.folio.rest.jaxrs.model.Vendor;
 import org.folio.rest.util.nameresolver.AggregatorNameResolver;
-import org.folio.rest.util.nameresolver.VendorNameResolver;
 
 public class AttributeNameAdder {
 
@@ -19,30 +14,17 @@ public class AttributeNameAdder {
   }
 
   public static Future<UsageDataProvider> resolveAndAddAttributeNames(
-      UsageDataProvider udp, Map<String, String> okapiHeaders, Vertx vertx) {
-    String okapiUrl = okapiHeaders.get(XOkapiHeaders.URL);
-
-    String vendorId = udp.getVendor().getId();
-    Future<String> vendorNameFuture =
-        VendorNameResolver.resolveName(vendorId, okapiUrl, okapiHeaders, vertx);
-
+      UsageDataProvider udp, Map<String, String> okapiHeaders, Context vertxContext) {
     String aggregatorId = getAggregatorId(udp);
-    Future<String> aggregatorNameFuture =
-        AggregatorNameResolver.resolveName(
-            aggregatorId,
-            ObjectUtils.firstNonNull(
-                okapiHeaders.get(XOkapiHeaders.URL_TO),
-                okapiUrl), // FIXME: workaround for loading sample-data
-            okapiHeaders,
-            vertx);
+    if (Objects.isNull(aggregatorId)) return Future.succeededFuture(udp);
 
-    return CompositeFuture.all(vendorNameFuture, aggregatorNameFuture)
-        .map(
-            cf -> {
-              setVendorName(udp, cf.resultAt(0));
-              setAggregatorName(udp, cf.resultAt(1));
-              return udp;
-            });
+    Future<String> aggregatorNameFuture =
+        AggregatorNameResolver.resolveName(aggregatorId, okapiHeaders, vertxContext);
+    return aggregatorNameFuture.map(
+        name -> {
+          if (Objects.nonNull(name)) udp.getHarvestingConfig().getAggregator().setName(name);
+          return udp;
+        });
   }
 
   private static String getAggregatorId(UsageDataProvider udp) {
@@ -50,21 +32,5 @@ public class AttributeNameAdder {
       return udp.getHarvestingConfig().getAggregator().getId();
     }
     return null;
-  }
-
-  private static void setVendorName(UsageDataProvider udp, String vendorName) {
-    if (vendorName != null) {
-      Vendor vendor = udp.getVendor();
-      vendor.setName(vendorName);
-      udp.setVendor(vendor);
-    }
-  }
-
-  private static void setAggregatorName(UsageDataProvider udp, String aggName) {
-    if (aggName != null) {
-      Aggregator aggregator = udp.getHarvestingConfig().getAggregator();
-      aggregator.setName(aggName);
-      udp.getHarvestingConfig().setAggregator(aggregator);
-    }
   }
 }

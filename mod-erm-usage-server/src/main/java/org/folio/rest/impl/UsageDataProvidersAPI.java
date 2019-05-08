@@ -153,7 +153,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Context vertxContext) {
 
     Future<UsageDataProvider> udpWithNames =
-        AttributeNameAdder.resolveAndAddAttributeNames(entity, okapiHeaders, vertxContext.owner());
+        AttributeNameAdder.resolveAndAddAttributeNames(entity, okapiHeaders, vertxContext);
 
     udpWithNames.setHandler(
         ar -> {
@@ -222,7 +222,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Context vertxContext) {
 
     Future<UsageDataProvider> udpWithNames =
-        AttributeNameAdder.resolveAndAddAttributeNames(entity, okapiHeaders, vertxContext.owner());
+        AttributeNameAdder.resolveAndAddAttributeNames(entity, okapiHeaders, vertxContext);
     udpWithNames.setHandler(
         ar -> {
           if (ar.succeeded()) {
