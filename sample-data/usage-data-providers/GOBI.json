@@ -1,12 +1,6 @@
 {
   "id": "0ba00047-b6cb-417a-a735-e2c1e45e30f1",
   "label": "GOBI Library Solutions",
-  "vendor": {
-    "id": "d0fb5aa0-cdf1-11e8-a8d5-f2801f1b9fd1"
-  },
-  "platform": {
-    "id": "00000000-0000-0000-0000-000000000000"
-  },
   "harvestingConfig": {
     "harvestingStatus": "inactive",
     "harvestVia": "sushi",

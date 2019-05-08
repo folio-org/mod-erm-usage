@@ -1,12 +1,6 @@
 {
   "id": "00db3e61-e08e-4f8b-93ee-8e60fd402fc8",
   "label": "Otto Harrassowitz GmbH & Co. KG",
-  "vendor": {
-    "id": "c0fb5956-cdf1-11e8-a8d5-f2801f1b9fd1"
-  },
-  "platform": {
-    "id": "00000000-0000-0000-0000-000000000000"
-  },
   "harvestingConfig": {
     "harvestingStatus": "inactive",
     "harvestVia": "sushi",
