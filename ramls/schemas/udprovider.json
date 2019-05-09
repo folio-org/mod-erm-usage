@@ -11,6 +11,10 @@
       "description": "Usage Data Provider name",
       "type": "string"
     },
+    "description": {
+      "description": "Usage Data Provider description",
+      "type": "string"
+    },
     "harvestingConfig": {
       "type": "object",
       "description": "Specifies harvesting configuration",
