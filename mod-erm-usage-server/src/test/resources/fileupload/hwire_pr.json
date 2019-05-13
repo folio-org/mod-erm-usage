@@ -1,0 +1,160 @@
+{
+  "Report_Header": {
+    "Created": "2019-05-07T00:21:48-08:00",
+    "Created_By": "HighWire Press Inc.",
+    "Customer_ID": "CustomerId123",
+    "Institution_ID": [
+      {
+        "Type": "Proprietary",
+        "Value": "CustomerId123"
+      }
+    ],
+    "Institution_Name": "CustomerId123",
+    "Release": "5",
+    "Report_Attributes": [
+      {
+        "Name": "Attributes_To_Show",
+        "Value": "Metric_Type"
+      }
+    ],
+    "Report_Filters": [
+      {
+        "Name": "Begin_Date",
+        "Value": "2018-10-01"
+      },
+      {
+        "Name": "End_Date",
+        "Value": "2018-11-30"
+      }
+    ],
+    "Report_ID": "PR",
+    "Report_Name": "Platform Master Report"
+  },
+  "Report_Items": [
+    {
+      "Performance": [
+        {
+          "Instance": [
+            {
+              "Count": "116",
+              "Metric_Type": "No_License"
+            },
+            {
+              "Count": "122",
+              "Metric_Type": "Searches_Platform"
+            },
+            {
+              "Count": "10114",
+              "Metric_Type": "Total_Item_Investigations"
+            },
+            {
+              "Count": "7341",
+              "Metric_Type": "Total_Item_Requests"
+            },
+            {
+              "Count": "6407",
+              "Metric_Type": "Unique_Item_Investigations"
+            },
+            {
+              "Count": "5239",
+              "Metric_Type": "Unique_Item_Requests"
+            },
+            {
+              "Count": "5172",
+              "Metric_Type": "Unique_Title_Investigations"
+            },
+            {
+              "Count": "4655",
+              "Metric_Type": "Unique_Title_Requests"
+            }
+          ],
+          "Period": {
+            "Begin_Date": "2018-10-01",
+            "End_Date": "2018-10-31"
+          }
+        },
+        {
+          "Instance": [
+            {
+              "Count": "33",
+              "Metric_Type": "No_License"
+            },
+            {
+              "Count": "198",
+              "Metric_Type": "Searches_Platform"
+            },
+            {
+              "Count": "11460",
+              "Metric_Type": "Total_Item_Investigations"
+            },
+            {
+              "Count": "8547",
+              "Metric_Type": "Total_Item_Requests"
+            },
+            {
+              "Count": "7138",
+              "Metric_Type": "Unique_Item_Investigations"
+            },
+            {
+              "Count": "5953",
+              "Metric_Type": "Unique_Item_Requests"
+            },
+            {
+              "Count": "6172",
+              "Metric_Type": "Unique_Title_Investigations"
+            },
+            {
+              "Count": "5560",
+              "Metric_Type": "Unique_Title_Requests"
+            }
+          ],
+          "Period": {
+            "Begin_Date": "2018-11-01",
+            "End_Date": "2018-11-30"
+          }
+        },
+        {
+          "Instance": [
+            {
+              "Count": "21574",
+              "Metric_Type": "Total_Item_Investigations"
+            },
+            {
+              "Count": "320",
+              "Metric_Type": "Searches_Platform"
+            },
+            {
+              "Count": "13545",
+              "Metric_Type": "Unique_Item_Investigations"
+            },
+            {
+              "Count": "11192",
+              "Metric_Type": "Unique_Item_Requests"
+            },
+            {
+              "Count": "15888",
+              "Metric_Type": "Total_Item_Requests"
+            },
+            {
+              "Count": "11344",
+              "Metric_Type": "Unique_Title_Investigations"
+            },
+            {
+              "Count": "10215",
+              "Metric_Type": "Unique_Title_Requests"
+            },
+            {
+              "Count": "149",
+              "Metric_Type": "No_License"
+            }
+          ],
+          "Period": {
+            "Begin_Date": "2018-10-01",
+            "End_Date": "2018-11-30"
+          }
+        }
+      ],
+      "Platform": "HighWire Press"
+    }
+  ]
+}

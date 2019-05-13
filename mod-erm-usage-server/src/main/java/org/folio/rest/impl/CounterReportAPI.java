@@ -37,6 +37,8 @@ import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
+import org.olf.erm.usage.counter50.Counter5Utils;
+import org.openapitools.client.model.SUSHIReportHeader;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
 
@@ -44,6 +46,9 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
 
   private static final String TABLE_NAME_COUNTER_REPORTS = "counter_reports";
   private static final String TABLE_NAME_UDP = "usage_data_providers";
+  private static final String MSG_EXACTLY_ONE_MONTH =
+      "Provided report must cover a period of exactly one month";
+  private static final String MSG_WRONG_FORMAT = "Wrong format supplied";
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
 
@@ -350,13 +355,26 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       throw new FileUploadException(e);
     }
 
-    // Counter4
+    // Counter 5
+    SUSHIReportHeader header = Counter5Utils.getReportHeader(content);
+    if (Counter5Utils.isValidReportHeader(header)) {
+      List<YearMonth> yearMonths = Counter5Utils.getYearMonthsFromReportHeader(header);
+      if (yearMonths.size() != 1) {
+        throw new FileUploadException(MSG_EXACTLY_ONE_MONTH);
+      }
+      return new CounterReport()
+          .withRelease("5")
+          .withReportName(header.getReportID())
+          .withReport(Json.decodeValue(content, org.folio.rest.jaxrs.model.Report.class))
+          .withYearMonth(yearMonths.get(0).toString());
+    }
+
+    // Counter 4
     Report report = Counter4Utils.fromString(content);
     if (report != null) {
       List<YearMonth> yearMonthsFromReport = Counter4Utils.getYearMonthsFromReport(report);
       if (yearMonthsFromReport.size() != 1) {
-        throw new FileUploadException(
-            "Provided report can only cover a period of exactly one month");
+        throw new FileUploadException(MSG_EXACTLY_ONE_MONTH);
       }
       return new CounterReport()
           .withRelease(report.getVersion())
@@ -367,7 +385,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
           .withYearMonth(yearMonthsFromReport.get(0).toString());
     }
 
-    throw new FileUploadException("Wrong format supplied");
+    throw new FileUploadException(MSG_WRONG_FORMAT);
   }
 
   private Future<UsageDataProvider> getUDPfromDbById(Vertx vertx, String tenantId, String id) {

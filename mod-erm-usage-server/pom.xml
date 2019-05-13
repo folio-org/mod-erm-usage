@@ -40,6 +40,11 @@
       <version>${erm.usage.counter.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.olf</groupId>
+      <artifactId>mod-erm-usage-counter50</artifactId>
+      <version>${erm.usage.counter.version}</version>
+    </dependency>
+    <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-core</artifactId>
       <version>${vertx.version}</version>
