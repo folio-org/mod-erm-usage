@@ -5,6 +5,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
+import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
 import io.restassured.RestAssured;
@@ -60,6 +61,10 @@ public class CounterReportUploadIT {
       new File(Resources.getResource("fileupload/noreport.txt").getFile());
   private static final File FILE_REPORT_MULTI =
       new File(Resources.getResource("fileupload/reportJSTORMultiMonth.xml").getFile());
+  private static final File FILE_REPORT5_OK =
+      new File(Resources.getResource("fileupload/hwire_trj1.json").getFile());
+  private static final File FILE_REPORT5_MULTI =
+      new File(Resources.getResource("fileupload/hwire_pr.json").getFile());
 
   @Rule public Timeout timeout = Timeout.seconds(10);
 
@@ -288,6 +293,35 @@ public class CounterReportUploadIT {
   }
 
   @Test
+  public void testReportR5Ok() throws Exception {
+    String savedReportId =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(FILE_REPORT5_OK)
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report"))
+            .extract()
+            .asString()
+            .replace("Saved report with id ", "");
+
+    CounterReport savedReport =
+        given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
+    assertThat(savedReport.getProviderId()).isEqualTo(PROVIDER_ID);
+    assertThat(savedReport.getRelease()).isEqualTo("5");
+    assertThat(savedReport.getYearMonth()).isEqualTo("2019-01");
+    assertThat(savedReport.getDownloadTime()).isNotNull();
+    assertThat(savedReport.getReportName()).isEqualTo("TR_J1");
+
+    org.folio.rest.jaxrs.model.Report report =
+        Json.decodeValue(
+            Files.toString(FILE_REPORT5_OK, StandardCharsets.UTF_8),
+            org.folio.rest.jaxrs.model.Report.class);
+    assertThat(savedReport.getReport()).isEqualToComparingFieldByFieldRecursively(report);
+  }
+
+  @Test
   public void testReportInvalidContent() {
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
@@ -299,10 +333,21 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportMultipleMonths() {
+  public void testReportMultipleMonthsC4() {
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
         .body(FILE_REPORT_MULTI)
+        .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+        .then()
+        .statusCode(500)
+        .body(containsString("exactly one month"));
+  }
+
+  @Test
+  public void testReportMultipleMonthsC5() {
+    given()
+        .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+        .body(FILE_REPORT5_MULTI)
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
