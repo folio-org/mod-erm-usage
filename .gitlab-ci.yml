@@ -79,12 +79,10 @@ publish_alpha_image:
       --docker-config "${DOCKER_ALPHA_AUTH_CONFIG}" \
       --input image.tar.gz \
       --name ${alpha_repo} \
-      --tag ${CI_COMMIT_REF_SLUG}
+      --tag latest
   tags:
   - docker
   only:
-  - branches
-  except:
   - master
 
 publish_staging_image:
@@ -99,7 +97,8 @@ publish_staging_image:
       --name ${staging_repo} \
       --tag staging
   tags:
-    - docker
+  - docker
+  when: manual
   only:
   - master
 
@@ -121,7 +120,8 @@ publish_production_image:
       --tag "${major_version}.${minor_version}" \
       --tag "${major_version}"
   tags:
-    - docker
+  - docker
+  when: manual
   except:
   - branches
   only:
@@ -150,8 +150,6 @@ deploy_alpha:
   tags:
   - docker
   only:
-  - branches
-  except:
   - master
 
 undeploy_alpha:
@@ -172,8 +170,6 @@ undeploy_alpha:
   - docker
   when: manual
   only:
-  - branches
-  except:
   - master
 
 deploy_staging:
@@ -198,6 +194,7 @@ deploy_staging:
       --set-string namespace=${K8S_STAGING_CLUSTER_NAMESPACE}
   tags:
   - docker
+  when: manual
   only:
   - master
 
