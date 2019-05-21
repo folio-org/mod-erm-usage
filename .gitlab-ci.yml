@@ -131,7 +131,7 @@ deploy_alpha:
   stage: deploy
   image: ubleipzig/deployer:1.4.7
   environment:
-    name: alpha/${CI_COMMIT_REF_SLUG}
+    name: latest
     on_stop: undeploy_alpha
   script: |
     deployer deploy --cluster-url "${K8S_ALPHA_CLUSTER_URL}" \
@@ -139,12 +139,12 @@ deploy_alpha:
       --token "${K8S_ALPHA_DEPLOY_TOKEN}" \
       --namespace "${K8S_ALPHA_CLUSTER_NAMESPACE}" \
       --service-account "${K8S_ALPHA_DEPLOY_USER}" \
-      --name issue-${CI_COMMIT_REF_SLUG} \
+      --name latest \
       --charts ubl/helmchart \
       --timeout 300 \
       --set-string dockerconfigjson=$(echo $(echo "${DOCKER_ALPHA_AUTH_CONFIG}"|base64)|tr -d " ") \
       --set-string app.image.repository=${alpha_repo} \
-      --set-string app.image.tag=${CI_COMMIT_REF_SLUG} \
+      --set-string app.image.tag=latest \
       --set-string okapi.host=okapi-app-service-alpha.folio-base-alpha \
       --set-string namespace=${K8S_ALPHA_CLUSTER_NAMESPACE}
   tags:
@@ -156,7 +156,7 @@ undeploy_alpha:
   stage: deploy
   image: ubleipzig/deployer:1.4.7
   environment:
-    name: alpha/${CI_COMMIT_REF_SLUG}
+    name: latest
     action: stop
   script: |
     deployer undeploy \
@@ -165,7 +165,7 @@ undeploy_alpha:
       --token "${K8S_ALPHA_DEPLOY_TOKEN}" \
       --namespace "${K8S_ALPHA_CLUSTER_NAMESPACE}" \
       --service-account "${K8S_ALPHA_DEPLOY_USER}" \
-      --name issue-${CI_COMMIT_REF_SLUG}
+      --name latest
   tags:
   - docker
   when: manual
