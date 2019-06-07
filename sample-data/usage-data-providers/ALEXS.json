@@ -2,7 +2,7 @@
   "id": "9362de60-f8b2-4073-bee3-01fa5fc8462f",
   "label": "Alexander Street Press",
   "harvestingConfig": {
-    "harvestingStatus": "inactive",
+    "harvestingStatus": "active",
     "harvestVia": "aggregator",
     "aggregator": {
       "id": "5b6ba83e-d7e5-414e-ba7b-134749c0d950",

@@ -2,7 +2,7 @@
   "id": "00db3e61-e08e-4f8b-93ee-8e60fd402fc8",
   "label": "Otto Harrassowitz GmbH & Co. KG",
   "harvestingConfig": {
-    "harvestingStatus": "inactive",
+    "harvestingStatus": "active",
     "harvestVia": "sushi",
     "sushiConfig": {
       "serviceType": "cs41",
