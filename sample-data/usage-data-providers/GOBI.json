@@ -2,7 +2,7 @@
   "id": "0ba00047-b6cb-417a-a735-e2c1e45e30f1",
   "label": "GOBI Library Solutions",
   "harvestingConfig": {
-    "harvestingStatus": "inactive",
+    "harvestingStatus": "active",
     "harvestVia": "sushi",
     "sushiConfig": {
       "serviceType": "cs41",
