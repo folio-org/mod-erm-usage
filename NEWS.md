@@ -1,3 +1,7 @@
+# 2.3.0
+* Update models & sample data
+* Upload Counter5 reports
+
 # 2.2.0
 * Add `createdDate`/`updatedDate` metadata to credentials csv export (MODEUS-18)
 * Use latest `mod-erm-usage-counter` version
