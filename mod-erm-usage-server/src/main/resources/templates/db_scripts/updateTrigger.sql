@@ -9,7 +9,7 @@ BEGIN
   SELECT setting INTO sp FROM pg_settings WHERE name = 'search_path';
   RAISE NOTICE 'current_user is currently %', current_user;
 	RAISE NOTICE 'search_path is currently %', sp;
-	SELECT jsonb->>'yearMonth' INTO res FROM counter_reports WHERE jsonb->>'providerId'=$1 ORDER BY jsonb->>'yearMonth' DESC LIMIT 1;
+	SELECT jsonb->>'yearMonth' INTO res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL ORDER BY jsonb->>'yearMonth' DESC LIMIT 1;
   -- RAISE EXCEPTION 'failed';
 	IF res IS NULL THEN
 		SELECT '' INTO res;
@@ -27,7 +27,7 @@ CREATE OR REPLACE FUNCTION earliest_year_month(
 $$
 DECLARE res TEXT;
 BEGIN
-	SELECT jsonb->>'yearMonth' into res FROM counter_reports WHERE jsonb->>'providerId'=$1 ORDER BY jsonb->>'yearMonth' ASC LIMIT 1;
+	SELECT jsonb->>'yearMonth' into res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL ORDER BY jsonb->>'yearMonth' ASC LIMIT 1;
 	IF res IS NULL THEN
 		SELECT '' INTO res;
 	END IF;
