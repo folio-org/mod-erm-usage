@@ -22,7 +22,8 @@
           "targetTable": "aggregator_settings",
           "tOps": "ADD"
         }
-      ]
+      ],
+      "customSnippetPath": "deleteUDPTrigger.sql"
     },
     {
       "tableName": "counter_reports",
