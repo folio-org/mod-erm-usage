@@ -1,3 +1,12 @@
+# 2.4.0
+* Update jackson-databind to 2.9.9.1 CVE-2019-12814
+* Add null checks when getting providers metadata during credentials CSV export
+* Add tests for SQL triggers
+* Add SQL triggers to autoupdate aggregator names stored in usage data providers when aggregator label changes
+* Resolve aggregator label by querying the database (MODEUS-27)
+* Remove `organizations-storage` from required interfaces (MODEUS-26)
+* Add SQL trigger to delete counter-reports if provider gets deleted (MODEUS-29)
+
 # 2.3.1
 * Bump erm-usage-counter version to incorporate bugfix (MODEUS-24)
 
