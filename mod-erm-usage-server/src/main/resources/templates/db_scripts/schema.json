@@ -7,7 +7,8 @@
       "fromModuleVersion": "1.0",
       "populateJsonWithId": true,
       "pkColumnName": "_id",
-      "withMetadata": true
+      "withMetadata": true,
+      "customSnippetPath": "aggregatorsettings.sql"
     },
     {
       "tableName": "usage_data_providers",
@@ -16,7 +17,7 @@
       "populateJsonWithId": true,
       "pkColumnName": "_id",
       "withMetadata": true,
-      "customSnippetPath": "deleteUDPTrigger.sql"
+      "customSnippetPath": "usagedataproviders.sql"
     },
     {
       "tableName": "counter_reports",
@@ -25,7 +26,7 @@
       "populateJsonWithId": true,
       "pkColumnName": "_id",
       "withMetadata": true,
-      "customSnippetPath": "updateTrigger.sql"
+      "customSnippetPath": "counterreports.sql"
     }
   ],
   "views": [
