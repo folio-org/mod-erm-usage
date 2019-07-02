@@ -23,7 +23,6 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
-import org.folio.rest.util.AttributeNameAdder;
 import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
 import org.z3950.zing.cql.cql2pgjson.FieldException;
 
@@ -152,26 +151,13 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    Future<UsageDataProvider> udpWithNames =
-        AttributeNameAdder.resolveAndAddAttributeNames(entity, okapiHeaders, vertxContext);
-
-    udpWithNames.setHandler(
-        ar -> {
-          if (ar.succeeded()) {
-            PgUtil.post(
-                TABLE_UDP,
-                ar.result(),
-                okapiHeaders,
-                vertxContext,
-                PostUsageDataProvidersResponse.class,
-                asyncResultHandler);
-          } else {
-            logger.error(ar.cause());
-            asyncResultHandler.handle(
-                Future.succeededFuture(
-                    PostUsageDataProvidersResponse.respond500WithTextPlain(ar.cause())));
-          }
-        });
+    PgUtil.post(
+        TABLE_UDP,
+        entity,
+        okapiHeaders,
+        vertxContext,
+        PostUsageDataProvidersResponse.class,
+        asyncResultHandler);
   }
 
   @Override
@@ -221,25 +207,13 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    Future<UsageDataProvider> udpWithNames =
-        AttributeNameAdder.resolveAndAddAttributeNames(entity, okapiHeaders, vertxContext);
-    udpWithNames.setHandler(
-        ar -> {
-          if (ar.succeeded()) {
-            PgUtil.put(
-                TABLE_UDP,
-                ar.result(),
-                id,
-                okapiHeaders,
-                vertxContext,
-                PutUsageDataProvidersByIdResponse.class,
-                asyncResultHandler);
-          } else {
-            logger.error(ar.cause());
-            asyncResultHandler.handle(
-                Future.succeededFuture(
-                    PutUsageDataProvidersByIdResponse.respond500WithTextPlain(ar.cause())));
-          }
-        });
+    PgUtil.put(
+        TABLE_UDP,
+        entity,
+        id,
+        okapiHeaders,
+        vertxContext,
+        PutUsageDataProvidersByIdResponse.class,
+        asyncResultHandler);
   }
 }

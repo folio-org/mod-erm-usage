@@ -1,9 +1,5 @@
 package org.folio.rest.impl;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.givenThat;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +40,7 @@ public class UsageDataProvidersIT {
   public static final String APPLICATION_JSON = "application/json";
   public static final String BASE_URI = "/usage-data-providers";
   private static final String TENANT = "diku";
-  private static final String AGGREGATOR_SETTINGS_PATH = "/aggregator-settings/";
+  public static final String AGGREGATOR_PATH = "/aggregator-settings";
   private static Vertx vertx;
   private static UsageDataProvider udprovider;
   private static UsageDataProvider udprovider2;
@@ -109,11 +105,7 @@ public class UsageDataProvidersIT {
         options,
         res -> {
           try {
-            tenantClient.postTenant(
-                null,
-                res2 -> {
-                  async.complete();
-                });
+            tenantClient.postTenant(null, res2 -> async.complete());
           } catch (Exception e) {
             context.fail(e);
           }
@@ -134,33 +126,27 @@ public class UsageDataProvidersIT {
 
   @Test
   public void checkThatWeCanAddAProviderWithAggregatorSettings() {
-    String mockedOkapiUrl = "http://localhost:" + wireMockRule.port();
-
-    // POST provider with aggregator, should fail
-    mockAggregatorNotFound();
+    // POST aggregator
     given()
-        .body(Json.encode(udprovider2))
+        .body(Json.encode(aggregator))
         .header("X-Okapi-Tenant", TENANT)
-        .header("x-okapi-url", mockedOkapiUrl)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .post(BASE_URI)
+        .post(AGGREGATOR_PATH)
         .then()
-        .statusCode(500);
+        .statusCode(201);
 
-    // POST provider then with mocked aggregator found
-    mockAggregatorFound();
+    // POST provider
     given()
         .body(Json.encode(udprovider2))
         .header("X-Okapi-Tenant", TENANT)
-        .header("x-okapi-url", mockedOkapiUrl)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .post(BASE_URI)
         .then()
         .statusCode(201);
 
-    // GET provider
+    // GET provider && check if aggregator name got resolved
     given()
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
@@ -178,6 +164,15 @@ public class UsageDataProvidersIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .delete(BASE_URI + "/" + udprovider2.getId())
+        .then()
+        .statusCode(204);
+
+    // DELETE aggregator
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(AGGREGATOR_PATH + "/" + aggregator.getId())
         .then()
         .statusCode(204);
   }
@@ -314,23 +309,5 @@ public class UsageDataProvidersIT {
         .post(BASE_URI)
         .then()
         .statusCode(422);
-  }
-
-  private void mockAggregatorFound() {
-    String aggregatorId = aggregator.getId();
-    String aggregatorUrl = AGGREGATOR_SETTINGS_PATH + aggregatorId;
-    givenThat(
-        get(urlPathEqualTo(aggregatorUrl))
-            .willReturn(
-                aResponse()
-                    .withHeader("Content-type", "application/json")
-                    .withBody(Json.encode(aggregator))
-                    .withStatus(200)));
-  }
-
-  private void mockAggregatorNotFound() {
-    String aggregatorId = aggregator.getId();
-    String aggregatorUrl = AGGREGATOR_SETTINGS_PATH + aggregatorId;
-    givenThat(get(urlPathEqualTo(aggregatorUrl)).willReturn(aResponse().withStatus(404)));
   }
 }
