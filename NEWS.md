@@ -1,3 +1,6 @@
+# 2.3.1
+* Bump erm-usage-counter version to incorporate bugfix (MODEUS-24)
+
 # 2.3.0
 * Update models & sample data
 * Upload Counter5 reports

@@ -211,18 +211,9 @@
             "POST",
             "DELETE"
           ],
-          "pathPattern": "/_/tenant",
-          "modulePermissions": [
-            "organizations-storage.organizations.item.get"
-          ]
+          "pathPattern": "/_/tenant"
         }
       ]
-    }
-  ],
-  "requires": [
-    {
-      "id": "organizations-storage.organizations",
-      "version": "1.0"
     }
   ],
   "permissionSets": [
@@ -302,19 +293,6 @@
       "description": "Delete an counter report"
     },
     {
-      "permissionName": "ermusage.organizations.get",
-      "displayName": "ermusage organization get",
-      "description": "Permissions to get organizations",
-      "subPermissions": [
-        "organizations-storage.contacts.collection.get",
-        "organizations-storage.contacts.item.get",
-        "organizations-storage.categories.collection.get",
-        "organizations-storage.categories.item.get",
-        "organizations-storage.organizations.collection.get",
-        "organizations-storage.organizations.item.get"
-      ]
-    },
-    {
       "permissionName": "ermusage.all",
       "displayName": "ermusage all",
       "description": "All permissions for the mod-erm-usage module. An admin should get all permission, e.g. to edit aggregators.",
@@ -333,8 +311,7 @@
         "counterreports.item.get",
         "counterreports.item.post",
         "counterreports.item.put",
-        "counterreports.item.delete",
-        "ermusage.organizations.get"
+        "counterreports.item.delete"
       ],
       "visible": true
     },
@@ -354,8 +331,7 @@
         "counterreports.item.get",
         "counterreports.item.post",
         "counterreports.item.put",
-        "counterreports.item.delete",
-        "ermusage.organizations.get"
+        "counterreports.item.delete"
       ],
       "visible": true
     },
@@ -369,8 +345,7 @@
         "aggregatorsettings.collection.get",
         "aggregatorsettings.item.get",
         "counterreports.collection.get",
-        "counterreports.item.get",
-        "ermusage.organizations.get"
+        "counterreports.item.get"
       ],
       "visible": true
     }
