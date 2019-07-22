@@ -102,8 +102,10 @@ public class ExportObject {
       try {
         final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        this.createdDate = dateFormat.format(provider.getMetadata().getCreatedDate());
-        this.updatedDate = dateFormat.format(provider.getMetadata().getUpdatedDate());
+        if (provider.getMetadata().getCreatedDate() != null)
+          this.createdDate = dateFormat.format(provider.getMetadata().getCreatedDate());
+        if (provider.getMetadata().getUpdatedDate() != null)
+          this.updatedDate = dateFormat.format(provider.getMetadata().getUpdatedDate());
       } catch (Exception e) {
         LOG.error("Error getting Metadata", e);
       }
