@@ -177,7 +177,7 @@ public class AggregatorSettingsIT {
 
     AggregatorSettings as =
         given()
-            .param(QUERY_PARAM, "(label=*Digital*)")
+            .param(QUERY_PARAM, "(label==*Digital*)")
             .get()
             .then()
             .statusCode(200)
