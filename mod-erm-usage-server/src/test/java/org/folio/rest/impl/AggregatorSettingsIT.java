@@ -373,7 +373,7 @@ public class AggregatorSettingsIT {
             .then()
             .extract()
             .as(UsageDataProviders.class);
-    assertThat(aggregators.getAggregatorSettings().size()).isEqualTo(0);
+    assertThat(providers.getUsageDataProviders().size()).isEqualTo(0);
   }
 
   @Test
