@@ -10,6 +10,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
+import org.folio.cql2pgjson.CQL2PgJSON;
+import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
@@ -23,8 +25,6 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
-import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.UsageDataProviders {
 

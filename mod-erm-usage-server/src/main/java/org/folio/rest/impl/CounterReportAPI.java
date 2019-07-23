@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.IOUtils;
+import org.folio.cql2pgjson.CQL2PgJSON;
+import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -39,8 +41,6 @@ import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.openapitools.client.model.SUSHIReportHeader;
-import org.z3950.zing.cql.cql2pgjson.CQL2PgJSON;
-import org.z3950.zing.cql.cql2pgjson.FieldException;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
