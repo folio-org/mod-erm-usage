@@ -43,7 +43,7 @@ public class SQLTriggersIT {
 
   @Rule public Timeout timout = Timeout.seconds(5);
 
-  private static final String TENANT = "diku";
+  private static final String TENANT = "testtenant";
   private static final String TABLE_UDP = "usage_data_providers";
   private static final String TABLE_REPORTS = "counter_reports";
   private static final String TABLE_AGGREGATOR = "aggregator_settings";

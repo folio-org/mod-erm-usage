@@ -31,7 +31,7 @@ WHEN (
 EXECUTE PROCEDURE resolve_aggregator_label();
 
 CREATE TRIGGER resolve_aggregator_label_before_update
-BEFORE UPDATE ON diku_mod_erm_usage.usage_data_providers FOR EACH ROW
+BEFORE UPDATE ON usage_data_providers FOR EACH ROW
 WHEN (
   NEW.jsonb->'harvestingConfig'->'aggregator'->>'id' IS NOT NULL AND
   NEW.jsonb->'harvestingConfig'->'aggregator'->>'id' IS DISTINCT FROM
