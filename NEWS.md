@@ -1,3 +1,6 @@
+# 2.4.1
+* Remove hardcoded 'diku' from db_scripts and use different tenant for tests (MODEUS-32)
+
 # 2.4.0
 * Update jackson-databind to 2.9.9.1 CVE-2019-12814
 * Add null checks when getting providers metadata during credentials CSV export
