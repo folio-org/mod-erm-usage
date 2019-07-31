@@ -82,7 +82,6 @@ public class CounterReportUploadIT {
       return;
     }
 
-    Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 
     RestAssured.reset();
@@ -97,21 +96,20 @@ public class CounterReportUploadIT {
     TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
+
+    Async async = context.async();
     vertx.deployVerticle(
         RestVerticle.class.getName(),
         options,
         res -> {
           try {
-            tenantClient.postTenant(
-                null,
-                res2 -> {
-                  postProvider(context);
-                  async.complete();
-                });
+            tenantClient.postTenant(null, res2 -> async.complete());
           } catch (Exception e) {
             context.fail(e);
           }
         });
+    async.await();
+    postProvider(context);
   }
 
   @AfterClass

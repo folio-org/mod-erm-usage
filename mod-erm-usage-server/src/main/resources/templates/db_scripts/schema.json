@@ -3,28 +3,19 @@
   "tables": [
     {
       "tableName": "aggregator_settings",
-      "generateId": true,
       "fromModuleVersion": "1.0",
-      "populateJsonWithId": true,
-      "pkColumnName": "_id",
       "withMetadata": true,
       "customSnippetPath": "aggregatorsettings.sql"
     },
     {
       "tableName": "usage_data_providers",
-      "generateId": true,
       "fromModuleVersion": "1.0",
-      "populateJsonWithId": true,
-      "pkColumnName": "_id",
       "withMetadata": true,
       "customSnippetPath": "usagedataproviders.sql"
     },
     {
       "tableName": "counter_reports",
-      "generateId": true,
       "fromModuleVersion": "1.0",
-      "populateJsonWithId": true,
-      "pkColumnName": "_id",
       "withMetadata": true,
       "customSnippetPath": "counterreports.sql"
     }
