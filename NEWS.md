@@ -1,3 +1,8 @@
+# 2.5.0
+* Update RMB version to 26.2.4
+* Update jackson-databind version to 2.9.9.3
+* Some fixes in tests
+
 # 2.4.1
 * Remove hardcoded 'diku' from db_scripts and use different tenant for tests (MODEUS-32)
 
