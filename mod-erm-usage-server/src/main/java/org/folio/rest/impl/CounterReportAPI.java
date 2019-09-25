@@ -10,7 +10,6 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.io.InputStream;
 import java.time.Instant;
-import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -19,8 +18,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
-import org.apache.commons.codec.Charsets;
-import org.apache.commons.io.IOUtils;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.okapi.common.XOkapiHeaders;
@@ -37,10 +34,9 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.util.UploadHelper;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
-import org.olf.erm.usage.counter50.Counter5Utils;
-import org.openapitools.client.model.SUSHIReportHeader;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
@@ -300,7 +296,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
 
     CounterReport counterReport;
     try {
-      counterReport = getCounterReportFromInputStream(entity);
+      counterReport = UploadHelper.getCounterReportFromInputStream(entity);
     } catch (Exception e) {
       asyncResultHandler.handle(
           Future.succeededFuture(
@@ -331,61 +327,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                             String.format("Error saving report: %s", ar.cause()))));
               }
             });
-  }
-
-  class FileUploadException extends Exception {
-
-    private static final long serialVersionUID = -3795351043189447151L;
-
-    public FileUploadException(String message) {
-      super(message);
-    }
-
-    public FileUploadException(Exception e) {
-      super(e);
-    }
-  }
-
-  private CounterReport getCounterReportFromInputStream(InputStream entity)
-      throws FileUploadException {
-    String content;
-    try {
-      content = IOUtils.toString(entity, Charsets.UTF_8);
-    } catch (Exception e) {
-      throw new FileUploadException(e);
-    }
-
-    // Counter 5
-    SUSHIReportHeader header = Counter5Utils.getReportHeader(content);
-    if (Counter5Utils.isValidReportHeader(header)) {
-      List<YearMonth> yearMonths = Counter5Utils.getYearMonthsFromReportHeader(header);
-      if (yearMonths.size() != 1) {
-        throw new FileUploadException(MSG_EXACTLY_ONE_MONTH);
-      }
-      return new CounterReport()
-          .withRelease("5")
-          .withReportName(header.getReportID())
-          .withReport(Json.decodeValue(content, org.folio.rest.jaxrs.model.Report.class))
-          .withYearMonth(yearMonths.get(0).toString());
-    }
-
-    // Counter 4
-    Report report = Counter4Utils.fromString(content);
-    if (report != null) {
-      List<YearMonth> yearMonthsFromReport = Counter4Utils.getYearMonthsFromReport(report);
-      if (yearMonthsFromReport.size() != 1) {
-        throw new FileUploadException(MSG_EXACTLY_ONE_MONTH);
-      }
-      return new CounterReport()
-          .withRelease(report.getVersion())
-          .withReportName(Counter4Utils.getNameForReportTitle(report.getName()))
-          .withReport(
-              Json.decodeValue(
-                  Counter4Utils.toJSON(report), org.folio.rest.jaxrs.model.Report.class))
-          .withYearMonth(yearMonthsFromReport.get(0).toString());
-    }
-
-    throw new FileUploadException(MSG_WRONG_FORMAT);
   }
 
   private Future<UsageDataProvider> getUDPfromDbById(Vertx vertx, String tenantId, String id) {
