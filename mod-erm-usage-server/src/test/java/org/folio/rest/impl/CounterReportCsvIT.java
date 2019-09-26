@@ -193,7 +193,7 @@ public class CounterReportCsvIT {
         .statusCode(200)
         .body(
             containsString(
-                "19th-Century Music,University of California Press,Ithaka,Ithaka,Ithaka,0148-2076,1533-8606,6,3,3,2,2,2"));
+                "19th-Century Music,University of California Press,Ithaka,,,0148-2076,1533-8606,6,3,3,2,2,2"));
   }
 
   @Test
