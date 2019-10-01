@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
+
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
@@ -41,7 +43,7 @@ import org.junit.runner.RunWith;
 @RunWith(VertxUnitRunner.class)
 public class SQLTriggersIT {
 
-  @Rule public Timeout timout = Timeout.seconds(5);
+  @Rule public Timeout timeout = Timeout.seconds(5);
 
   private static final String TENANT = "testtenant";
   private static final String TABLE_UDP = "usage_data_providers";
@@ -58,6 +60,7 @@ public class SQLTriggersIT {
   private static AggregatorSetting sampleAggregator;
   private static UsageDataProvider sampleUDP;
   private static CounterReport sampleReport;
+  private static CounterReport reportFailed;
 
   @BeforeClass
   public static void init(TestContext context) {
@@ -86,6 +89,12 @@ public class SQLTriggersIT {
               Resources.getResource("sample-data/counter-reports/2018-01.json"),
               StandardCharsets.UTF_8);
       sampleReport = Json.decodeValue(reportJSON, CounterReport.class);
+      reportFailed = Json.decodeValue(reportJSON, CounterReport.class)
+        .withId(UUID.randomUUID().toString())
+        .withYearMonth("2018-02")
+        .withFailedAttempts(3)
+        .withFailedReason("This is a failed report")
+        .withReport(null);
     } catch (Exception e) {
       e.printStackTrace();
       context.fail(e);
@@ -461,5 +470,83 @@ public class SQLTriggersIT {
                 context.fail(ar.cause());
               }
             });
+  }
+
+  @Test
+  public void updateProviderHasFailedReportOnInsertOrUpdate(TestContext context) {
+    Async async = context.async();
+    getPGClient()
+      .upsert(
+        TABLE_REPORTS,
+        sampleReport.getId(),
+        sampleReport,
+        ar -> {
+          if (ar.succeeded()) {
+            getPGClient()
+              .getById(
+                TABLE_UDP,
+                sampleUDP.getId(),
+                UsageDataProvider.class,
+                ar2 -> {
+                  if (ar2.succeeded()) {
+                    assertThat(ar2.result().getHasFailedReport()).isEqualTo("no");
+                    async.complete();
+                  } else {
+                    context.fail(ar2.cause());
+                  }
+                });
+          } else {
+            context.fail(ar.cause());
+          }
+        });
+
+    async.await();
+    Async async2 = context.async();
+    getPGClient()
+      .upsert(
+        TABLE_REPORTS,
+        reportFailed.getId(),
+        reportFailed,
+        ar -> {
+          if (ar.succeeded()) {
+            getPGClient()
+              .getById(
+                TABLE_UDP,
+                sampleUDP.getId(),
+                UsageDataProvider.class,
+                ar2 -> {
+                  if (ar2.succeeded()) {
+                    assertThat(ar2.result().getHasFailedReport()).isEqualTo("yes");
+                    getPGClient()
+                      .delete(
+                        TABLE_REPORTS,
+                        reportFailed.getId(),
+                        ar3 -> {
+                          if (ar3.succeeded()) {
+                            getPGClient()
+                              .getById(
+                                TABLE_UDP,
+                                sampleUDP.getId(),
+                                UsageDataProvider.class,
+                                ar4 -> {
+                                  if (ar4.succeeded()) {
+                                    assertThat(ar4.result().getHasFailedReport()).isEqualTo("no");
+                                    async2.complete();
+                                  } else {
+                                    context.fail(ar4.cause());
+                                  }
+                                });
+                          } else {
+                            context.fail(ar3.cause());
+                          }
+                        });
+                  } else {
+                    context.fail(ar2.cause());
+                  }
+                });
+          } else {
+            context.fail(ar.cause());
+          }
+        });
   }
 }

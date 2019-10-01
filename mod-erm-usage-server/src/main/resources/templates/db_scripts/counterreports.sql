@@ -1,7 +1,7 @@
 -- return year-month of latest report available for a usage data provider
 CREATE OR REPLACE FUNCTION latest_year_month(
   providerId TEXT
-  ) RETURNS TEXT AS 
+  ) RETURNS TEXT AS
 $$
 DECLARE res TEXT;
 DECLARE sp TEXT;
@@ -23,7 +23,7 @@ LANGUAGE plpgsql;
 -- return year-month of earliest report available for a usage data provider
 CREATE OR REPLACE FUNCTION earliest_year_month(
   providerId TEXT
-  ) RETURNS TEXT AS 
+  ) RETURNS TEXT AS
 $$
 DECLARE res TEXT;
 BEGIN
@@ -32,6 +32,27 @@ BEGIN
 		SELECT '' INTO res;
 	END IF;
 	RETURN res;
+END;
+$$
+LANGUAGE plpgsql;
+
+-- return yes/no depending whether the usage data provider has a failed report or not
+CREATE OR REPLACE FUNCTION udp_has_failed_report(
+  providerId TEXT
+  ) RETURNS TEXT AS
+$$
+DECLARE c NUMERIC;
+DECLARE res TEXT;
+BEGIN
+  SELECT count(*) INTO c FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->>'failedAttempts' IS NOT NULL;
+  IF c IS NULL THEN
+    SELECT 'no' INTO res;
+  ELSIF c = 0 THEN
+    SELECT 'no' INTO res;
+  ELSE
+    SELECT 'yes' INTO res;
+  END IF;
+  RETURN res;
 END;
 $$
 LANGUAGE plpgsql;
@@ -64,14 +85,48 @@ BEGIN
 END;
 $BODY$ LANGUAGE plpgsql;
 
--- trigger function to update latest report available of an usage data provider, on update/insert
+-- trigger function to update if an usage data provider has a failed report, on update/insert
+CREATE OR REPLACE FUNCTION update_udp_failed_report_on_update() RETURNS TRIGGER AS
+$BODY$
+DECLARE has_error TEXT;
+BEGIN
+	SELECT udp_has_failed_report(NEW.jsonb->>'providerId') INTO has_error;
+	UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{hasFailedReport}', to_jsonb(has_error), TRUE) WHERE jsonb->>'id'=NEW.jsonb->>'providerId';
+	RETURN NEW;
+END;
+$BODY$ LANGUAGE plpgsql;
+
+-- trigger function to update if an usage data provider has a failed report, on delete
+CREATE OR REPLACE FUNCTION update_udp_failed_report_on_delete() RETURNS TRIGGER AS
+$BODY$
+DECLARE has_error TEXT;
+BEGIN
+	SELECT udp_has_failed_report(OLD.jsonb->>'providerId') INTO has_error;
+	UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{hasFailedReport}', to_jsonb(has_error), TRUE) WHERE jsonb->>'id'=OLD.jsonb->>'providerId';
+	RETURN OLD;
+END;
+$BODY$ LANGUAGE plpgsql;
+
+-- trigger to update latest report available of an usage data provider, on update/insert
 CREATE TRIGGER update_provider_report_date_on_update
 AFTER INSERT OR UPDATE ON counter_reports
 FOR EACH ROW
 EXECUTE PROCEDURE update_latest_statistic_on_update();
 
--- trigger function to update latest report available of an usage data provider, on delete
+-- trigger to update latest report available of an usage data provider, on delete
 CREATE TRIGGER update_provider_report_date_on_delete
 AFTER DELETE ON counter_reports
 FOR EACH ROW
 EXECUTE PROCEDURE update_latest_statistic_on_delete();
+
+-- trigger to update if an usage data provider has a failed report, on update/insert
+CREATE TRIGGER update_provider_failed_report_on_update
+AFTER INSERT OR UPDATE ON counter_reports
+FOR EACH ROW
+EXECUTE PROCEDURE update_udp_failed_report_on_update();
+
+-- trigger to update if an usage data provider has a failed report, on delete
+CREATE TRIGGER update_provider_failed_report_on_delete
+AFTER DELETE ON counter_reports
+FOR EACH ROW
+EXECUTE PROCEDURE update_udp_failed_report_on_delete();

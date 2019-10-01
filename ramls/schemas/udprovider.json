@@ -146,6 +146,10 @@
       "description": "Oldest report available for provider",
       "type": "string"
     },
+    "hasFailedReport": {
+      "description": "Indicator if this provider has a failed report",
+      "type": "string"
+    },
     "notes": {
       "description": "Notes for provider",
       "type": "string"

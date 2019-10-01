@@ -237,4 +237,9 @@ public class CounterReportIT {
         .then()
         .statusCode(422);
   }
+
+  @Test
+  public void checkHasErrorIsComputed() {
+
+  }
 }
