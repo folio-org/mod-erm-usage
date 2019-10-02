@@ -26,5 +26,6 @@
     "requestorName": "Karla Kolumna",
     "requestorMail": "kolumna@ub.uni-leipzig.de"
   },
+  "hasFailedReport": "no",
   "notes": "This is a note!"
 }
