@@ -489,7 +489,7 @@ public class SQLTriggersIT {
                 UsageDataProvider.class,
                 ar2 -> {
                   if (ar2.succeeded()) {
-                    assertThat(ar2.result().getHasFailedReport()).isEqualTo("no");
+                    assertThat(ar2.result().getHasFailedReport()).isEqualTo(UsageDataProvider.HasFailedReport.NO);
                     async.complete();
                   } else {
                     context.fail(ar2.cause());
@@ -516,7 +516,7 @@ public class SQLTriggersIT {
                 UsageDataProvider.class,
                 ar2 -> {
                   if (ar2.succeeded()) {
-                    assertThat(ar2.result().getHasFailedReport()).isEqualTo("yes");
+                    assertThat(ar2.result().getHasFailedReport()).isEqualTo(UsageDataProvider.HasFailedReport.YES);
                     getPGClient()
                       .delete(
                         TABLE_REPORTS,
@@ -530,7 +530,7 @@ public class SQLTriggersIT {
                                 UsageDataProvider.class,
                                 ar4 -> {
                                   if (ar4.succeeded()) {
-                                    assertThat(ar4.result().getHasFailedReport()).isEqualTo("no");
+                                    assertThat(ar4.result().getHasFailedReport()).isEqualTo(UsageDataProvider.HasFailedReport.NO);
                                     async2.complete();
                                   } else {
                                     context.fail(ar4.cause());

@@ -148,7 +148,11 @@
     },
     "hasFailedReport": {
       "description": "Indicator if this provider has a failed report",
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "yes",
+        "no"
+      ]
     },
     "notes": {
       "description": "Notes for provider",
