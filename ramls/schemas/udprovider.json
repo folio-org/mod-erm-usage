@@ -152,7 +152,8 @@
       "enum": [
         "yes",
         "no"
-      ]
+      ],
+      "default": "no"
     },
     "notes": {
       "description": "Notes for provider",
