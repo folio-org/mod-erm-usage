@@ -25,6 +25,7 @@ import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.SushiCredentials;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -309,5 +310,32 @@ public class UsageDataProvidersIT {
         .post(BASE_URI)
         .then()
         .statusCode(422);
+  }
+
+  @Test
+  public void checkThatDefaultValueForHasFailedReportsIsNo() {
+    UsageDataProvider udp =
+        given()
+            .body(udprovider)
+            .header("X-Okapi-Tenant", TENANT)
+            .header("content-type", APPLICATION_JSON)
+            .header("accept", APPLICATION_JSON)
+            .request()
+            .post(BASE_URI)
+            .then()
+            .statusCode(201)
+            .extract()
+            .as(UsageDataProvider.class);
+
+    assertThat(udp.getHasFailedReport()).isEqualTo(HasFailedReport.NO);
+
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .when()
+        .delete(BASE_URI + "/" + udprovider.getId())
+        .then()
+        .statusCode(204);
   }
 }

@@ -151,10 +151,6 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    if (entity.getHasFailedReport() == null) {
-      entity.setHasFailedReport(UsageDataProvider.HasFailedReport.NO);
-    }
-
     PgUtil.post(
         TABLE_UDP,
         entity,
