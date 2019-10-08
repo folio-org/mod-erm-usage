@@ -34,6 +34,7 @@ import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.Constants;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -129,7 +130,7 @@ public class CounterReportUploadIT {
     Async async = ctx.async();
     PostgresClient.getInstance(vertx, TENANT)
         .delete(
-            "counter_reports",
+            Constants.TABLE_NAME_COUNTER_REPORTS,
             new Criterion(),
             ar -> {
               if (ar.failed()) ctx.fail(ar.cause());
@@ -154,7 +155,7 @@ public class CounterReportUploadIT {
     Async async = ctx.async();
     PostgresClient.getInstance(vertx, TENANT)
         .save(
-            "usage_data_providers",
+            Constants.TABLE_NAME_UDP,
             PROVIDER_ID,
             Json.decodeValue(str, UsageDataProvider.class).withId(null),
             ar -> {

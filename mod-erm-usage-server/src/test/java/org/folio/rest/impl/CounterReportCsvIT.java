@@ -35,6 +35,7 @@ import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.Constants;
 import org.joda.time.LocalDate;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -130,7 +131,7 @@ public class CounterReportCsvIT {
     Async async = ctx.async();
     PostgresClient.getInstance(vertx, TENANT)
         .delete(
-            "counter_reports",
+            Constants.TABLE_NAME_COUNTER_REPORTS,
             new Criterion(),
             ar -> {
               if (ar.failed()) ctx.fail(ar.cause());

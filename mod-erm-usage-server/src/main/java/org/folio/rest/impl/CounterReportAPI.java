@@ -1,5 +1,8 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -40,8 +43,6 @@ import org.olf.erm.usage.counter41.Counter4Utils;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
-  private static final String TABLE_NAME_COUNTER_REPORTS = "counter_reports";
-  private static final String TABLE_NAME_UDP = "usage_data_providers";
   private static final String MSG_EXACTLY_ONE_MONTH =
       "Provided report must cover a period of exactly one month";
   private static final String MSG_WRONG_FORMAT = "Wrong format supplied";

@@ -34,6 +34,7 @@ import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.Constants;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -315,7 +316,7 @@ public class AggregatorSettingsIT {
             });
     PostgresClient.getInstance(vertx, TENANT)
         .saveBatch(
-            "usage_data_providers",
+            Constants.TABLE_NAME_UDP,
             providers,
             ar -> {
               assertThat(ar.succeeded()).isTrue();
@@ -342,7 +343,7 @@ public class AggregatorSettingsIT {
     Async async = ctx.async(2);
     PostgresClient.getInstance(vertx, TENANT)
         .delete(
-            "usage_data_providers",
+            Constants.TABLE_NAME_UDP,
             new Criterion(),
             ar -> {
               assertThat(ar.succeeded()).isTrue();
