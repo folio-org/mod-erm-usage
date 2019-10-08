@@ -43,9 +43,6 @@ import org.olf.erm.usage.counter41.Counter4Utils;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
-  private static final String MSG_EXACTLY_ONE_MONTH =
-      "Provided report must cover a period of exactly one month";
-  private static final String MSG_WRONG_FORMAT = "Wrong format supplied";
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
 
@@ -237,7 +234,8 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
 
   private Optional<String> csvMapper(CounterReport cr) {
     if (cr.getRelease().equals("4") && cr.getReport() != null) {
-      return Optional.of(Counter4Utils.toCSV(Counter4Utils.fromJSON(Json.encode(cr.getReport()))));
+      return Optional.ofNullable(
+          Counter4Utils.toCSV(Counter4Utils.fromJSON(Json.encode(cr.getReport()))));
     }
     return Optional.empty();
   }
@@ -258,17 +256,9 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               if (ar.succeeded()) {
                 Optional<String> csvResult = csvMapper(ar.result());
                 if (csvResult.isPresent()) {
-                  if (csvResult.get() != null) {
-                    asyncResultHandler.handle(
-                        Future.succeededFuture(
-                            GetCounterReportsCsvByIdResponse.respond200WithTextCsv(
-                                csvResult.get())));
-                  } else {
-                    asyncResultHandler.handle(
-                        Future.succeededFuture(
-                            GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
-                                "Error while tranforming report to CSV")));
-                  }
+                  asyncResultHandler.handle(
+                      Future.succeededFuture(
+                          GetCounterReportsCsvByIdResponse.respond200WithTextCsv(csvResult.get())));
                 } else {
                   asyncResultHandler.handle(
                       Future.succeededFuture(
@@ -392,7 +382,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
 
           Future<String> upsertFuture = Future.future();
           PostgresClient.getInstance(vertx, tenantId)
-              .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertFuture::handle);
+              .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertFuture);
           return upsertFuture;
         });
   }
@@ -448,7 +438,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                   return;
                 }
 
-                String csv = null;
+                String csv;
                 try {
                   Report merge = Counter4Utils.merge(reports);
                   csv = Counter4Utils.toCSV(merge);
