@@ -3,8 +3,11 @@ package org.folio.rest.util;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
+import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
@@ -77,5 +80,50 @@ public class PgHelper {
               .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertFuture);
           return upsertFuture;
         });
+  }
+
+  /**
+   * Returns those CounterReports that are present in the database.
+   *
+   * @param vertxContext Vertx context
+   * @param tenantId Tenant
+   * @param providerId ProviderId
+   * @param reportName Report name
+   * @param release Counter release/version
+   * @param yearMonths Months to check
+   * @return List of CounterReport
+   */
+  public static Future<List<CounterReport>> getExistingReports(
+      Context vertxContext,
+      String tenantId,
+      String providerId,
+      String reportName,
+      String release,
+      List<String> yearMonths) {
+    String months = yearMonths.stream().map(ym -> "'" + ym + "'").collect(Collectors.joining(","));
+    String where =
+        String.format(
+            " WHERE (jsonb->>'providerId' = '%s') AND "
+                + "(jsonb->>'reportName' = '%s') AND "
+                + "(jsonb->>'release' = '%s') AND "
+                + "(jsonb->'yearMonth' ?| array[%s])",
+            providerId, reportName, release, months);
+
+    Future<List<CounterReport>> result = Future.future();
+    PostgresClient.getInstance(vertxContext.owner(), tenantId)
+        .get(
+            TABLE_NAME_COUNTER_REPORTS,
+            CounterReport.class,
+            where,
+            false,
+            false,
+            ar -> {
+              if (ar.succeeded()) {
+                result.complete(ar.result().getResults());
+              } else {
+                result.tryFail(ar.cause());
+              }
+            });
+    return result;
   }
 }
