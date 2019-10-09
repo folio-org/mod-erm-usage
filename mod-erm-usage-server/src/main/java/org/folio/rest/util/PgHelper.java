@@ -3,9 +3,12 @@ package org.folio.rest.util;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -79,6 +82,55 @@ public class PgHelper {
           PostgresClient.getInstance(vertx, tenantId)
               .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertFuture);
           return upsertFuture;
+        });
+  }
+
+  public static Future<Void> saveCounterReportsToDb(
+      Context vertxContext,
+      String tenantId,
+      List<CounterReport> counterReports,
+      boolean overwrite) {
+
+    // check required attributes for equality
+    long count =
+        counterReports.stream()
+            .map(cr -> Arrays.asList(cr.getReportName(), cr.getRelease(), cr.getProviderId()))
+            .distinct()
+            .count();
+    if (count != 1) {
+      return Future.failedFuture(
+          "Report attributes 'reportName', 'release' and 'providerId' are not equal.");
+    }
+
+    String providerId = counterReports.get(0).getProviderId();
+    String release = counterReports.get(0).getRelease();
+    String reportName = counterReports.get(0).getReportName();
+
+    Future<List<CounterReport>> existingReports =
+        PgHelper.getExistingReports(
+            vertxContext,
+            tenantId,
+            providerId,
+            reportName,
+            release,
+            counterReports.stream().map(CounterReport::getYearMonth).collect(Collectors.toList()));
+
+    return existingReports.compose(
+        existingList -> {
+          if (!overwrite && !existingList.isEmpty()) {
+            return Future.failedFuture(
+                "Reports already existing for months: "
+                    + existingList.stream()
+                        .map(CounterReport::getYearMonth)
+                        .collect(Collectors.joining(", ")));
+          } else {
+            List<Future> saveFutures = new ArrayList<>();
+            counterReports.forEach(
+                cr ->
+                    saveFutures.add(
+                        saveCounterReportToDb(vertxContext.owner(), tenantId, cr, true)));
+            return CompositeFuture.join(saveFutures).map((Void) null);
+          }
         });
   }
 
