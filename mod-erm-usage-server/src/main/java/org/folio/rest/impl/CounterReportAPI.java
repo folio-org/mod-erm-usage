@@ -6,7 +6,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -281,12 +280,12 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-    Vertx vertx = vertxContext.owner();
+
     String tenantId = okapiHeaders.get(XOkapiHeaders.TENANT);
 
-    CounterReport counterReport;
+    List<CounterReport> counterReports;
     try {
-      counterReport = UploadHelper.getCounterReportFromInputStream(entity);
+      counterReports = UploadHelper.getCounterReportsFromInputStream(entity);
     } catch (Exception e) {
       asyncResultHandler.handle(
           Future.succeededFuture(
@@ -295,21 +294,22 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       return;
     }
 
-    PgHelper.getUDPfromDbById(vertx, tenantId, id)
+    PgHelper.getUDPfromDbById(vertxContext.owner(), tenantId, id)
         .compose(
-            udp ->
-                Future.succeededFuture(
-                    counterReport
-                        .withProviderId(udp.getId())
-                        .withDownloadTime(Date.from(Instant.now()))))
-        .compose(cr -> PgHelper.saveCounterReportToDb(vertx, tenantId, cr, overwrite))
+            udp -> {
+              counterReports.forEach(
+                  cr -> cr.withProviderId(udp.getId()).withDownloadTime(Date.from(Instant.now())));
+              return Future.succeededFuture(counterReports);
+            })
+        .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, tenantId, crs, overwrite))
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
                 asyncResultHandler.handle(
                     Future.succeededFuture(
                         PostCounterReportsUploadProviderByIdResponse.respond200WithTextPlain(
-                            String.format("Saved report with id %s", ar.result()))));
+                            String.format(
+                                "Saved report with ids: %s", String.join(",", ar.result())))));
               } else {
                 asyncResultHandler.handle(
                     Future.succeededFuture(

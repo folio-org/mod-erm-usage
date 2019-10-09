@@ -185,7 +185,7 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportR4Ok() throws Exception {
+  public void testReportR4Ok() {
     String savedReportId =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
@@ -196,7 +196,7 @@ public class CounterReportUploadIT {
             .body(containsString("Saved report"))
             .extract()
             .asString()
-            .replace("Saved report with id ", "");
+            .replace("Saved report with ids: ", "");
 
     CounterReport savedReport =
         given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
@@ -257,7 +257,8 @@ public class CounterReportUploadIT {
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
-        .body(containsString("Report already exists"));
+        .body(containsString("Report already existing"))
+        .body(containsString("2018-03"));
   }
 
   @Test
@@ -272,7 +273,7 @@ public class CounterReportUploadIT {
             .body(containsString("Saved report"))
             .extract()
             .asString()
-            .replace("Saved report with id ", "");
+            .replace("Saved report with ids: ", "");
 
     CounterReport savedReport =
         given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
@@ -303,7 +304,7 @@ public class CounterReportUploadIT {
             .body(containsString("Saved report"))
             .extract()
             .asString()
-            .replace("Saved report with id ", "");
+            .replace("Saved report with ids: ", "");
 
     CounterReport savedReport =
         given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
@@ -333,13 +334,35 @@ public class CounterReportUploadIT {
 
   @Test
   public void testReportMultipleMonthsC4() {
+    String createdIds =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(FILE_REPORT_MULTI)
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report with ids"))
+            .extract()
+            .asString()
+            .replace("Saved report with ids: ", "");
+
+    String query =
+        String.format("/counter-reports?query=(reportName=JR1 AND providerId=%s)", PROVIDER_ID);
+    CounterReports reports = given().get(query).then().extract().as(CounterReports.class);
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getYearMonth))
+        .containsExactlyInAnyOrder("2018-03", "2018-04");
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getId))
+        .containsExactlyInAnyOrder(createdIds.split(","));
+
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
         .body(FILE_REPORT_MULTI)
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
-        .body(containsString("exactly one month"));
+        .body(containsString("Report already existing"))
+        .body(containsString("2018-03"))
+        .body(containsString("2018-04"));
   }
 
   @Test
