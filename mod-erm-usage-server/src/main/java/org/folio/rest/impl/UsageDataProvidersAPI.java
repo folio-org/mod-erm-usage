@@ -1,5 +1,7 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -28,13 +30,11 @@ import org.folio.rest.tools.utils.TenantTool;
 
 public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.UsageDataProviders {
 
-  private static final String TABLE_UDP = "usage_data_providers";
-
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(UsageDataProvidersAPI.class);
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
-    CQL2PgJSON cql2pgJson = new CQL2PgJSON(Arrays.asList(TABLE_UDP + ".jsonb"));
+    CQL2PgJSON cql2pgJson = new CQL2PgJSON(Arrays.asList(TABLE_NAME_UDP + ".jsonb"));
     return new CQLWrapper(cql2pgJson, query)
         .setLimit(new Limit(limit))
         .setOffset(new Offset(offset));
@@ -64,7 +64,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
             try {
               PostgresClient.getInstance(vertxContext.owner(), tenantId)
                   .get(
-                      TABLE_UDP,
+                      TABLE_NAME_UDP,
                       UsageDataProvider.class,
                       fieldList,
                       cql,
@@ -152,7 +152,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Context vertxContext) {
 
     PgUtil.post(
-        TABLE_UDP,
+        TABLE_NAME_UDP,
         entity,
         okapiHeaders,
         vertxContext,
@@ -170,7 +170,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Context vertxContext) {
 
     PgUtil.getById(
-        TABLE_UDP,
+        TABLE_NAME_UDP,
         UsageDataProvider.class,
         id,
         okapiHeaders,
@@ -189,7 +189,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Context vertxContext) {
 
     PgUtil.deleteById(
-        TABLE_UDP,
+        TABLE_NAME_UDP,
         id,
         okapiHeaders,
         vertxContext,
@@ -208,7 +208,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Context vertxContext) {
 
     PgUtil.put(
-        TABLE_UDP,
+        TABLE_NAME_UDP,
         entity,
         id,
         okapiHeaders,

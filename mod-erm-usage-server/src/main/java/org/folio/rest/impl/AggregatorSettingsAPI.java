@@ -1,5 +1,7 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import io.vertx.core.AsyncResult;
@@ -34,7 +36,6 @@ import org.folio.rest.util.ExportObject;
 public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.AggregatorSettings {
 
   private static final String TABLE_NAME_AGGREGATOR_SETTINGS = "aggregator_settings";
-  private static final String TABLE_UDP = "usage_data_providers";
 
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(AggregatorSettingsAPI.class);
@@ -257,7 +258,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
 
     PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
         .get(
-            TABLE_UDP,
+            TABLE_NAME_UDP,
             UsageDataProvider.class,
             where,
             true,

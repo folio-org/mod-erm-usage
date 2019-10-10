@@ -1,16 +1,16 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import java.io.InputStream;
 import java.time.Instant;
-import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -19,8 +19,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
-import org.apache.commons.codec.Charsets;
-import org.apache.commons.io.IOUtils;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.okapi.common.XOkapiHeaders;
@@ -28,7 +26,6 @@ import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.CounterReportsGetOrder;
-import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PgUtil;
@@ -37,18 +34,13 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.util.PgHelper;
+import org.folio.rest.util.UploadHelper;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
-import org.olf.erm.usage.counter50.Counter5Utils;
-import org.openapitools.client.model.SUSHIReportHeader;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
-  private static final String TABLE_NAME_COUNTER_REPORTS = "counter_reports";
-  private static final String TABLE_NAME_UDP = "usage_data_providers";
-  private static final String MSG_EXACTLY_ONE_MONTH =
-      "Provided report must cover a period of exactly one month";
-  private static final String MSG_WRONG_FORMAT = "Wrong format supplied";
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
 
@@ -240,7 +232,8 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
 
   private Optional<String> csvMapper(CounterReport cr) {
     if (cr.getRelease().equals("4") && cr.getReport() != null) {
-      return Optional.of(Counter4Utils.toCSV(Counter4Utils.fromJSON(Json.encode(cr.getReport()))));
+      return Optional.ofNullable(
+          Counter4Utils.toCSV(Counter4Utils.fromJSON(Json.encode(cr.getReport()))));
     }
     return Optional.empty();
   }
@@ -261,17 +254,9 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               if (ar.succeeded()) {
                 Optional<String> csvResult = csvMapper(ar.result());
                 if (csvResult.isPresent()) {
-                  if (csvResult.get() != null) {
-                    asyncResultHandler.handle(
-                        Future.succeededFuture(
-                            GetCounterReportsCsvByIdResponse.respond200WithTextCsv(
-                                csvResult.get())));
-                  } else {
-                    asyncResultHandler.handle(
-                        Future.succeededFuture(
-                            GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
-                                "Error while tranforming report to CSV")));
-                  }
+                  asyncResultHandler.handle(
+                      Future.succeededFuture(
+                          GetCounterReportsCsvByIdResponse.respond200WithTextCsv(csvResult.get())));
                 } else {
                   asyncResultHandler.handle(
                       Future.succeededFuture(
@@ -295,12 +280,12 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-    Vertx vertx = vertxContext.owner();
+
     String tenantId = okapiHeaders.get(XOkapiHeaders.TENANT);
 
-    CounterReport counterReport;
+    List<CounterReport> counterReports;
     try {
-      counterReport = getCounterReportFromInputStream(entity);
+      counterReports = UploadHelper.getCounterReportsFromInputStream(entity);
     } catch (Exception e) {
       asyncResultHandler.handle(
           Future.succeededFuture(
@@ -309,21 +294,22 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       return;
     }
 
-    getUDPfromDbById(vertx, tenantId, id)
+    PgHelper.getUDPfromDbById(vertxContext.owner(), tenantId, id)
         .compose(
-            udp ->
-                Future.succeededFuture(
-                    counterReport
-                        .withProviderId(udp.getId())
-                        .withDownloadTime(Date.from(Instant.now()))))
-        .compose(cr -> saveCounterReportToDb(vertx, tenantId, cr, overwrite))
+            udp -> {
+              counterReports.forEach(
+                  cr -> cr.withProviderId(udp.getId()).withDownloadTime(Date.from(Instant.now())));
+              return Future.succeededFuture(counterReports);
+            })
+        .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, tenantId, crs, overwrite))
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
                 asyncResultHandler.handle(
                     Future.succeededFuture(
                         PostCounterReportsUploadProviderByIdResponse.respond200WithTextPlain(
-                            String.format("Saved report with id %s", ar.result()))));
+                            String.format(
+                                "Saved report with ids: %s", String.join(",", ar.result())))));
               } else {
                 asyncResultHandler.handle(
                     Future.succeededFuture(
@@ -331,128 +317,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                             String.format("Error saving report: %s", ar.cause()))));
               }
             });
-  }
-
-  class FileUploadException extends Exception {
-
-    private static final long serialVersionUID = -3795351043189447151L;
-
-    public FileUploadException(String message) {
-      super(message);
-    }
-
-    public FileUploadException(Exception e) {
-      super(e);
-    }
-  }
-
-  private CounterReport getCounterReportFromInputStream(InputStream entity)
-      throws FileUploadException {
-    String content;
-    try {
-      content = IOUtils.toString(entity, Charsets.UTF_8);
-    } catch (Exception e) {
-      throw new FileUploadException(e);
-    }
-
-    // Counter 5
-    SUSHIReportHeader header = Counter5Utils.getReportHeader(content);
-    if (Counter5Utils.isValidReportHeader(header)) {
-      List<YearMonth> yearMonths = Counter5Utils.getYearMonthsFromReportHeader(header);
-      if (yearMonths.size() != 1) {
-        throw new FileUploadException(MSG_EXACTLY_ONE_MONTH);
-      }
-      return new CounterReport()
-          .withRelease("5")
-          .withReportName(header.getReportID())
-          .withReport(Json.decodeValue(content, org.folio.rest.jaxrs.model.Report.class))
-          .withYearMonth(yearMonths.get(0).toString());
-    }
-
-    // Counter 4
-    Report report = Counter4Utils.fromString(content);
-    if (report != null) {
-      List<YearMonth> yearMonthsFromReport = Counter4Utils.getYearMonthsFromReport(report);
-      if (yearMonthsFromReport.size() != 1) {
-        throw new FileUploadException(MSG_EXACTLY_ONE_MONTH);
-      }
-      return new CounterReport()
-          .withRelease(report.getVersion())
-          .withReportName(Counter4Utils.getNameForReportTitle(report.getName()))
-          .withReport(
-              Json.decodeValue(
-                  Counter4Utils.toJSON(report), org.folio.rest.jaxrs.model.Report.class))
-          .withYearMonth(yearMonthsFromReport.get(0).toString());
-    }
-
-    throw new FileUploadException(MSG_WRONG_FORMAT);
-  }
-
-  private Future<UsageDataProvider> getUDPfromDbById(Vertx vertx, String tenantId, String id) {
-    Future<UsageDataProvider> udpFuture = Future.future();
-    PostgresClient.getInstance(vertx, tenantId)
-        .getById(
-            TABLE_NAME_UDP,
-            id,
-            UsageDataProvider.class,
-            ar -> {
-              if (ar.succeeded()) {
-                if (ar.result() != null) {
-                  udpFuture.complete(ar.result());
-                } else {
-                  udpFuture.fail(String.format("Provider with id %s not found", id));
-                }
-              } else {
-                udpFuture.fail(
-                    String.format(
-                        "Unable to get usage data provider with id %s: %s", id, ar.cause()));
-              }
-            });
-    return udpFuture;
-  }
-
-  private Future<String> saveCounterReportToDb(
-      Vertx vertx, String tenantId, CounterReport counterReport, boolean overwrite) {
-
-    // check if CounterReport already exists
-    Future<String> idFuture = Future.future();
-    PostgresClient.getInstance(vertx, tenantId)
-        .get(
-            TABLE_NAME_COUNTER_REPORTS,
-            // select the properties we want to check for
-            new CounterReport()
-                .withProviderId(counterReport.getProviderId())
-                .withReportName(counterReport.getReportName())
-                .withRelease(counterReport.getRelease())
-                .withYearMonth(counterReport.getYearMonth()),
-            false,
-            h -> {
-              if (h.succeeded()) {
-                int resultSize = h.result().getResults().size();
-                if (resultSize == 1) {
-                  idFuture.complete(h.result().getResults().get(0).getId());
-                } else if (resultSize > 1) {
-                  idFuture.fail("Too many results");
-                } else {
-                  idFuture.complete(null);
-                }
-              } else {
-                idFuture.fail(h.cause());
-              }
-            });
-
-    // save report
-    return idFuture.compose(
-        id -> {
-          if (id != null && !overwrite) {
-            return Future.failedFuture("Report already exists");
-          }
-
-          Future<String> upsertFuture = Future.future();
-          PostgresClient.getInstance(vertx, tenantId)
-              .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertFuture::handle);
-          return upsertFuture;
-        });
   }
 
   @Override
@@ -506,7 +370,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                   return;
                 }
 
-                String csv = null;
+                String csv;
                 try {
                   Report merge = Counter4Utils.merge(reports);
                   csv = Counter4Utils.toCSV(merge);

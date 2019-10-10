@@ -1,6 +1,8 @@
 package templates.db_scripts;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
 import com.google.common.io.Resources;
 import io.vertx.core.DeploymentOptions;
@@ -18,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
@@ -46,8 +47,6 @@ public class SQLTriggersIT {
   @Rule public Timeout timeout = Timeout.seconds(5);
 
   private static final String TENANT = "testtenant";
-  private static final String TABLE_UDP = "usage_data_providers";
-  private static final String TABLE_REPORTS = "counter_reports";
   private static final String TABLE_AGGREGATOR = "aggregator_settings";
   private static Vertx vertx;
   private static int port;
@@ -89,12 +88,13 @@ public class SQLTriggersIT {
               Resources.getResource("sample-data/counter-reports/2018-01.json"),
               StandardCharsets.UTF_8);
       sampleReport = Json.decodeValue(reportJSON, CounterReport.class);
-      reportFailed = Json.decodeValue(reportJSON, CounterReport.class)
-        .withId(UUID.randomUUID().toString())
-        .withYearMonth("2018-02")
-        .withFailedAttempts(3)
-        .withFailedReason("This is a failed report")
-        .withReport(null);
+      reportFailed =
+          Json.decodeValue(reportJSON, CounterReport.class)
+              .withId(UUID.randomUUID().toString())
+              .withYearMonth("2018-02")
+              .withFailedAttempts(3)
+              .withFailedReason("This is a failed report")
+              .withReport(null);
     } catch (Exception e) {
       e.printStackTrace();
       context.fail(e);
@@ -130,12 +130,13 @@ public class SQLTriggersIT {
 
   private Future<Integer> deleteSampleData() {
     // return CompositeFuture.all(
-    //    truncateTable(TABLE_UDP), truncateTable(TABLE_AGGREGATOR), truncateTable(TABLE_REPORTS));
+    //    truncateTable(TABLE_NAME_UDP), truncateTable(TABLE_AGGREGATOR),
+    // truncateTable(TABLE_NAME_COUNTER_REPORTS));
 
     // FIXME: run in a sequence to prevent exception in StatsTracker.java
-    return truncateTable(TABLE_UDP)
+    return truncateTable(TABLE_NAME_UDP)
         .compose(i -> truncateTable(TABLE_AGGREGATOR))
-        .compose(i -> truncateTable(TABLE_REPORTS));
+        .compose(i -> truncateTable(TABLE_NAME_COUNTER_REPORTS));
   }
 
   private Future<Void> loadSampleData() {
@@ -178,7 +179,7 @@ public class SQLTriggersIT {
     Future<Void> aggregatorFuture = Future.future();
     getPGClient()
         .get(
-            TABLE_UDP,
+            TABLE_NAME_UDP,
             new UsageDataProvider(),
             false,
             ar -> {
@@ -194,7 +195,7 @@ public class SQLTriggersIT {
         v ->
             getPGClient()
                 .get(
-                    TABLE_REPORTS,
+                    TABLE_NAME_COUNTER_REPORTS,
                     new CounterReport(),
                     false,
                     ar -> {
@@ -247,7 +248,7 @@ public class SQLTriggersIT {
                 h ->
                     getPGClient()
                         .getById(
-                            TABLE_UDP,
+                            TABLE_NAME_UDP,
                             "e67924ee-aa00-454e-8fd0-c3f81339d20e",
                             UsageDataProvider.class,
                             context.asyncAssertSuccess(
@@ -265,13 +266,13 @@ public class SQLTriggersIT {
   public void deleteCounterReports(TestContext context) {
     getPGClient()
         .delete(
-            TABLE_UDP,
+            TABLE_NAME_UDP,
             "e67924ee-aa00-454e-8fd0-c3f81339d20e",
             context.asyncAssertSuccess(
                 ur ->
                     getPGClient()
                         .get(
-                            TABLE_REPORTS,
+                            TABLE_NAME_COUNTER_REPORTS,
                             new CounterReport(),
                             false,
                             context.asyncAssertSuccess(
@@ -284,7 +285,7 @@ public class SQLTriggersIT {
   public void resolveAggregatorLabelBeforeInsert(TestContext context) {
     getPGClient()
         .getById(
-            TABLE_UDP,
+            TABLE_NAME_UDP,
             "e67924ee-aa00-454e-8fd0-c3f81339d20e",
             UsageDataProvider.class,
             context.asyncAssertSuccess(
@@ -308,14 +309,14 @@ public class SQLTriggersIT {
                 s ->
                     getPGClient()
                         .update( // change udp to use new aggregator
-                            TABLE_UDP,
+                            TABLE_NAME_UDP,
                             changeAggregatorId(sampleUDP, id),
                             sampleUDP.getId(),
                             context.asyncAssertSuccess(
                                 ur ->
                                     getPGClient()
                                         .getById( // test if name got changed
-                                            TABLE_UDP,
+                                            TABLE_NAME_UDP,
                                             sampleUDP.getId(),
                                             UsageDataProvider.class,
                                             context.asyncAssertSuccess(
@@ -334,14 +335,14 @@ public class SQLTriggersIT {
     Async async = context.async();
     getPGClient()
         .upsert(
-            TABLE_REPORTS,
+            TABLE_NAME_COUNTER_REPORTS,
             sampleReport.getId(),
             clone(sampleReport).withYearMonth("2017-01"),
             ar -> {
               if (ar.succeeded()) {
                 getPGClient()
                     .getById(
-                        TABLE_UDP,
+                        TABLE_NAME_UDP,
                         sampleUDP.getId(),
                         UsageDataProvider.class,
                         ar2 -> {
@@ -362,14 +363,14 @@ public class SQLTriggersIT {
     Async async2 = context.async();
     getPGClient()
         .upsert(
-            TABLE_REPORTS,
+            TABLE_NAME_COUNTER_REPORTS,
             sampleReport.getId(),
             clone(sampleReport).withYearMonth("2019-03"),
             ar -> {
               if (ar.succeeded()) {
                 getPGClient()
                     .getById(
-                        TABLE_UDP,
+                        TABLE_NAME_UDP,
                         sampleUDP.getId(),
                         UsageDataProvider.class,
                         ar2 -> {
@@ -391,14 +392,14 @@ public class SQLTriggersIT {
     Async async3 = context.async();
     getPGClient()
         .upsert(
-            TABLE_REPORTS,
+            TABLE_NAME_COUNTER_REPORTS,
             sampleReport.getId(),
             clone(sampleReport).withFailedAttempts(1),
             ar -> {
               if (ar.succeeded()) {
                 getPGClient()
                     .getById(
-                        TABLE_UDP,
+                        TABLE_NAME_UDP,
                         sampleUDP.getId(),
                         UsageDataProvider.class,
                         ar2 -> {
@@ -421,13 +422,13 @@ public class SQLTriggersIT {
     Async async = context.async();
     getPGClient()
         .delete(
-            TABLE_REPORTS,
+            TABLE_NAME_COUNTER_REPORTS,
             "c07aa46b-fbca-45c8-bd44-c7f9a3648586", // Report 2018-04
             ar -> {
               if (ar.succeeded()) {
                 getPGClient()
                     .getById(
-                        TABLE_UDP,
+                        TABLE_NAME_UDP,
                         sampleUDP.getId(),
                         UsageDataProvider.class,
                         ar2 -> {
@@ -448,13 +449,13 @@ public class SQLTriggersIT {
     Async async2 = context.async();
     getPGClient()
         .delete(
-            TABLE_REPORTS,
+            TABLE_NAME_COUNTER_REPORTS,
             sampleReport.getId(), // Report 2018-01
             ar -> {
               if (ar.succeeded()) {
                 getPGClient()
                     .getById(
-                        TABLE_UDP,
+                        TABLE_NAME_UDP,
                         sampleUDP.getId(),
                         UsageDataProvider.class,
                         ar2 -> {
@@ -476,77 +477,81 @@ public class SQLTriggersIT {
   public void updateProviderHasFailedReportOnInsertOrUpdate(TestContext context) {
     Async async = context.async();
     getPGClient()
-      .upsert(
-        TABLE_REPORTS,
-        sampleReport.getId(),
-        sampleReport,
-        ar -> {
-          if (ar.succeeded()) {
-            getPGClient()
-              .getById(
-                TABLE_UDP,
-                sampleUDP.getId(),
-                UsageDataProvider.class,
-                ar2 -> {
-                  if (ar2.succeeded()) {
-                    assertThat(ar2.result().getHasFailedReport()).isEqualTo(UsageDataProvider.HasFailedReport.NO);
-                    async.complete();
-                  } else {
-                    context.fail(ar2.cause());
-                  }
-                });
-          } else {
-            context.fail(ar.cause());
-          }
-        });
+        .upsert(
+            TABLE_NAME_COUNTER_REPORTS,
+            sampleReport.getId(),
+            sampleReport,
+            ar -> {
+              if (ar.succeeded()) {
+                getPGClient()
+                    .getById(
+                        TABLE_NAME_UDP,
+                        sampleUDP.getId(),
+                        UsageDataProvider.class,
+                        ar2 -> {
+                          if (ar2.succeeded()) {
+                            assertThat(ar2.result().getHasFailedReport())
+                                .isEqualTo(UsageDataProvider.HasFailedReport.NO);
+                            async.complete();
+                          } else {
+                            context.fail(ar2.cause());
+                          }
+                        });
+              } else {
+                context.fail(ar.cause());
+              }
+            });
 
     async.await();
     Async async2 = context.async();
     getPGClient()
-      .upsert(
-        TABLE_REPORTS,
-        reportFailed.getId(),
-        reportFailed,
-        ar -> {
-          if (ar.succeeded()) {
-            getPGClient()
-              .getById(
-                TABLE_UDP,
-                sampleUDP.getId(),
-                UsageDataProvider.class,
-                ar2 -> {
-                  if (ar2.succeeded()) {
-                    assertThat(ar2.result().getHasFailedReport()).isEqualTo(UsageDataProvider.HasFailedReport.YES);
-                    getPGClient()
-                      .delete(
-                        TABLE_REPORTS,
-                        reportFailed.getId(),
-                        ar3 -> {
-                          if (ar3.succeeded()) {
+        .upsert(
+            TABLE_NAME_COUNTER_REPORTS,
+            reportFailed.getId(),
+            reportFailed,
+            ar -> {
+              if (ar.succeeded()) {
+                getPGClient()
+                    .getById(
+                        TABLE_NAME_UDP,
+                        sampleUDP.getId(),
+                        UsageDataProvider.class,
+                        ar2 -> {
+                          if (ar2.succeeded()) {
+                            assertThat(ar2.result().getHasFailedReport())
+                                .isEqualTo(UsageDataProvider.HasFailedReport.YES);
                             getPGClient()
-                              .getById(
-                                TABLE_UDP,
-                                sampleUDP.getId(),
-                                UsageDataProvider.class,
-                                ar4 -> {
-                                  if (ar4.succeeded()) {
-                                    assertThat(ar4.result().getHasFailedReport()).isEqualTo(UsageDataProvider.HasFailedReport.NO);
-                                    async2.complete();
-                                  } else {
-                                    context.fail(ar4.cause());
-                                  }
-                                });
+                                .delete(
+                                    TABLE_NAME_COUNTER_REPORTS,
+                                    reportFailed.getId(),
+                                    ar3 -> {
+                                      if (ar3.succeeded()) {
+                                        getPGClient()
+                                            .getById(
+                                                TABLE_NAME_UDP,
+                                                sampleUDP.getId(),
+                                                UsageDataProvider.class,
+                                                ar4 -> {
+                                                  if (ar4.succeeded()) {
+                                                    assertThat(ar4.result().getHasFailedReport())
+                                                        .isEqualTo(
+                                                            UsageDataProvider.HasFailedReport.NO);
+                                                    async2.complete();
+                                                  } else {
+                                                    context.fail(ar4.cause());
+                                                  }
+                                                });
+                                      } else {
+                                        context.fail(ar3.cause());
+                                      }
+                                    });
                           } else {
-                            context.fail(ar3.cause());
+                            context.fail(ar2.cause());
                           }
                         });
-                  } else {
-                    context.fail(ar2.cause());
-                  }
-                });
-          } else {
-            context.fail(ar.cause());
-          }
-        });
+              } else {
+                context.fail(ar.cause());
+              }
+            });
   }
 }

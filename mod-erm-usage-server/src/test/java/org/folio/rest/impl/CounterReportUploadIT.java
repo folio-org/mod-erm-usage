@@ -25,6 +25,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import javax.xml.bind.JAXB;
+import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
@@ -34,6 +35,7 @@ import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.Constants;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -129,7 +131,7 @@ public class CounterReportUploadIT {
     Async async = ctx.async();
     PostgresClient.getInstance(vertx, TENANT)
         .delete(
-            "counter_reports",
+            Constants.TABLE_NAME_COUNTER_REPORTS,
             new Criterion(),
             ar -> {
               if (ar.failed()) ctx.fail(ar.cause());
@@ -154,7 +156,7 @@ public class CounterReportUploadIT {
     Async async = ctx.async();
     PostgresClient.getInstance(vertx, TENANT)
         .save(
-            "usage_data_providers",
+            Constants.TABLE_NAME_UDP,
             PROVIDER_ID,
             Json.decodeValue(str, UsageDataProvider.class).withId(null),
             ar -> {
@@ -184,7 +186,7 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportR4Ok() throws Exception {
+  public void testReportR4Ok() {
     String savedReportId =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
@@ -195,7 +197,7 @@ public class CounterReportUploadIT {
             .body(containsString("Saved report"))
             .extract()
             .asString()
-            .replace("Saved report with id ", "");
+            .replace("Saved report with ids: ", "");
 
     CounterReport savedReport =
         given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
@@ -256,7 +258,8 @@ public class CounterReportUploadIT {
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
-        .body(containsString("Report already exists"));
+        .body(containsString("Report already existing"))
+        .body(containsString("2018-03"));
   }
 
   @Test
@@ -271,7 +274,7 @@ public class CounterReportUploadIT {
             .body(containsString("Saved report"))
             .extract()
             .asString()
-            .replace("Saved report with id ", "");
+            .replace("Saved report with ids: ", "");
 
     CounterReport savedReport =
         given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
@@ -302,7 +305,7 @@ public class CounterReportUploadIT {
             .body(containsString("Saved report"))
             .extract()
             .asString()
-            .replace("Saved report with id ", "");
+            .replace("Saved report with ids: ", "");
 
     CounterReport savedReport =
         given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
@@ -332,13 +335,71 @@ public class CounterReportUploadIT {
 
   @Test
   public void testReportMultipleMonthsC4() {
+    String createdIds =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(FILE_REPORT_MULTI)
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report with ids"))
+            .extract()
+            .asString()
+            .replace("Saved report with ids: ", "");
+
+    String query =
+        String.format("/counter-reports?query=(reportName=JR1 AND providerId=%s)", PROVIDER_ID);
+    CounterReports reports = given().get(query).then().extract().as(CounterReports.class);
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getYearMonth))
+        .containsExactlyInAnyOrder("2018-03", "2018-04");
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getId))
+        .containsExactlyInAnyOrder(createdIds.split(","));
+
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
         .body(FILE_REPORT_MULTI)
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
-        .body(containsString("exactly one month"));
+        .body(containsString("Report already existing"))
+        .body(containsString("2018-03"))
+        .body(containsString("2018-04"));
+  }
+
+  @Test
+  public void testReportMultipleMonthsC4FromCsv() {
+    String csvString = Counter4Utils.toCSV(JAXB.unmarshal(FILE_REPORT_MULTI, Report.class));
+    assertThat(csvString).isNotNull();
+
+    String createdIds =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(IOUtils.toInputStream(csvString, StandardCharsets.UTF_8))
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report with ids"))
+            .extract()
+            .asString()
+            .replace("Saved report with ids: ", "");
+
+    String query =
+        String.format("/counter-reports?query=(reportName=JR1 AND providerId=%s)", PROVIDER_ID);
+    CounterReports reports = given().get(query).then().extract().as(CounterReports.class);
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getYearMonth))
+        .containsExactlyInAnyOrder("2018-03", "2018-04");
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getId))
+        .containsExactlyInAnyOrder(createdIds.split(","));
+
+    given()
+        .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+        .body(FILE_REPORT_MULTI)
+        .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+        .then()
+        .statusCode(500)
+        .body(containsString("Report already existing"))
+        .body(containsString("2018-03"))
+        .body(containsString("2018-04"));
   }
 
   @Test
