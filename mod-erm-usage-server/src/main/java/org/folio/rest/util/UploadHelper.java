@@ -1,6 +1,7 @@
 package org.folio.rest.util;
 
 import io.vertx.core.json.Json;
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.YearMonth;
 import java.util.Collections;
@@ -12,6 +13,7 @@ import org.folio.rest.jaxrs.model.CounterReport;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
+import org.olf.erm.usage.counter41.csv.mapper.MapperException;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.openapitools.client.model.SUSHIReportHeader;
@@ -55,44 +57,49 @@ public class UploadHelper {
 
     // Counter 4
     Report report = Counter4Utils.fromString(content);
-    if (report != null) {
-      List<YearMonth> yearMonthsFromReport = Counter4Utils.getYearMonthsFromReport(report);
-
-      List<Report> reports = Collections.singletonList(report);
-      if (yearMonthsFromReport.size() != 1) {
-        reports = Counter4Utils.split(report);
-      }
-
-      List<CounterReport> counterReports =
-          reports.stream()
-              .map(
-                  r -> {
-                    List<YearMonth> months = Counter4Utils.getYearMonthsFromReport(r);
-                    if (!months.isEmpty()) {
-                      return new CounterReport()
-                          .withRelease(report.getVersion())
-                          .withReportName(Counter4Utils.getNameForReportTitle(report.getName()))
-                          .withReport(
-                              Json.decodeValue(
-                                  Counter4Utils.toJSON(report),
-                                  org.folio.rest.jaxrs.model.Report.class))
-                          .withYearMonth(months.get(0).toString());
-                    } else {
-                      return null;
-                    }
-                  })
-              .collect(Collectors.toList());
-
-      if (counterReports.isEmpty()) {
-        throw new FileUploadException("No months to process.");
-      } else if (counterReports.contains(null)) {
-        throw new FileUploadException("Error processing at least one month from supplied report.");
-      } else {
-        return counterReports;
+    if (report == null) {
+      try {
+        report = Counter4Utils.fromCsvString(content);
+      } catch (IOException | MapperException e) {
+        throw new FileUploadException(MSG_WRONG_FORMAT + ": " + e.getMessage(), e);
       }
     }
 
-    throw new FileUploadException(MSG_WRONG_FORMAT);
+    List<YearMonth> yearMonthsFromReport = Counter4Utils.getYearMonthsFromReport(report);
+
+    List<Report> reports = Collections.singletonList(report);
+    if (yearMonthsFromReport.size() != 1) {
+      reports = Counter4Utils.split(report);
+    }
+
+    Report finalReport = report;
+    List<CounterReport> counterReports =
+        reports.stream()
+            .map(
+                r -> {
+                  List<YearMonth> months = Counter4Utils.getYearMonthsFromReport(r);
+                  if (!months.isEmpty()) {
+                    return new CounterReport()
+                        .withRelease(finalReport.getVersion())
+                        .withReportName(Counter4Utils.getNameForReportTitle(finalReport.getName()))
+                        .withReport(
+                            Json.decodeValue(
+                                Counter4Utils.toJSON(finalReport),
+                                org.folio.rest.jaxrs.model.Report.class))
+                        .withYearMonth(months.get(0).toString());
+                  } else {
+                    return null;
+                  }
+                })
+            .collect(Collectors.toList());
+
+    if (counterReports.isEmpty()) {
+      throw new FileUploadException("No months to process.");
+    } else if (counterReports.contains(null)) {
+      throw new FileUploadException("Error processing at least one month from supplied report.");
+    } else {
+      return counterReports;
+    }
   }
 
   public static class FileUploadException extends Exception {
@@ -101,6 +108,10 @@ public class UploadHelper {
 
     public FileUploadException(String message) {
       super(message);
+    }
+
+    public FileUploadException(String message, Throwable cause) {
+      super(message, cause);
     }
 
     public FileUploadException(Exception e) {

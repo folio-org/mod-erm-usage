@@ -25,6 +25,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import javax.xml.bind.JAXB;
+import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
@@ -338,6 +339,42 @@ public class CounterReportUploadIT {
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
             .body(FILE_REPORT_MULTI)
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report with ids"))
+            .extract()
+            .asString()
+            .replace("Saved report with ids: ", "");
+
+    String query =
+        String.format("/counter-reports?query=(reportName=JR1 AND providerId=%s)", PROVIDER_ID);
+    CounterReports reports = given().get(query).then().extract().as(CounterReports.class);
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getYearMonth))
+        .containsExactlyInAnyOrder("2018-03", "2018-04");
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getId))
+        .containsExactlyInAnyOrder(createdIds.split(","));
+
+    given()
+        .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+        .body(FILE_REPORT_MULTI)
+        .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+        .then()
+        .statusCode(500)
+        .body(containsString("Report already existing"))
+        .body(containsString("2018-03"))
+        .body(containsString("2018-04"));
+  }
+
+  @Test
+  public void testReportMultipleMonthsC4FromCsv() {
+    String csvString = Counter4Utils.toCSV(JAXB.unmarshal(FILE_REPORT_MULTI, Report.class));
+    assertThat(csvString).isNotNull();
+
+    String createdIds =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(IOUtils.toInputStream(csvString, StandardCharsets.UTF_8))
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
             .statusCode(200)
