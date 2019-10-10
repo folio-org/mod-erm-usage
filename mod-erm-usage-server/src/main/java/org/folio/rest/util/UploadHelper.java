@@ -13,10 +13,14 @@ import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
 import org.olf.erm.usage.counter50.Counter5Utils;
+import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.openapitools.client.model.SUSHIReportHeader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UploadHelper {
 
+  private static final Logger log = LoggerFactory.getLogger(UploadHelper.class);
   private static final String MSG_EXACTLY_ONE_MONTH =
       "Provided report must cover a period of exactly one month";
   private static final String MSG_WRONG_FORMAT = "Wrong format supplied";
@@ -31,18 +35,22 @@ public class UploadHelper {
     }
 
     // Counter 5
-    SUSHIReportHeader header = Counter5Utils.getReportHeader(content);
-    if (Counter5Utils.isValidReportHeader(header)) {
-      List<YearMonth> yearMonths = Counter5Utils.getYearMonthsFromReportHeader(header);
-      if (yearMonths.size() != 1) {
-        throw new FileUploadException(MSG_EXACTLY_ONE_MONTH);
+    try {
+      SUSHIReportHeader header = Counter5Utils.getSushiReportHeader(content);
+      if (Counter5Utils.isValidReportHeader(header)) {
+        List<YearMonth> yearMonths = Counter5Utils.getYearMonthsFromReportHeader(header);
+        if (yearMonths.size() != 1) {
+          throw new FileUploadException(MSG_EXACTLY_ONE_MONTH);
+        }
+        return Collections.singletonList(
+            new CounterReport()
+                .withRelease("5")
+                .withReportName(header.getReportID())
+                .withReport(Json.decodeValue(content, org.folio.rest.jaxrs.model.Report.class))
+                .withYearMonth(yearMonths.get(0).toString()));
       }
-      return Collections.singletonList(
-          new CounterReport()
-              .withRelease("5")
-              .withReportName(header.getReportID())
-              .withReport(Json.decodeValue(content, org.folio.rest.jaxrs.model.Report.class))
-              .withYearMonth(yearMonths.get(0).toString()));
+    } catch (Counter5UtilsException e) {
+      log.info("Report does not seem to be a R5 Report: {}", e.getMessage());
     }
 
     // Counter 4
