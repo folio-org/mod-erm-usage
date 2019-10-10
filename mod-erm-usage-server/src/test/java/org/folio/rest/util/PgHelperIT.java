@@ -223,6 +223,7 @@ public class PgHelperIT {
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
+                assertThat(ar.result()).hasSize(2);
                 PostgresClient.getInstance(vertx, tenant)
                     .get(
                         TABLE_NAME_COUNTER_REPORTS,
@@ -236,12 +237,14 @@ public class PgHelperIT {
                             context.verify(
                                 v -> {
                                   assertThat(result.result().getResults()).hasSize(2);
+                                  assertThat(
+                                          result.result().getResults().stream()
+                                              .map(CounterReport::getId))
+                                      .containsExactlyInAnyOrder(
+                                          ar.result().toArray(new String[0]));
                                   assertThat(result.result().getResults())
                                       .allSatisfy(
-                                          cr -> {
-                                            assertThat(cr.getFailedAttempts()).isEqualTo(5);
-                                            assertThat(uuids).contains(cr.getId());
-                                          });
+                                          cr -> assertThat(cr.getFailedAttempts()).isEqualTo(5));
                                 });
                             async2.complete();
                           } else {
@@ -261,6 +264,7 @@ public class PgHelperIT {
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
+                assertThat(ar.result()).hasSize(2);
                 PostgresClient.getInstance(vertx, tenant)
                     .get(
                         TABLE_NAME_COUNTER_REPORTS,
@@ -277,7 +281,8 @@ public class PgHelperIT {
                                   assertThat(
                                           result.result().getResults().stream()
                                               .map(CounterReport::getId))
-                                      .doesNotContain(uuids.toArray(new String[0]));
+                                      .containsExactlyInAnyOrder(
+                                          ar.result().toArray(new String[0]));
                                 });
                             async.complete();
                           } else {

@@ -85,7 +85,7 @@ public class PgHelper {
         });
   }
 
-  public static Future<Void> saveCounterReportsToDb(
+  public static Future<List<String>> saveCounterReportsToDb(
       Context vertxContext,
       String tenantId,
       List<CounterReport> counterReports,
@@ -119,7 +119,7 @@ public class PgHelper {
         existingList -> {
           if (!overwrite && !existingList.isEmpty()) {
             return Future.failedFuture(
-                "Reports already existing for months: "
+                "Report already existing for months: "
                     + existingList.stream()
                         .map(CounterReport::getYearMonth)
                         .collect(Collectors.joining(", ")));
@@ -129,7 +129,9 @@ public class PgHelper {
                 cr ->
                     saveFutures.add(
                         saveCounterReportToDb(vertxContext.owner(), tenantId, cr, true)));
-            return CompositeFuture.join(saveFutures).map((Void) null);
+
+            return CompositeFuture.join(saveFutures)
+                .map(cf -> cf.list().stream().map(o -> (String) o).collect(Collectors.toList()));
           }
         });
   }
