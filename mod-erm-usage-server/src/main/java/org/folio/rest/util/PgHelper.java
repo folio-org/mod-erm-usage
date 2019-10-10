@@ -180,4 +180,6 @@ public class PgHelper {
             });
     return result;
   }
+
+  private PgHelper() {}
 }
