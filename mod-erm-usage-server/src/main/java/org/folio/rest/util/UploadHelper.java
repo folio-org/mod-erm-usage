@@ -87,48 +87,6 @@ public class UploadHelper {
     throw new FileUploadException(MSG_WRONG_FORMAT);
   }
 
-  public static CounterReport getCounterReportFromInputStream(InputStream entity)
-      throws FileUploadException {
-    String content;
-    try {
-      content = IOUtils.toString(entity, Charsets.UTF_8);
-    } catch (Exception e) {
-      throw new FileUploadException(e);
-    }
-
-    // Counter 5
-    SUSHIReportHeader header = Counter5Utils.getReportHeader(content);
-    if (Counter5Utils.isValidReportHeader(header)) {
-      List<YearMonth> yearMonths = Counter5Utils.getYearMonthsFromReportHeader(header);
-      if (yearMonths.size() != 1) {
-        throw new FileUploadException(MSG_EXACTLY_ONE_MONTH);
-      }
-      return new CounterReport()
-          .withRelease("5")
-          .withReportName(header.getReportID())
-          .withReport(Json.decodeValue(content, org.folio.rest.jaxrs.model.Report.class))
-          .withYearMonth(yearMonths.get(0).toString());
-    }
-
-    // Counter 4
-    Report report = Counter4Utils.fromString(content);
-    if (report != null) {
-      List<YearMonth> yearMonthsFromReport = Counter4Utils.getYearMonthsFromReport(report);
-      if (yearMonthsFromReport.size() != 1) {
-        throw new FileUploadException(MSG_EXACTLY_ONE_MONTH);
-      }
-      return new CounterReport()
-          .withRelease(report.getVersion())
-          .withReportName(Counter4Utils.getNameForReportTitle(report.getName()))
-          .withReport(
-              Json.decodeValue(
-                  Counter4Utils.toJSON(report), org.folio.rest.jaxrs.model.Report.class))
-          .withYearMonth(yearMonthsFromReport.get(0).toString());
-    }
-
-    throw new FileUploadException(MSG_WRONG_FORMAT);
-  }
-
   public static class FileUploadException extends Exception {
 
     private static final long serialVersionUID = -3795351043189447151L;
