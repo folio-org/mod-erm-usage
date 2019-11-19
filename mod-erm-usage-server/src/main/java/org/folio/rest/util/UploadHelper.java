@@ -84,8 +84,7 @@ public class UploadHelper {
                         .withReportName(Counter4Utils.getNameForReportTitle(finalReport.getName()))
                         .withReport(
                             Json.decodeValue(
-                                Counter4Utils.toJSON(finalReport),
-                                org.folio.rest.jaxrs.model.Report.class))
+                                Counter4Utils.toJSON(r), org.folio.rest.jaxrs.model.Report.class))
                         .withYearMonth(months.get(0).toString());
                   } else {
                     return null;
