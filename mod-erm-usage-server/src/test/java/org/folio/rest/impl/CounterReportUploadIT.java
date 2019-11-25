@@ -23,7 +23,11 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.xml.bind.JAXB;
 import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.XOkapiHeaders;
@@ -42,9 +46,12 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.niso.schemas.counter.Metric;
+import org.niso.schemas.counter.MetricType;
 import org.niso.schemas.counter.Report;
 import org.niso.schemas.sushi.counter.CounterReportResponse;
 import org.olf.erm.usage.counter41.Counter4Utils;
+import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
 
 @RunWith(VertxUnitRunner.class)
 public class CounterReportUploadIT {
@@ -209,7 +216,7 @@ public class CounterReportUploadIT {
 
     Report reportFromXML = JAXB.unmarshal(FILE_REPORT_OK, Report.class);
     Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
-    assertThat(reportFromXML).isEqualToComparingFieldByFieldRecursively(reportFromDB);
+    assertThat(reportFromXML).usingRecursiveComparison().isEqualTo(reportFromDB);
   }
 
   @Test
@@ -290,7 +297,7 @@ public class CounterReportUploadIT {
             .getReport()
             .get(0);
     Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
-    assertThat(reportFromXML).isEqualToComparingFieldByFieldRecursively(reportFromDB);
+    assertThat(reportFromXML).usingRecursiveComparison().isEqualTo(reportFromDB);
   }
 
   @Test
@@ -319,7 +326,7 @@ public class CounterReportUploadIT {
         Json.decodeValue(
             Files.toString(FILE_REPORT5_OK, StandardCharsets.UTF_8),
             org.folio.rest.jaxrs.model.Report.class);
-    assertThat(savedReport.getReport()).isEqualToComparingFieldByFieldRecursively(report);
+    assertThat(savedReport.getReport()).usingRecursiveComparison().isEqualTo(report);
   }
 
   @Test
@@ -366,8 +373,20 @@ public class CounterReportUploadIT {
         .body(containsString("2018-04"));
   }
 
+  private void removeAttributes(Report report) {
+    report.getCustomer().get(0).getReportItems().stream()
+        .flatMap(ri -> ri.getItemPerformance().stream())
+        .map(Metric::getInstance)
+        .forEach(
+            list ->
+                list.removeIf(
+                    pc ->
+                        pc.getMetricType().equals(MetricType.FT_HTML)
+                            || pc.getMetricType().equals(MetricType.FT_PDF)));
+  }
+
   @Test
-  public void testReportMultipleMonthsC4FromCsv() {
+  public void testReportMultipleMonthsC4FromCsv() throws IOException, ReportSplitException {
     String csvString = Counter4Utils.toCSV(JAXB.unmarshal(FILE_REPORT_MULTI, Report.class));
     assertThat(csvString).isNotNull();
 
@@ -384,12 +403,41 @@ public class CounterReportUploadIT {
             .replace("Saved report with ids: ", "");
 
     String query =
-        String.format("/counter-reports?query=(reportName=JR1 AND providerId=%s)", PROVIDER_ID);
+        String.format(
+            "/counter-reports?query=(reportName=JR1 AND providerId=%s) sortby yearMonth",
+            PROVIDER_ID);
     CounterReports reports = given().get(query).then().extract().as(CounterReports.class);
     assertThat(reports.getCounterReports().stream().map(CounterReport::getYearMonth))
-        .containsExactlyInAnyOrder("2018-03", "2018-04");
+        .containsExactly("2018-03", "2018-04");
     assertThat(reports.getCounterReports().stream().map(CounterReport::getId))
-        .containsExactlyInAnyOrder(createdIds.split(","));
+        .containsExactly(createdIds.split(","));
+
+    // check content here
+    Report report =
+        Counter4Utils.fromString(
+            Files.asCharSource(FILE_REPORT_MULTI, StandardCharsets.UTF_8).read());
+    assertThat(report).isNotNull();
+    List<Report> expectedReports = new ArrayList<>(Counter4Utils.split(report));
+    expectedReports.forEach(this::removeAttributes);
+
+    List<Report> actualReports =
+        reports.getCounterReports().stream()
+            .map(CounterReport::getReport)
+            .map(Json::encode)
+            .map(Counter4Utils::fromJSON)
+            .collect(Collectors.toList());
+
+    assertThat(actualReports.get(0))
+        .usingRecursiveComparison()
+        .ignoringFields("created", "id", "name", "title", "vendor")
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedReports.get(0));
+
+    assertThat(actualReports.get(1))
+        .usingRecursiveComparison()
+        .ignoringFields("created", "id", "name", "title", "vendor")
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedReports.get(1));
 
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
