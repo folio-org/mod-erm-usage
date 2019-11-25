@@ -137,13 +137,14 @@ public class AggregatorSettingsIT {
             .statusCode(201)
             .extract()
             .as(AggregatorSetting.class);
-    assertThat(postResponse).isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
+    assertThat(postResponse).usingRecursiveComparison().isEqualTo(aggregatorSettingSample);
 
     AggregatorSettings ass;
     ass = given().get().then().statusCode(200).extract().as(AggregatorSettings.class);
     assertThat(ass.getTotalRecords()).isEqualTo(1);
     assertThat(ass.getAggregatorSettings().get(0))
-        .isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
+        .usingRecursiveComparison()
+        .isEqualTo(aggregatorSettingSample);
 
     // PUT & GET
     given()
@@ -155,7 +156,8 @@ public class AggregatorSettingsIT {
     ass = given().get().then().statusCode(200).extract().as(AggregatorSettings.class);
     assertThat(ass.getTotalRecords()).isEqualTo(1);
     assertThat(ass.getAggregatorSettings().get(0))
-        .isEqualToComparingFieldByFieldRecursively(aggregatorSettingSampleModified);
+        .usingRecursiveComparison()
+        .isEqualTo(aggregatorSettingSampleModified);
 
     // DELETE & GET
     given().delete(aggregatorSettingSample.getId()).then().statusCode(204);
@@ -186,7 +188,8 @@ public class AggregatorSettingsIT {
             .as(AggregatorSettings.class);
     assertThat(as.getTotalRecords()).isEqualTo(1);
     assertThat(as.getAggregatorSettings().get(0))
-        .isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
+        .usingRecursiveComparison()
+        .isEqualTo(aggregatorSettingSample);
 
     as =
         given()
@@ -198,7 +201,8 @@ public class AggregatorSettingsIT {
             .as(AggregatorSettings.class);
     assertThat(as.getTotalRecords()).isEqualTo(1);
     assertThat(as.getAggregatorSettings().get(0))
-        .isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
+        .usingRecursiveComparison()
+        .isEqualTo(aggregatorSettingSample);
 
     as =
         given()
@@ -251,7 +255,7 @@ public class AggregatorSettingsIT {
             .header(HttpHeaders.LOCATION);
     AggregatorSetting as =
         given().get(location).then().statusCode(200).extract().as(AggregatorSetting.class);
-    assertThat(as).isEqualToComparingFieldByFieldRecursively(aggregatorSettingSample);
+    assertThat(as).usingRecursiveComparison().isEqualTo(aggregatorSettingSample);
     given().delete(location).then().statusCode(204);
   }
 

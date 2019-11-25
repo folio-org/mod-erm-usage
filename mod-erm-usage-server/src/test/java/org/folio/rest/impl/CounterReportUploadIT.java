@@ -216,7 +216,7 @@ public class CounterReportUploadIT {
 
     Report reportFromXML = JAXB.unmarshal(FILE_REPORT_OK, Report.class);
     Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
-    assertThat(reportFromXML).isEqualToComparingFieldByFieldRecursively(reportFromDB);
+    assertThat(reportFromXML).usingRecursiveComparison().isEqualTo(reportFromDB);
   }
 
   @Test
@@ -297,7 +297,7 @@ public class CounterReportUploadIT {
             .getReport()
             .get(0);
     Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
-    assertThat(reportFromXML).isEqualToComparingFieldByFieldRecursively(reportFromDB);
+    assertThat(reportFromXML).usingRecursiveComparison().isEqualTo(reportFromDB);
   }
 
   @Test
@@ -326,7 +326,7 @@ public class CounterReportUploadIT {
         Json.decodeValue(
             Files.toString(FILE_REPORT5_OK, StandardCharsets.UTF_8),
             org.folio.rest.jaxrs.model.Report.class);
-    assertThat(savedReport.getReport()).isEqualToComparingFieldByFieldRecursively(report);
+    assertThat(savedReport.getReport()).usingRecursiveComparison().isEqualTo(report);
   }
 
   @Test
