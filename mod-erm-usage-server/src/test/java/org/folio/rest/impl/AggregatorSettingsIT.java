@@ -1,8 +1,5 @@
 package org.folio.rest.impl;
 
-import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -20,26 +17,33 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.UUID;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.AggregatorSettings;
+import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
+import org.folio.rest.util.ModuleVersion;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.UUID;
+
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(VertxUnitRunner.class)
 public class AggregatorSettingsIT {
@@ -52,7 +56,7 @@ public class AggregatorSettingsIT {
   private static String aggregatorSettingSampleString;
   private static AggregatorSetting aggregatorSettingSample;
   private static AggregatorSetting aggregatorSettingSampleModified;
-
+  private static RecursiveComparisonConfiguration comparisonConfiguration;
   @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
@@ -104,7 +108,7 @@ public class AggregatorSettingsIT {
         res -> {
           try {
             tenantClient.postTenant(
-                null,
+                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
                 res2 -> {
                   async.complete();
                 });
@@ -112,6 +116,9 @@ public class AggregatorSettingsIT {
             context.fail(e);
           }
         });
+
+    comparisonConfiguration = new RecursiveComparisonConfiguration();
+    comparisonConfiguration.ignoreFields("metadata");
   }
 
   @AfterClass
@@ -137,13 +144,15 @@ public class AggregatorSettingsIT {
             .statusCode(201)
             .extract()
             .as(AggregatorSetting.class);
-    assertThat(postResponse).usingRecursiveComparison().isEqualTo(aggregatorSettingSample);
+    assertThat(postResponse)
+        .usingRecursiveComparison(comparisonConfiguration)
+        .isEqualTo(aggregatorSettingSample);
 
     AggregatorSettings ass;
     ass = given().get().then().statusCode(200).extract().as(AggregatorSettings.class);
     assertThat(ass.getTotalRecords()).isEqualTo(1);
     assertThat(ass.getAggregatorSettings().get(0))
-        .usingRecursiveComparison()
+        .usingRecursiveComparison(comparisonConfiguration)
         .isEqualTo(aggregatorSettingSample);
 
     // PUT & GET
@@ -156,7 +165,7 @@ public class AggregatorSettingsIT {
     ass = given().get().then().statusCode(200).extract().as(AggregatorSettings.class);
     assertThat(ass.getTotalRecords()).isEqualTo(1);
     assertThat(ass.getAggregatorSettings().get(0))
-        .usingRecursiveComparison()
+        .usingRecursiveComparison(comparisonConfiguration)
         .isEqualTo(aggregatorSettingSampleModified);
 
     // DELETE & GET
@@ -188,7 +197,7 @@ public class AggregatorSettingsIT {
             .as(AggregatorSettings.class);
     assertThat(as.getTotalRecords()).isEqualTo(1);
     assertThat(as.getAggregatorSettings().get(0))
-        .usingRecursiveComparison()
+        .usingRecursiveComparison(comparisonConfiguration)
         .isEqualTo(aggregatorSettingSample);
 
     as =
@@ -201,7 +210,7 @@ public class AggregatorSettingsIT {
             .as(AggregatorSettings.class);
     assertThat(as.getTotalRecords()).isEqualTo(1);
     assertThat(as.getAggregatorSettings().get(0))
-        .usingRecursiveComparison()
+        .usingRecursiveComparison(comparisonConfiguration)
         .isEqualTo(aggregatorSettingSample);
 
     as =
@@ -255,12 +264,15 @@ public class AggregatorSettingsIT {
             .header(HttpHeaders.LOCATION);
     AggregatorSetting as =
         given().get(location).then().statusCode(200).extract().as(AggregatorSetting.class);
-    assertThat(as).usingRecursiveComparison().isEqualTo(aggregatorSettingSample);
+    assertThat(as)
+        .usingRecursiveComparison(comparisonConfiguration)
+        .isEqualTo(aggregatorSettingSample);
     given().delete(location).then().statusCode(204);
   }
 
   @Test
   public void checkThatMetaDataIsCreatedOnPost() {
+    // METADATA IS CREATED IF USER_ID IS NULL
     // no user header
     String location =
         given()
@@ -271,7 +283,7 @@ public class AggregatorSettingsIT {
             .extract()
             .header("Location");
     AggregatorSetting as = given().get(location).then().extract().as(AggregatorSetting.class);
-    assertThat(as.getMetadata()).isNull();
+    assertThat(as.getMetadata()).isNotNull();
     given().delete(location).then().statusCode(204);
 
     // with user header

@@ -1,9 +1,5 @@
 package templates.db_scripts;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
-import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
-
 import com.google.common.io.Resources;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
@@ -14,37 +10,27 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import java.io.FileReader;
-import java.io.IOException;
+import org.folio.rest.RestVerticle;
+import org.folio.rest.client.TenantClient;
+import org.folio.rest.jaxrs.model.*;
+import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.ModuleVersion;
+import org.junit.*;
+import org.junit.runner.RunWith;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import org.apache.maven.model.Parent;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
-import org.folio.rest.jaxrs.model.Aggregator;
-import org.folio.rest.jaxrs.model.AggregatorSetting;
-import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.jaxrs.model.Parameter;
-import org.folio.rest.jaxrs.model.TenantAttributes;
-import org.folio.rest.jaxrs.model.UsageDataProvider;
-import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
 @RunWith(VertxUnitRunner.class)
 public class SQLTriggersIT {
-
-  @Rule public Timeout timeout = Timeout.seconds(5);
 
   private static final String TENANT = "testtenant";
   private static final String TABLE_AGGREGATOR = "aggregator_settings";
@@ -60,6 +46,7 @@ public class SQLTriggersIT {
   private static UsageDataProvider sampleUDP;
   private static CounterReport sampleReport;
   private static CounterReport reportFailed;
+  @Rule public Timeout timeout = Timeout.seconds(5);
 
   @BeforeClass
   public static void init(TestContext context) {
@@ -69,7 +56,9 @@ public class SQLTriggersIT {
       PostgresClient.getInstance(vertx).startEmbeddedPostgres();
       port = NetworkUtils.nextFreePort();
       tenantAttributes =
-          new TenantAttributes().withModuleTo(getModuleVersion()).withParameters(parameters);
+          new TenantAttributes()
+              .withModuleTo(ModuleVersion.getModuleVersion())
+              .withParameters(parameters);
       tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
 
       String aggregatorJSON =
@@ -105,71 +94,13 @@ public class SQLTriggersIT {
     vertx.deployVerticle(RestVerticle.class.getName(), options, context.asyncAssertSuccess());
   }
 
-  @Before
-  public void before(TestContext context) {
-    deleteSampleData()
-        .compose(r -> loadSampleData())
-        .compose(r -> validateSampleData())
-        .setHandler(context.asyncAssertSuccess());
-  }
-
   @AfterClass
   public static void tearDown(TestContext context) {
     vertx.close(context.asyncAssertSuccess(res -> PostgresClient.stopEmbeddedPostgres()));
   }
 
-  private Future<Integer> truncateTable(String tableName) {
-    Future<Integer> future = Future.future();
-    getPGClient()
-        .delete(
-            tableName,
-            new Criterion(),
-            ar -> future.complete((ar.succeeded()) ? ar.result().getUpdated() : null));
-    return future;
-  }
-
-  private Future<Integer> deleteSampleData() {
-    // return CompositeFuture.all(
-    //    truncateTable(TABLE_NAME_UDP), truncateTable(TABLE_AGGREGATOR),
-    // truncateTable(TABLE_NAME_COUNTER_REPORTS));
-
-    // FIXME: run in a sequence to prevent exception in StatsTracker.java
-    return truncateTable(TABLE_NAME_UDP)
-        .compose(i -> truncateTable(TABLE_AGGREGATOR))
-        .compose(i -> truncateTable(TABLE_NAME_COUNTER_REPORTS));
-  }
-
-  private Future<Void> loadSampleData() {
-    Future<Void> future = Future.future();
-    try {
-      tenantClient.postTenant(
-          tenantAttributes,
-          res -> {
-            if (res.statusCode() / 200 == 1) {
-              future.complete();
-            } else {
-              future.fail(
-                  String.format(
-                      "Tenantloading returned %s %s", res.statusCode(), res.statusMessage()));
-            }
-          });
-    } catch (Exception e) {
-      future.fail(e);
-    }
-    return future;
-  }
-
-  private static String getModuleVersion() throws IOException, XmlPullParserException {
-    Parent parent = new MavenXpp3Reader().read(new FileReader("pom.xml")).getParent();
-    return String.format("%s-%s", parent.getArtifactId(), parent.getVersion());
-  }
-
   private static PostgresClient getPGClient() {
     return PostgresClient.getInstance(vertx, TENANT);
-  }
-
-  private <T extends Object> T clone(T o) {
-    return Json.decodeValue(Json.encode(o), (Class<T>) o.getClass());
   }
 
   // FIXME: run in a sequence to prevent exception in StatsTracker.java
@@ -225,6 +156,59 @@ public class SQLTriggersIT {
                     }),
         aggregatorFuture);
     return aggregatorFuture;
+  }
+
+  @Before
+  public void before(TestContext context) {
+    deleteSampleData()
+        .compose(r -> loadSampleData())
+        .compose(r -> validateSampleData())
+        .setHandler(context.asyncAssertSuccess());
+  }
+
+  private Future<Integer> truncateTable(String tableName) {
+    Future<Integer> future = Future.future();
+    getPGClient()
+        .delete(
+            tableName,
+            new Criterion(),
+            ar -> future.complete((ar.succeeded()) ? ar.result().getUpdated() : null));
+    return future;
+  }
+
+  private Future<Integer> deleteSampleData() {
+    // return CompositeFuture.all(
+    //    truncateTable(TABLE_NAME_UDP), truncateTable(TABLE_AGGREGATOR),
+    // truncateTable(TABLE_NAME_COUNTER_REPORTS));
+
+    // FIXME: run in a sequence to prevent exception in StatsTracker.java
+    return truncateTable(TABLE_NAME_UDP)
+        .compose(i -> truncateTable(TABLE_AGGREGATOR))
+        .compose(i -> truncateTable(TABLE_NAME_COUNTER_REPORTS));
+  }
+
+  private Future<Void> loadSampleData() {
+    Future<Void> future = Future.future();
+    try {
+      tenantClient.postTenant(
+          tenantAttributes,
+          res -> {
+            if (res.statusCode() / 200 == 1) {
+              future.complete();
+            } else {
+              future.fail(
+                  String.format(
+                      "Tenantloading returned %s %s", res.statusCode(), res.statusMessage()));
+            }
+          });
+    } catch (Exception e) {
+      future.fail(e);
+    }
+    return future;
+  }
+
+  private <T extends Object> T clone(T o) {
+    return Json.decodeValue(Json.encode(o), (Class<T>) o.getClass());
   }
 
   private UsageDataProvider changeAggregatorId(UsageDataProvider p, String id) {

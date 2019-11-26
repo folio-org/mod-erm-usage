@@ -23,15 +23,15 @@
       "withMetadata": true
     },
     {
+      "tableName": "counter_reports",
+      "fromModuleVersion": "1.0",
+      "withMetadata": true
+    },
+    {
       "tableName": "usage_data_providers",
       "fromModuleVersion": "mod-erm-usage-2.6.0-SNAPSHOT",
       "withMetadata": true,
       "customSnippetPath": "migration/usage_data_providers.sql"
-    },
-    {
-      "tableName": "counter_reports",
-      "fromModuleVersion": "1.0",
-      "withMetadata": true
     }
   ],
   "views": [

@@ -1,8 +1,5 @@
 package org.folio.rest.impl;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.parsing.Parser;
@@ -14,24 +11,30 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.ModuleVersion;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
+
 @RunWith(VertxUnitRunner.class)
 public class CounterReportIT {
 
-  public static final String APPLICATION_JSON = "application/json";
-  public static final String BASE_URI = "/counter-reports";
+  private static final String APPLICATION_JSON = "application/json";
+  private static final String BASE_URI = "/counter-reports";
   private static final String TENANT = "diku";
   private static Vertx vertx;
   private static CounterReport report;
@@ -78,7 +81,7 @@ public class CounterReportIT {
         res -> {
           try {
             tenantClient.postTenant(
-                null,
+                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
                 res2 -> {
                   async.complete();
                 });

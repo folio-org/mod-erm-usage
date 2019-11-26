@@ -1,10 +1,5 @@
 package org.folio.rest.impl;
 
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -17,31 +12,35 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
-import org.folio.rest.jaxrs.model.AggregatorSetting;
-import org.folio.rest.jaxrs.model.SushiCredentials;
-import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.jaxrs.model.*;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
-import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.ModuleVersion;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
 @RunWith(VertxUnitRunner.class)
 public class UsageDataProvidersIT {
 
-  public static final String APPLICATION_JSON = "application/json";
-  public static final String BASE_URI = "/usage-data-providers";
+  private static final String APPLICATION_JSON = "application/json";
+  private static final String BASE_URI = "/usage-data-providers";
+  private static final String AGGREGATOR_PATH = "/aggregator-settings";
   private static final String TENANT = "diku";
-  public static final String AGGREGATOR_PATH = "/aggregator-settings";
   private static Vertx vertx;
   private static UsageDataProvider udprovider;
   private static UsageDataProvider udprovider2;
@@ -106,7 +105,9 @@ public class UsageDataProvidersIT {
         options,
         res -> {
           try {
-            tenantClient.postTenant(null, res2 -> async.complete());
+            tenantClient.postTenant(
+                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
+                res2 -> async.complete());
           } catch (Exception e) {
             context.fail(e);
           }

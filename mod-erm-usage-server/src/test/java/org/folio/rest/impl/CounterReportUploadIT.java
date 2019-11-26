@@ -1,10 +1,5 @@
 package org.folio.rest.impl;
 
-import static io.restassured.RestAssured.get;
-import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
-
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
@@ -22,29 +17,20 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.xml.bind.JAXB;
 import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
+import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.folio.rest.util.ModuleVersion;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.niso.schemas.counter.Metric;
 import org.niso.schemas.counter.MetricType;
@@ -53,15 +39,25 @@ import org.niso.schemas.sushi.counter.CounterReportResponse;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
 
+import javax.xml.bind.JAXB;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
 @RunWith(VertxUnitRunner.class)
 public class CounterReportUploadIT {
 
   private static final String TENANT = "diku";
-  private static Vertx vertx;
-
   private static final String PROVIDER_ID = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
   private static final String PROVIDER_ID2 = "4b659cb9-e4bb-493d-ae30-5f5690c54803";
-
   private static final File FILE_REPORT_OK =
       new File(Resources.getResource("fileupload/reportJSTOR.xml").getFile());
   private static final File FILE_REPORT_NSS_OK =
@@ -74,7 +70,7 @@ public class CounterReportUploadIT {
       new File(Resources.getResource("fileupload/hwire_trj1.json").getFile());
   private static final File FILE_REPORT5_MULTI =
       new File(Resources.getResource("fileupload/hwire_pr.json").getFile());
-
+  private static Vertx vertx;
   @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
@@ -112,7 +108,9 @@ public class CounterReportUploadIT {
         options,
         res -> {
           try {
-            tenantClient.postTenant(null, res2 -> async.complete());
+            tenantClient.postTenant(
+                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
+                res2 -> async.complete());
           } catch (Exception e) {
             context.fail(e);
           }
@@ -131,22 +129,6 @@ public class CounterReportUploadIT {
               PostgresClient.stopEmbeddedPostgres();
               async.complete();
             }));
-  }
-
-  @Before
-  public void before(TestContext ctx) {
-    Async async = ctx.async();
-    PostgresClient.getInstance(vertx, TENANT)
-        .delete(
-            Constants.TABLE_NAME_COUNTER_REPORTS,
-            new Criterion(),
-            ar -> {
-              if (ar.failed()) ctx.fail(ar.cause());
-              async.complete();
-            });
-    async.await();
-
-    testThatDBIsEmpty();
   }
 
   private static void postProvider(TestContext ctx) {
@@ -174,6 +156,22 @@ public class CounterReportUploadIT {
               }
             });
     async.await();
+  }
+
+  @Before
+  public void before(TestContext ctx) {
+    Async async = ctx.async();
+    PostgresClient.getInstance(vertx, TENANT)
+        .delete(
+            Constants.TABLE_NAME_COUNTER_REPORTS,
+            new Criterion(),
+            ar -> {
+              if (ar.failed()) ctx.fail(ar.cause());
+              async.complete();
+            });
+    async.await();
+
+    testThatDBIsEmpty();
   }
 
   private void testThatDBSizeIsSize(int i) {
