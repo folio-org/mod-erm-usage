@@ -6,6 +6,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS delete_counter_reports ON usage_data_providers;
 CREATE TRIGGER delete_counter_reports
 AFTER DELETE ON usage_data_providers FOR EACH ROW
 EXECUTE PROCEDURE delete_counter_reports();
@@ -23,6 +24,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS resolve_aggregator_label_before_insert ON usage_data_providers;
 CREATE TRIGGER resolve_aggregator_label_before_insert
 BEFORE INSERT ON usage_data_providers FOR EACH ROW
 WHEN (
@@ -30,6 +32,7 @@ WHEN (
 )
 EXECUTE PROCEDURE resolve_aggregator_label();
 
+DROP TRIGGER IF EXISTS resolve_aggregator_label_before_update ON usage_data_providers;
 CREATE TRIGGER resolve_aggregator_label_before_update
 BEFORE UPDATE ON usage_data_providers FOR EACH ROW
 WHEN (

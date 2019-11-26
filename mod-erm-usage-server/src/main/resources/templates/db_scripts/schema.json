@@ -1,23 +1,37 @@
 {
-  "scripts": [],
+  "scripts": [
+    {
+      "run": "after",
+      "snippetPath": "aggregatorsettings_triggers.sql",
+      "fromModuleVersion": "mod-erm-usage-2.6.0-SNAPSHOT"
+    },
+    {
+      "run": "after",
+      "snippetPath": "usagedataproviders_triggers.sql",
+      "fromModuleVersion": "mod-erm-usage-2.6.0-SNAPSHOT"
+    },
+    {
+      "run": "after",
+      "snippetPath": "counterreports_triggers.sql",
+      "fromModuleVersion": "mod-erm-usage-2.6.0-SNAPSHOT"
+    }
+  ],
   "tables": [
     {
       "tableName": "aggregator_settings",
       "fromModuleVersion": "1.0",
-      "withMetadata": true,
-      "customSnippetPath": "aggregatorsettings.sql"
+      "withMetadata": true
     },
     {
       "tableName": "usage_data_providers",
-      "fromModuleVersion": "1.0",
+      "fromModuleVersion": "mod-erm-usage-2.6.0-SNAPSHOT",
       "withMetadata": true,
-      "customSnippetPath": "usagedataproviders.sql"
+      "customSnippetPath": "migration/usage_data_providers.sql"
     },
     {
       "tableName": "counter_reports",
       "fromModuleVersion": "1.0",
-      "withMetadata": true,
-      "customSnippetPath": "counterreports.sql"
+      "withMetadata": true
     }
   ],
   "views": [

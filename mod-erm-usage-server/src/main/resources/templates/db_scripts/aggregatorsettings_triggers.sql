@@ -8,6 +8,8 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_aggregator_label_references_after_update ON aggregator_settings;
+
 CREATE TRIGGER update_aggregator_label_references_after_update
 AFTER UPDATE ON aggregator_settings FOR EACH ROW
 WHEN (
