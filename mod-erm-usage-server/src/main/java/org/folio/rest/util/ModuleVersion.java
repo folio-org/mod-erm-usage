@@ -1,19 +1,16 @@
 package org.folio.rest.util;
 
+import java.io.FileReader;
+import java.io.IOException;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-
-import java.io.FileReader;
-import java.io.IOException;
 
 public class ModuleVersion {
 
   private static String version;
 
-  private ModuleVersion() {
-    throw new IllegalStateException("Utility class");
-  }
+  private ModuleVersion() {}
 
   public static String getModuleVersion() throws IOException, XmlPullParserException {
     if (version == null) {
