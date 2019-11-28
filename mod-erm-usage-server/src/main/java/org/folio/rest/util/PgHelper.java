@@ -3,7 +3,10 @@ package org.folio.rest.util;
 import io.vertx.core.*;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.persist.Criteria.Criteria;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.cql.CQLWrapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +17,8 @@ import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
 public class PgHelper {
+
+  private static final String EQUALS = "=";
 
   private PgHelper() {}
 
@@ -41,20 +46,49 @@ public class PgHelper {
     return udpPromise.future();
   }
 
+  private static CQLWrapper createGetReportCQL(CounterReport counterReport) {
+    Criteria idCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_PROVIDER_ID)
+            .setJSONB(true)
+            .setOperation(EQUALS)
+            .setVal(counterReport.getProviderId());
+    Criteria releaseCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_RELEASE)
+            .setOperation(EQUALS)
+            .setVal(counterReport.getRelease());
+    Criteria reportNameCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_REPORT_NAME)
+            .setOperation(EQUALS)
+            .setVal(counterReport.getReportName());
+    Criteria yearMonthCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_YEAR_MONTH)
+            .setOperation(EQUALS)
+            .setVal(counterReport.getYearMonth());
+    Criterion criterion =
+        new Criterion()
+            .addCriterion(idCrit)
+            .addCriterion(releaseCrit)
+            .addCriterion(reportNameCrit)
+            .addCriterion(yearMonthCrit);
+    return new CQLWrapper(criterion);
+  }
+
   public static Future<String> saveCounterReportToDb(
       Vertx vertx, String tenantId, CounterReport counterReport, boolean overwrite) {
 
     // check if CounterReport already exists
+    CQLWrapper cql = createGetReportCQL(counterReport);
+
     Promise<String> idPromise = Promise.promise();
     PostgresClient.getInstance(vertx, tenantId)
         .get(
             TABLE_NAME_COUNTER_REPORTS,
-            // select the properties we want to check for
-            new CounterReport()
-                .withProviderId(counterReport.getProviderId())
-                .withReportName(counterReport.getReportName())
-                .withRelease(counterReport.getRelease())
-                .withYearMonth(counterReport.getYearMonth()),
+            CounterReport.class,
+            cql,
             false,
             h -> {
               if (h.succeeded()) {

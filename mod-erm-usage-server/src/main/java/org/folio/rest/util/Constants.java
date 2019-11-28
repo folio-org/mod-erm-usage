@@ -4,4 +4,9 @@ public class Constants {
 
   public static final String TABLE_NAME_COUNTER_REPORTS = "counter_reports";
   public static final String TABLE_NAME_UDP = "usage_data_providers";
+
+  public static final String FIELD_NAME_PROVIDER_ID = "'providerId'";
+  public static final String FIELD_NAME_RELEASE = "'release'";
+  public static final String FIELD_NAME_REPORT_NAME = "'reportName'";
+  public static final String FIELD_NAME_YEAR_MONTH = "'yearMonth'";
 }
