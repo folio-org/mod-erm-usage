@@ -3,13 +3,8 @@ package org.folio.rest.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.ddlgen.Schema;
 import org.folio.rest.persist.ddlgen.SchemaMaker;
@@ -20,6 +15,13 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class EmbeddedPostgresRule implements TestRule {
 
@@ -35,7 +37,7 @@ public class EmbeddedPostgresRule implements TestRule {
 
   private Future<List<String>> createSchema(String tenant) {
     log.info("Creating schema for tenant: {}", tenant);
-    Future<List<String>> createSchema = Future.future();
+    Promise<List<String>> createSchema = Promise.promise();
     try {
       String tableInput =
           Resources.toString(
@@ -52,8 +54,9 @@ public class EmbeddedPostgresRule implements TestRule {
               true,
               ar -> {
                 if (ar.succeeded()) {
-                  if (ar.result().size() == 0) createSchema.complete(ar.result());
-                  else createSchema.fail(tenant + ": " + ar.result().get(0));
+                  if (ar.result().size() == 0) {
+                    createSchema.complete(ar.result());
+                  } else createSchema.fail(tenant + ": " + ar.result().get(0));
                 } else {
                   createSchema.fail(ar.cause());
                 }
@@ -61,7 +64,7 @@ public class EmbeddedPostgresRule implements TestRule {
     } catch (Exception e) {
       createSchema.fail(e);
     }
-    return createSchema;
+    return createSchema.future();
   }
 
   private Future<List<String>> createSchemas(Future<List<String>> start, List<String> tenantList) {

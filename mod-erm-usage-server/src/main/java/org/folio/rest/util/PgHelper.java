@@ -1,25 +1,25 @@
 package org.folio.rest.util;
 
-import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
-import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
-
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import io.vertx.core.*;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+
 public class PgHelper {
+
+  private PgHelper() {}
 
   public static Future<UsageDataProvider> getUDPfromDbById(
       Vertx vertx, String tenantId, String id) {
-    Future<UsageDataProvider> udpFuture = Future.future();
+    Promise<UsageDataProvider> udpPromise = Promise.promise();
     PostgresClient.getInstance(vertx, tenantId)
         .getById(
             TABLE_NAME_UDP,
@@ -28,24 +28,24 @@ public class PgHelper {
             ar -> {
               if (ar.succeeded()) {
                 if (ar.result() != null) {
-                  udpFuture.complete(ar.result());
+                  udpPromise.complete(ar.result());
                 } else {
-                  udpFuture.fail(String.format("Provider with id %s not found", id));
+                  udpPromise.fail(String.format("Provider with id %s not found", id));
                 }
               } else {
-                udpFuture.fail(
+                udpPromise.fail(
                     String.format(
                         "Unable to get usage data provider with id %s: %s", id, ar.cause()));
               }
             });
-    return udpFuture;
+    return udpPromise.future();
   }
 
   public static Future<String> saveCounterReportToDb(
       Vertx vertx, String tenantId, CounterReport counterReport, boolean overwrite) {
 
     // check if CounterReport already exists
-    Future<String> idFuture = Future.future();
+    Promise<String> idPromise = Promise.promise();
     PostgresClient.getInstance(vertx, tenantId)
         .get(
             TABLE_NAME_COUNTER_REPORTS,
@@ -60,29 +60,31 @@ public class PgHelper {
               if (h.succeeded()) {
                 int resultSize = h.result().getResults().size();
                 if (resultSize == 1) {
-                  idFuture.complete(h.result().getResults().get(0).getId());
+                  idPromise.complete(h.result().getResults().get(0).getId());
                 } else if (resultSize > 1) {
-                  idFuture.fail("Too many results");
+                  idPromise.fail("Too many results");
                 } else {
-                  idFuture.complete(null);
+                  idPromise.complete(null);
                 }
               } else {
-                idFuture.fail(h.cause());
+                idPromise.fail(h.cause());
               }
             });
 
     // save report
-    return idFuture.compose(
-        id -> {
-          if (id != null && !overwrite) {
-            return Future.failedFuture("Report already exists");
-          }
+    return idPromise
+        .future()
+        .compose(
+            id -> {
+              if (id != null && !overwrite) {
+                return Future.failedFuture("Report already exists");
+              }
 
-          Future<String> upsertFuture = Future.future();
-          PostgresClient.getInstance(vertx, tenantId)
-              .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertFuture);
-          return upsertFuture;
-        });
+              Promise<String> upsertPromise = Promise.promise();
+              PostgresClient.getInstance(vertx, tenantId)
+                  .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertPromise);
+              return upsertPromise.future();
+            });
   }
 
   public static Future<List<String>> saveCounterReportsToDb(
@@ -163,7 +165,7 @@ public class PgHelper {
                 + "(jsonb->'yearMonth' ?| array[%s])",
             providerId, reportName, release, months);
 
-    Future<List<CounterReport>> result = Future.future();
+    Promise<List<CounterReport>> result = Promise.promise();
     PostgresClient.getInstance(vertxContext.owner(), tenantId)
         .get(
             TABLE_NAME_COUNTER_REPORTS,
@@ -178,8 +180,6 @@ public class PgHelper {
                 result.tryFail(ar.cause());
               }
             });
-    return result;
+    return result.future();
   }
-
-  private PgHelper() {}
 }
