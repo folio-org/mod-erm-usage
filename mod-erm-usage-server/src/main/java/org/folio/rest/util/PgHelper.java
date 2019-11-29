@@ -13,12 +13,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
-import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+import static org.folio.rest.util.Constants.*;
 
 public class PgHelper {
-
-  private static final String EQUALS = "=";
 
   private PgHelper() {}
 
@@ -49,24 +46,24 @@ public class PgHelper {
   private static CQLWrapper createGetReportCQL(CounterReport counterReport) {
     Criteria idCrit =
         new Criteria()
-            .addField(Constants.FIELD_NAME_PROVIDER_ID)
+            .addField(FIELD_NAME_PROVIDER_ID)
             .setJSONB(true)
-            .setOperation(EQUALS)
+            .setOperation(OPERATOR_EQUALS)
             .setVal(counterReport.getProviderId());
     Criteria releaseCrit =
         new Criteria()
-            .addField(Constants.FIELD_NAME_RELEASE)
-            .setOperation(EQUALS)
+            .addField(FIELD_NAME_RELEASE)
+            .setOperation(OPERATOR_EQUALS)
             .setVal(counterReport.getRelease());
     Criteria reportNameCrit =
         new Criteria()
-            .addField(Constants.FIELD_NAME_REPORT_NAME)
-            .setOperation(EQUALS)
+            .addField(FIELD_NAME_REPORT_NAME)
+            .setOperation(OPERATOR_EQUALS)
             .setVal(counterReport.getReportName());
     Criteria yearMonthCrit =
         new Criteria()
-            .addField(Constants.FIELD_NAME_YEAR_MONTH)
-            .setOperation(EQUALS)
+            .addField(FIELD_NAME_YEAR_MONTH)
+            .setOperation(OPERATOR_EQUALS)
             .setVal(counterReport.getYearMonth());
     Criterion criterion =
         new Criterion()
@@ -190,21 +187,43 @@ public class PgHelper {
       String reportName,
       String release,
       List<String> yearMonths) {
-    String months = yearMonths.stream().map(ym -> "'" + ym + "'").collect(Collectors.joining(","));
-    String where =
-        String.format(
-            " WHERE (jsonb->>'providerId' = '%s') AND "
-                + "(jsonb->>'reportName' = '%s') AND "
-                + "(jsonb->>'release' = '%s') AND "
-                + "(jsonb->'yearMonth' ?| array[%s])",
-            providerId, reportName, release, months);
+    String months = String.join(",", yearMonths);
+
+    Criteria providerCrit =
+        new Criteria()
+            .addField(FIELD_NAME_PROVIDER_ID)
+            .setOperation(OPERATOR_EQUALS)
+            .setVal(providerId);
+    Criteria reportNameCrit =
+        new Criteria()
+            .addField(FIELD_NAME_REPORT_NAME)
+            .setOperation(OPERATOR_EQUALS)
+            .setVal(reportName);
+    Criteria releaseCrit =
+        new Criteria().addField(FIELD_NAME_RELEASE).setOperation(OPERATOR_EQUALS).setVal(release);
+    Criteria yearMonthCrit =
+        new Criteria()
+            .addField("jsonb->" + FIELD_NAME_YEAR_MONTH)
+            .setJSONB(false)
+            .setOperation("?|")
+            .setVal("{" + months + "}");
+    Criterion criterion =
+        new Criterion()
+            .addCriterion(providerCrit)
+            .addCriterion(reportNameCrit)
+            .addCriterion(releaseCrit)
+            .addCriterion(yearMonthCrit);
+
+    // Need to CQLWrapper from Criterion cause PostgresClient sometimes returns unexpected results
+    // when using just the criterion...
+    CQLWrapper cql = new CQLWrapper(criterion);
 
     Promise<List<CounterReport>> result = Promise.promise();
     PostgresClient.getInstance(vertxContext.owner(), tenantId)
         .get(
             TABLE_NAME_COUNTER_REPORTS,
             CounterReport.class,
-            where,
+            cql,
             false,
             false,
             ar -> {
