@@ -1,24 +1,27 @@
 package org.folio.rest.util;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
-
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.persist.Criteria.Criteria;
+import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.cql.CQLWrapper;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.PostgresClient;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 
 @RunWith(VertxUnitRunner.class)
 public class PgHelperIT {
@@ -84,11 +87,13 @@ public class PgHelperIT {
                     ar.result().getResults().stream()
                         .map(ja -> ja.getString(0))
                         .collect(Collectors.toList());
+
+                CQLWrapper cql = new CQLWrapper(new Criterion());
                 PostgresClient.getInstance(vertx, tenant)
                     .get(
                         TABLE_NAME_COUNTER_REPORTS,
                         CounterReport.class,
-                        new Criterion(),
+                        cql,
                         false,
                         ar2 -> {
                           if (ar2.succeeded()) {
@@ -184,6 +189,8 @@ public class PgHelperIT {
   public void testSaveReportsToDb(TestContext context) {
     Async async = context.async();
     reports2.forEach(li -> li.withFailedAttempts(5));
+    CQLWrapper cql = createGetCounterReportCQL(providerId2, "4", "JR1");
+
     PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), tenant, reports2, false)
         .setHandler(
             ar -> {
@@ -191,13 +198,12 @@ public class PgHelperIT {
                 context.fail("Should fail");
               } else {
                 assertThat(ar.cause().getMessage()).contains("2019-01", "2019-02");
+
                 PostgresClient.getInstance(vertx, tenant)
                     .get(
                         TABLE_NAME_COUNTER_REPORTS,
-                        new CounterReport()
-                            .withProviderId(providerId2)
-                            .withRelease("4")
-                            .withReportName("JR1"),
+                        CounterReport.class,
+                        cql,
                         false,
                         result -> {
                           if (result.succeeded()) {
@@ -227,10 +233,8 @@ public class PgHelperIT {
                 PostgresClient.getInstance(vertx, tenant)
                     .get(
                         TABLE_NAME_COUNTER_REPORTS,
-                        new CounterReport()
-                            .withProviderId(providerId2)
-                            .withRelease("4")
-                            .withReportName("JR1"),
+                        CounterReport.class,
+                        cql,
                         false,
                         result -> {
                           if (result.succeeded()) {
@@ -260,6 +264,8 @@ public class PgHelperIT {
   @Test
   public void testSaveReportsToDb2(TestContext context) {
     Async async = context.async();
+    CQLWrapper cql = createGetCounterReportCQL(providerId2, "4", "PR1");
+
     PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), tenant, reports3, false)
         .setHandler(
             ar -> {
@@ -268,10 +274,8 @@ public class PgHelperIT {
                 PostgresClient.getInstance(vertx, tenant)
                     .get(
                         TABLE_NAME_COUNTER_REPORTS,
-                        new CounterReport()
-                            .withProviderId(providerId2)
-                            .withRelease("4")
-                            .withReportName("PR1"),
+                        CounterReport.class,
+                        cql,
                         false,
                         result -> {
                           if (result.succeeded()) {
@@ -293,5 +297,25 @@ public class PgHelperIT {
                 context.fail(ar.cause());
               }
             });
+  }
+
+  private CQLWrapper createGetCounterReportCQL(
+      String providerId, String release, String reportName) {
+    Criteria idCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_PROVIDER_ID)
+            .setJSONB(true)
+            .setOperation("=")
+            .setVal(providerId);
+    Criteria releaseCrit =
+        new Criteria().addField(Constants.FIELD_NAME_RELEASE).setOperation("=").setVal(release);
+    Criteria reportNameCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_REPORT_NAME)
+            .setOperation("=")
+            .setVal(reportName);
+    Criterion criterion =
+        new Criterion().addCriterion(idCrit).addCriterion(releaseCrit).addCriterion(reportNameCrit);
+    return new CQLWrapper(criterion);
   }
 }

@@ -1,7 +1,5 @@
 package org.folio.rest.impl;
 
-import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import io.vertx.core.AsyncResult;
@@ -10,11 +8,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import javax.ws.rs.core.Response;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.okapi.common.XOkapiHeaders;
@@ -23,6 +16,8 @@ import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.AggregatorSettings;
 import org.folio.rest.jaxrs.model.AggregatorSettingsGetOrder;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.persist.Criteria.Criteria;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PgUtil;
@@ -31,7 +26,16 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.util.Constants;
 import org.folio.rest.util.ExportObject;
+
+import javax.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
 public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.AggregatorSettings {
 
@@ -39,6 +43,18 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
 
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(AggregatorSettingsAPI.class);
+
+  public static String getCredentialsCSV(List<UsageDataProvider> udps)
+      throws JsonProcessingException {
+    List<ExportObject> exportObjectList =
+        udps.stream().map(ExportObject::new).collect(Collectors.toList());
+    CsvMapper csvMapper = new CsvMapper();
+    return csvMapper
+        .writerFor(ExportObject.class)
+        .with(csvMapper.schemaFor(ExportObject.class).withHeader())
+        .forType(List.class)
+        .writeValueAsString(exportObjectList);
+  }
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
     CQL2PgJSON cql2pgJson =
@@ -234,18 +250,6 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
         asyncResultHandler);
   }
 
-  public static String getCredentialsCSV(List<UsageDataProvider> udps)
-      throws JsonProcessingException {
-    List<ExportObject> exportObjectList =
-        udps.stream().map(ExportObject::new).collect(Collectors.toList());
-    CsvMapper csvMapper = new CsvMapper();
-    return csvMapper
-        .writerFor(ExportObject.class)
-        .with(csvMapper.schemaFor(ExportObject.class).withHeader())
-        .forType(List.class)
-        .writeValueAsString(exportObjectList);
-  }
-
   @Override
   public void getAggregatorSettingsExportcredentialsById(
       String id,
@@ -253,14 +257,21 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    String where =
-        String.format(" WHERE (jsonb->'harvestingConfig'->'aggregator'->>'id' = '%s')", id);
+    Criteria criteria =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_HARVESTING_CONFIG)
+            .addField(Constants.FIELD_NAME_AGGREGATOR)
+            .addField(Constants.FIELD_NAME_ID)
+            .setOperation(Constants.OPERATOR_EQUALS)
+            .setVal(id);
+    Criterion criterion = new Criterion(criteria);
+    CQLWrapper cql = new CQLWrapper(criterion);
 
     PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
         .get(
             TABLE_NAME_UDP,
             UsageDataProvider.class,
-            where,
+            cql,
             true,
             true,
             ar -> {

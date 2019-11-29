@@ -1,7 +1,5 @@
 package org.folio.rest.impl;
 
-import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
-
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -9,16 +7,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import java.io.InputStream;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import javax.ws.rs.core.Response;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.okapi.common.XOkapiHeaders;
@@ -26,6 +14,8 @@ import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.CounterReportsGetOrder;
+import org.folio.rest.persist.Criteria.Criteria;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
 import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PgUtil;
@@ -34,10 +24,19 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
 import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.util.Constants;
 import org.folio.rest.util.PgHelper;
 import org.folio.rest.util.UploadHelper;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
+
+import javax.ws.rs.core.Response;
+import java.io.InputStream;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
@@ -330,21 +329,42 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    String where =
-        String.format(
-            " WHERE (jsonb->>'providerId' = '%s') AND "
-                + "(jsonb->>'reportName' = '%s') AND "
-                + "(jsonb->>'release' = '%s') AND "
-                + "(jsonb->'report' IS NOT NULL) AND"
-                + "(jsonb->>'yearMonth' >= '%s') AND "
-                + "(jsonb->>'yearMonth' <= '%s')",
-            id, name, version, begin, end);
+    Criteria providerCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_PROVIDER_ID)
+            .setOperation(Constants.OPERATOR_EQUALS)
+            .setVal(id);
+    Criteria reportNameCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_REPORT_NAME)
+            .setOperation(Constants.OPERATOR_EQUALS)
+            .setVal(name);
+    Criteria releaseCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_RELEASE)
+            .setOperation(Constants.OPERATOR_EQUALS)
+            .setVal(version);
+    Criteria reportCrit =
+        new Criteria().addField(Constants.FIELD_NAME_REPORT).setOperation("IS NOT NULL");
+    Criteria yearMonthBeginCrit =
+        new Criteria().addField(Constants.FIELD_NAME_YEAR_MONTH).setOperation(">=").setVal(begin);
+    Criteria yearMonthEndCrit =
+        new Criteria().addField(Constants.FIELD_NAME_YEAR_MONTH).setOperation("<=").setVal(end);
+    Criterion criterion =
+        new Criterion()
+            .addCriterion(providerCrit)
+            .addCriterion(reportNameCrit)
+            .addCriterion(releaseCrit)
+            .addCriterion(reportCrit)
+            .addCriterion(yearMonthBeginCrit)
+            .addCriterion(yearMonthEndCrit);
+    CQLWrapper cql = new CQLWrapper(criterion);
 
     PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
         .get(
             TABLE_NAME_COUNTER_REPORTS,
             CounterReport.class,
-            where,
+            cql,
             true,
             true,
             ar -> {

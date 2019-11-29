@@ -82,9 +82,7 @@ public class CounterReportIT {
           try {
             tenantClient.postTenant(
                 new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
-                res2 -> {
-                  async.complete();
-                });
+                res2 -> async.complete());
           } catch (Exception e) {
             context.fail(e);
           }

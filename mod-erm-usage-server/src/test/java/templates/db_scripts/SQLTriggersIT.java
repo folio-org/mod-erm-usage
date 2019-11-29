@@ -3,6 +3,7 @@ package templates.db_scripts;
 import com.google.common.io.Resources;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
@@ -22,6 +23,7 @@ import org.junit.runner.RunWith;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +36,7 @@ public class SQLTriggersIT {
 
   private static final String TENANT = "testtenant";
   private static final String TABLE_AGGREGATOR = "aggregator_settings";
+  private static final String TOKEN = jwtToken(new JsonObject().put("user_id", TENANT));
   private static Vertx vertx;
   private static int port;
   private static List<Parameter> parameters =
@@ -48,6 +51,12 @@ public class SQLTriggersIT {
   private static CounterReport reportFailed;
   @Rule public Timeout timeout = Timeout.seconds(5);
 
+  private static String jwtToken(JsonObject payload) {
+    return "header."
+      + Base64.getEncoder().encodeToString(payload.encode().getBytes())
+      + ".signature";
+  }
+
   @BeforeClass
   public static void init(TestContext context) {
     vertx = Vertx.vertx();
@@ -59,7 +68,7 @@ public class SQLTriggersIT {
           new TenantAttributes()
               .withModuleTo(ModuleVersion.getModuleVersion())
               .withParameters(parameters);
-      tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
+      tenantClient = new TenantClient("http://localhost:" + port, TENANT, TOKEN);
 
       String aggregatorJSON =
           Resources.toString(
@@ -105,9 +114,11 @@ public class SQLTriggersIT {
 
   // FIXME: run in a sequence to prevent exception in StatsTracker.java
   private static Future<Void> validateSampleData() {
-    Future<Void> providerFuture = Future.future();
-    Future<Void> reportFuture = Future.future();
-    Future<Void> aggregatorFuture = Future.future();
+
+    Promise<Void> providerPromise = Promise.promise();
+    Promise<Void> reportPromise = Promise.promise();
+    Promise<Void> aggregatorPromise = Promise.promise();
+
     getPGClient()
         .get(
             TABLE_NAME_UDP,
@@ -116,46 +127,52 @@ public class SQLTriggersIT {
             ar -> {
               if (ar.succeeded()) {
                 assertThat(ar.result().getResults().size()).isEqualTo(4);
-                providerFuture.complete();
+                providerPromise.complete();
               } else {
-                providerFuture.fail(ar.cause());
+                providerPromise.fail(ar.cause());
               }
             });
 
-    providerFuture.compose(
-        v ->
-            getPGClient()
-                .get(
-                    TABLE_NAME_COUNTER_REPORTS,
-                    new CounterReport(),
-                    false,
-                    ar -> {
-                      if (ar.succeeded()) {
-                        assertThat(ar.result().getResults().size()).isEqualTo(4);
-                        reportFuture.complete();
-                      } else {
-                        reportFuture.fail(ar.cause());
-                      }
-                    }),
-        reportFuture);
-
-    reportFuture.compose(
-        v ->
-            getPGClient()
-                .get(
-                    TABLE_AGGREGATOR,
-                    new AggregatorSetting(),
-                    false,
-                    ar -> {
-                      if (ar.succeeded()) {
-                        assertThat(ar.result().getResults().size()).isEqualTo(1);
-                        aggregatorFuture.complete();
-                      } else {
-                        aggregatorFuture.fail(ar.cause());
-                      }
-                    }),
-        aggregatorFuture);
-    return aggregatorFuture;
+    providerPromise
+        .future()
+        .compose(
+            v -> {
+              getPGClient()
+                  .get(
+                      TABLE_NAME_COUNTER_REPORTS,
+                      new CounterReport(),
+                      false,
+                      ar -> {
+                        if (ar.succeeded()) {
+                          assertThat(ar.result().getResults().size()).isEqualTo(4);
+                          reportPromise.complete();
+                        } else {
+                          reportPromise.fail(ar.cause());
+                        }
+                      });
+              return reportPromise.future();
+            })
+        .setHandler(
+            ar -> {
+              if (ar.succeeded()) {
+                getPGClient()
+                    .get(
+                        TABLE_AGGREGATOR,
+                        new AggregatorSetting(),
+                        false,
+                        ar2 -> {
+                          if (ar2.succeeded()) {
+                            assertThat(ar2.result().getResults().size()).isEqualTo(1);
+                            aggregatorPromise.complete();
+                          } else {
+                            aggregatorPromise.fail(ar2.cause());
+                          }
+                        });
+              } else {
+                aggregatorPromise.fail(ar.cause());
+              }
+            });
+    return aggregatorPromise.future();
   }
 
   @Before
@@ -167,13 +184,13 @@ public class SQLTriggersIT {
   }
 
   private Future<Integer> truncateTable(String tableName) {
-    Future<Integer> future = Future.future();
+    Promise<Integer> promise = Promise.promise();
     getPGClient()
         .delete(
             tableName,
             new Criterion(),
-            ar -> future.complete((ar.succeeded()) ? ar.result().getUpdated() : null));
-    return future;
+            ar -> promise.complete((ar.succeeded()) ? ar.result().getUpdated() : null));
+    return promise.future();
   }
 
   private Future<Integer> deleteSampleData() {
@@ -188,23 +205,23 @@ public class SQLTriggersIT {
   }
 
   private Future<Void> loadSampleData() {
-    Future<Void> future = Future.future();
+    Promise<Void> promise = Promise.promise();
     try {
       tenantClient.postTenant(
           tenantAttributes,
           res -> {
             if (res.statusCode() / 200 == 1) {
-              future.complete();
+              promise.complete();
             } else {
-              future.fail(
+              promise.fail(
                   String.format(
                       "Tenantloading returned %s %s", res.statusCode(), res.statusMessage()));
             }
           });
     } catch (Exception e) {
-      future.fail(e);
+      promise.fail(e);
     }
-    return future;
+    return promise.future();
   }
 
   private <T extends Object> T clone(T o) {

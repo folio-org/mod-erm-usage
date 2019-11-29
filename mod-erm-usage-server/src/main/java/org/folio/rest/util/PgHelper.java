@@ -1,25 +1,27 @@
 package org.folio.rest.util;
 
-import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
-import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+import io.vertx.core.*;
+import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.persist.Criteria.Criteria;
+import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.cql.CQLWrapper;
 
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.jaxrs.model.UsageDataProvider;
-import org.folio.rest.persist.PostgresClient;
+
+import static org.folio.rest.util.Constants.*;
 
 public class PgHelper {
 
+  private PgHelper() {}
+
   public static Future<UsageDataProvider> getUDPfromDbById(
       Vertx vertx, String tenantId, String id) {
-    Future<UsageDataProvider> udpFuture = Future.future();
+    Promise<UsageDataProvider> udpPromise = Promise.promise();
     PostgresClient.getInstance(vertx, tenantId)
         .getById(
             TABLE_NAME_UDP,
@@ -28,61 +30,92 @@ public class PgHelper {
             ar -> {
               if (ar.succeeded()) {
                 if (ar.result() != null) {
-                  udpFuture.complete(ar.result());
+                  udpPromise.complete(ar.result());
                 } else {
-                  udpFuture.fail(String.format("Provider with id %s not found", id));
+                  udpPromise.fail(String.format("Provider with id %s not found", id));
                 }
               } else {
-                udpFuture.fail(
+                udpPromise.fail(
                     String.format(
                         "Unable to get usage data provider with id %s: %s", id, ar.cause()));
               }
             });
-    return udpFuture;
+    return udpPromise.future();
+  }
+
+  private static CQLWrapper createGetReportCQL(CounterReport counterReport) {
+    Criteria idCrit =
+        new Criteria()
+            .addField(FIELD_NAME_PROVIDER_ID)
+            .setJSONB(true)
+            .setOperation(OPERATOR_EQUALS)
+            .setVal(counterReport.getProviderId());
+    Criteria releaseCrit =
+        new Criteria()
+            .addField(FIELD_NAME_RELEASE)
+            .setOperation(OPERATOR_EQUALS)
+            .setVal(counterReport.getRelease());
+    Criteria reportNameCrit =
+        new Criteria()
+            .addField(FIELD_NAME_REPORT_NAME)
+            .setOperation(OPERATOR_EQUALS)
+            .setVal(counterReport.getReportName());
+    Criteria yearMonthCrit =
+        new Criteria()
+            .addField(FIELD_NAME_YEAR_MONTH)
+            .setOperation(OPERATOR_EQUALS)
+            .setVal(counterReport.getYearMonth());
+    Criterion criterion =
+        new Criterion()
+            .addCriterion(idCrit)
+            .addCriterion(releaseCrit)
+            .addCriterion(reportNameCrit)
+            .addCriterion(yearMonthCrit);
+    return new CQLWrapper(criterion);
   }
 
   public static Future<String> saveCounterReportToDb(
       Vertx vertx, String tenantId, CounterReport counterReport, boolean overwrite) {
 
     // check if CounterReport already exists
-    Future<String> idFuture = Future.future();
+    CQLWrapper cql = createGetReportCQL(counterReport);
+
+    Promise<String> idPromise = Promise.promise();
     PostgresClient.getInstance(vertx, tenantId)
         .get(
             TABLE_NAME_COUNTER_REPORTS,
-            // select the properties we want to check for
-            new CounterReport()
-                .withProviderId(counterReport.getProviderId())
-                .withReportName(counterReport.getReportName())
-                .withRelease(counterReport.getRelease())
-                .withYearMonth(counterReport.getYearMonth()),
+            CounterReport.class,
+            cql,
             false,
             h -> {
               if (h.succeeded()) {
                 int resultSize = h.result().getResults().size();
                 if (resultSize == 1) {
-                  idFuture.complete(h.result().getResults().get(0).getId());
+                  idPromise.complete(h.result().getResults().get(0).getId());
                 } else if (resultSize > 1) {
-                  idFuture.fail("Too many results");
+                  idPromise.fail("Too many results");
                 } else {
-                  idFuture.complete(null);
+                  idPromise.complete(null);
                 }
               } else {
-                idFuture.fail(h.cause());
+                idPromise.fail(h.cause());
               }
             });
 
     // save report
-    return idFuture.compose(
-        id -> {
-          if (id != null && !overwrite) {
-            return Future.failedFuture("Report already exists");
-          }
+    return idPromise
+        .future()
+        .compose(
+            id -> {
+              if (id != null && !overwrite) {
+                return Future.failedFuture("Report already exists");
+              }
 
-          Future<String> upsertFuture = Future.future();
-          PostgresClient.getInstance(vertx, tenantId)
-              .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertFuture);
-          return upsertFuture;
-        });
+              Promise<String> upsertPromise = Promise.promise();
+              PostgresClient.getInstance(vertx, tenantId)
+                  .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertPromise);
+              return upsertPromise.future();
+            });
   }
 
   public static Future<List<String>> saveCounterReportsToDb(
@@ -154,21 +187,43 @@ public class PgHelper {
       String reportName,
       String release,
       List<String> yearMonths) {
-    String months = yearMonths.stream().map(ym -> "'" + ym + "'").collect(Collectors.joining(","));
-    String where =
-        String.format(
-            " WHERE (jsonb->>'providerId' = '%s') AND "
-                + "(jsonb->>'reportName' = '%s') AND "
-                + "(jsonb->>'release' = '%s') AND "
-                + "(jsonb->'yearMonth' ?| array[%s])",
-            providerId, reportName, release, months);
+    String months = String.join(",", yearMonths);
 
-    Future<List<CounterReport>> result = Future.future();
+    Criteria providerCrit =
+        new Criteria()
+            .addField(FIELD_NAME_PROVIDER_ID)
+            .setOperation(OPERATOR_EQUALS)
+            .setVal(providerId);
+    Criteria reportNameCrit =
+        new Criteria()
+            .addField(FIELD_NAME_REPORT_NAME)
+            .setOperation(OPERATOR_EQUALS)
+            .setVal(reportName);
+    Criteria releaseCrit =
+        new Criteria().addField(FIELD_NAME_RELEASE).setOperation(OPERATOR_EQUALS).setVal(release);
+    Criteria yearMonthCrit =
+        new Criteria()
+            .addField("jsonb->" + FIELD_NAME_YEAR_MONTH)
+            .setJSONB(false)
+            .setOperation("?|")
+            .setVal("{" + months + "}");
+    Criterion criterion =
+        new Criterion()
+            .addCriterion(providerCrit)
+            .addCriterion(reportNameCrit)
+            .addCriterion(releaseCrit)
+            .addCriterion(yearMonthCrit);
+
+    // Need to CQLWrapper from Criterion cause PostgresClient sometimes returns unexpected results
+    // when using just the criterion...
+    CQLWrapper cql = new CQLWrapper(criterion);
+
+    Promise<List<CounterReport>> result = Promise.promise();
     PostgresClient.getInstance(vertxContext.owner(), tenantId)
         .get(
             TABLE_NAME_COUNTER_REPORTS,
             CounterReport.class,
-            where,
+            cql,
             false,
             false,
             ar -> {
@@ -178,8 +233,6 @@ public class PgHelper {
                 result.tryFail(ar.cause());
               }
             });
-    return result;
+    return result.future();
   }
-
-  private PgHelper() {}
 }

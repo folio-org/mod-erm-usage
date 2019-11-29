@@ -104,9 +104,7 @@ public class CounterReportCsvIT {
           try {
             tenantClient.postTenant(
                 new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
-                res2 -> {
-                  async.complete();
-                });
+                res2 -> async.complete());
           } catch (Exception e) {
             context.fail(e);
           }
@@ -173,7 +171,7 @@ public class CounterReportCsvIT {
   }
 
   @Test
-  public void testGetCSVOkJR1MultipleMonths() throws IOException {
+  public void testGetCSVOkJR1MultipleMonths() {
     String json1 = resourceToString("JR1/jr1_1.json");
     String json2 = resourceToString("JR1/jr1_2.json");
     String json3 = resourceToString("JR1/jr1_3.json");
