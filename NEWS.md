@@ -1,3 +1,11 @@
+# 2.6.0
+* Update to RMB version 29.1.0
+* Use new base docker image && new JAVA_OPTIONS (FOLIO-2358)
+* Add database migration script
+* Update jackson-databind version to 2.10.0
+* Support upload of csv reports (UIEUS-105)
+* Update UDP schema: add `hasFailedReport`
+
 # 2.5.0
 * Update RMB version to 26.2.4
 * Update jackson-databind version to 2.9.9.3
