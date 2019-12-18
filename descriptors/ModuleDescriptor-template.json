@@ -293,8 +293,8 @@
       "description": "Delete an counter report"
     },
     {
-      "permissionName": "ermusage.all",
-      "displayName": "ermusage all",
+      "permissionName": "eusage.all",
+      "displayName": "eusage all",
       "description": "All permissions for the mod-erm-usage module. An admin should get all permission, e.g. to edit aggregators.",
       "subPermissions": [
         "usagedataproviders.collection.get",
@@ -315,8 +315,8 @@
       ]
     },
     {
-      "permissionName": "ermusage.user",
-      "displayName": "ermusage user",
+      "permissionName": "eusage.user",
+      "displayName": "eusage user",
       "description": "Permission set for a standard erm user. Cannot edit aggregator settings.",
       "subPermissions": [
         "usagedataproviders.collection.get",
@@ -331,19 +331,6 @@
         "counterreports.item.post",
         "counterreports.item.put",
         "counterreports.item.delete"
-      ]
-    },
-    {
-      "permissionName": "ermusage.view",
-      "displayName": "ermusage view",
-      "description": "Permission set for a erm user that can just view but not edit any ressource.",
-      "subPermissions": [
-        "usagedataproviders.collection.get",
-        "usagedataproviders.item.get",
-        "aggregatorsettings.collection.get",
-        "aggregatorsettings.item.get",
-        "counterreports.collection.get",
-        "counterreports.item.get"
       ]
     }
   ],
