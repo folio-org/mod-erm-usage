@@ -10,6 +10,7 @@ documentation:
 types:
   counterReport: !include ./schemas/counterreport.json
   counterReports: !include ./schemas/counterreports.json
+  errorCodes: !include ./schemas/errorcodes.json
   errors: !include ./raml-util/schemas/errors.schema
 
 traits:
@@ -61,7 +62,7 @@ resourceTypes:
     /{id}:
       get:
         description: Get the report identified by id as CSV
-        responses: 
+        responses:
           200:
             body:
               text/csv:
@@ -83,14 +84,14 @@ resourceTypes:
   /upload/provider/{id}:
     description: Upload a report from file for a provider identified by id
     post:
-      queryParameters: 
+      queryParameters:
         overwrite:
           description: Overwrite existing reports?
           type: boolean
           default: false
       body:
         application/octet-stream:
-      responses: 
+      responses:
         200:
           body:
             text/plain:
@@ -100,4 +101,13 @@ resourceTypes:
         500:
           body:
             text/plain:
-      
+  /errors/codes:
+    get:
+      description: Get counter/sushi error codes existent in counter reports
+      responses:
+        200:
+          description: error codes existent in counter reports
+          body:
+            application/json:
+              example: !include examples/errorcodes.sample
+              schema: errorCodes

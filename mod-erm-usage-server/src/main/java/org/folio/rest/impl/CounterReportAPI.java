@@ -319,6 +319,28 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   }
 
   @Override
+  public void getCounterReportsErrorsCodes(
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+    String tenantId = okapiHeaders.get(XOkapiHeaders.TENANT);
+    PgHelper.getErrorCodes(vertxContext, tenantId)
+        .setHandler(
+            ar -> {
+              if (ar.succeeded()) {
+                org.folio.rest.jaxrs.model.ErrorCodes result = ar.result();
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        GetCounterReportsErrorsCodesResponse.respond200WithApplicationJson(
+                            result)));
+              } else {
+                System.out.println("FAIL");
+                asyncResultHandler.handle(Future.succeededFuture());
+              }
+            });
+  }
+
+  @Override
   public void getCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEnd(
       String id,
       String name,
