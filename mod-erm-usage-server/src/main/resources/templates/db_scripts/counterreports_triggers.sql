@@ -46,7 +46,7 @@ BEGIN
             ELSE 'other'
       END AS error
     FROM(
-      SELECT	DISTINCT(SUBSTRING(jsonb->>'failedReason','Number=([0-9]{4})')) as error_code,
+      SELECT	DISTINCT(SUBSTRING(jsonb->>'failedReason','Number=([0-9]{1,4})')) as error_code,
               COUNT(jsonb->>'failedReason') as number_failed
       FROM  	counter_reports
       WHERE		jsonb->>'providerId'=$1 AND jsonb->>'failedReason' IS NOT NULL

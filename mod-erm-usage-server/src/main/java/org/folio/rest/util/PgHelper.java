@@ -240,7 +240,7 @@ public class PgHelper {
 
   public static Future<ErrorCodes> getErrorCodes(Context vertxContext, String tenantId) {
     String query =
-        "SELECT DISTINCT(SUBSTRING(jsonb->>'failedReason','Number=([0-9]{4})')) FROM counter_reports WHERE jsonb->>'failedReason' IS NOT NULL";
+        "SELECT DISTINCT(SUBSTRING(jsonb->>'failedReason','Number=([0-9]{1,4})')) FROM counter_reports WHERE jsonb->>'failedReason' IS NOT NULL";
     Promise<ErrorCodes> result = Promise.promise();
     PostgresClient.getInstance(vertxContext.owner(), tenantId)
         .select(
