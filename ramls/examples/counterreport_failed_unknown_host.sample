@@ -1,0 +1,10 @@
+{
+	"id": "e1d980f8-a2fe-4ba8-b541-c9b49dce9d47",
+	"downloadTime": "2018-09-13T12:57:01.414+0000",
+	"failedAttempts" : 1,
+  "failedReason" : "Error getting report: Could not send Message., UnknownHostException invoking http://usage.myhost.com/SushiServer: usage.myhost.com, usage.myhost.com",
+	"providerId": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd72",
+	"release": "4",
+	"reportName": "JR1",
+	"yearMonth": "2018-08"
+}

@@ -14,7 +14,9 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.ErrorCodes;
 import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.ModuleVersion;
@@ -24,10 +26,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 @RunWith(VertxUnitRunner.class)
@@ -39,6 +45,9 @@ public class CounterReportIT {
   private static Vertx vertx;
   private static CounterReport report;
   private static CounterReport reportChanged;
+  private static CounterReport reportFailedReason3000;
+  private static CounterReport reportFailedReason3031;
+  private static CounterReport reportFailedReasonUnkownHost;
 
   @Rule public Timeout timeout = Timeout.seconds(10);
 
@@ -51,6 +60,23 @@ public class CounterReportIT {
           new String(Files.readAllBytes(Paths.get("../ramls/examples/counterreport.sample")));
       report = Json.decodeValue(reportStr, CounterReport.class);
       reportChanged = Json.decodeValue(reportStr, CounterReport.class).withRelease("5");
+
+      String reportFailedReasonStr_3000 =
+          new String(
+              Files.readAllBytes(Paths.get("../ramls/examples/counterreport_failed_3000.sample")));
+      reportFailedReason3000 = Json.decodeValue(reportFailedReasonStr_3000, CounterReport.class);
+
+      String reportFailedReasonStr_3031 =
+          new String(
+              Files.readAllBytes(Paths.get("../ramls/examples/counterreport_failed_3031.sample")));
+      reportFailedReason3031 = Json.decodeValue(reportFailedReasonStr_3031, CounterReport.class);
+
+      String reportFailedReasonStr_unknownHost =
+          new String(
+              Files.readAllBytes(
+                  Paths.get("../ramls/examples/counterreport_failed_unknown_host.sample")));
+      reportFailedReasonUnkownHost =
+          Json.decodeValue(reportFailedReasonStr_unknownHost, CounterReport.class);
     } catch (Exception ex) {
       context.fail(ex);
     }
@@ -237,5 +263,154 @@ public class CounterReportIT {
         .post(BASE_URI)
         .then()
         .statusCode(422);
+  }
+
+  @Test
+  public void checkThatCounterReportFailedReasonTriggerIsExecuted(TestContext context) {
+    UsageDataProvider udprovider = null;
+    try {
+      String udproviderStr =
+          new String(Files.readAllBytes(Paths.get("../ramls/examples/udproviders.sample")));
+      udprovider = Json.decodeValue(udproviderStr, UsageDataProvider.class);
+
+    } catch (IOException e) {
+      context.fail();
+    }
+
+    // POST usage data provider
+    given()
+        .body(Json.encode(udprovider))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post("/usage-data-providers")
+        .then()
+        .statusCode(201);
+
+    // POST report
+    given()
+        .body(Json.encode(reportFailedReason3000))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201)
+        .body("release", equalTo(reportFailedReason3000.getRelease()))
+        .body("id", equalTo(reportFailedReason3000.getId()));
+
+    // Check if hasFailedReport and errorCode of UDP is set
+    UsageDataProvider udp =
+        given()
+            .body(Json.encode(udprovider))
+            .header("X-Okapi-Tenant", TENANT)
+            .header("content-type", APPLICATION_JSON)
+            .header("accept", APPLICATION_JSON)
+            .request()
+            .get("/usage-data-providers/" + udprovider.getId())
+            .thenReturn()
+            .as(UsageDataProvider.class);
+    assertThat(udp.getLabel()).isEqualTo(udprovider.getLabel());
+    assertThat(udp.getId()).isNotEmpty();
+    assertThat(udp.getHasFailedReport().value())
+        .isEqualTo(UsageDataProvider.HasFailedReport.YES.value());
+
+    List<String> udpErrorCodes = udp.getReportErrorCodes();
+    assertThat(udpErrorCodes.size()).isEqualTo(1);
+    assertThat(reportFailedReason3000.getFailedReason().contains(udpErrorCodes.get(0)));
+
+    // DELETE report
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(BASE_URI + "/" + reportFailedReason3000.getId())
+        .then()
+        .statusCode(204);
+
+    // DELETE udp
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete("/usage-data-providers/" + udprovider.getId())
+        .then()
+        .statusCode(204);
+  }
+
+  @Test
+  public void checkThatWeGetErrorCodes(TestContext context) {
+    // POST reports
+    given()
+        .body(Json.encode(reportFailedReason3000))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201)
+        .body("release", equalTo(reportFailedReason3000.getRelease()))
+        .body("id", equalTo(reportFailedReason3000.getId()));
+
+    given()
+        .body(Json.encode(reportFailedReason3031))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201)
+        .body("release", equalTo(reportFailedReason3031.getRelease()))
+        .body("id", equalTo(reportFailedReason3031.getId()));
+
+    given()
+        .body(Json.encode(reportFailedReasonUnkownHost))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201)
+        .body("release", equalTo(reportFailedReasonUnkownHost.getRelease()))
+        .body("id", equalTo(reportFailedReasonUnkownHost.getId()));
+
+    // GET error codes
+    ErrorCodes errorCodes =
+        given()
+            .header("X-Okapi-Tenant", TENANT)
+            .header("content-type", APPLICATION_JSON)
+            .header("accept", APPLICATION_JSON)
+            .request()
+            .get("/counter-reports/errors/codes")
+            .thenReturn()
+            .as(ErrorCodes.class);
+
+    assertThat(errorCodes.getErrorCodes().size()).isEqualTo(3);
+    assertThat(errorCodes.getErrorCodes().containsAll(Arrays.asList("3000", "3031", "other")));
+
+    // DELETE reports
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(BASE_URI + "/" + reportFailedReason3000.getId())
+        .then()
+        .statusCode(204);
+
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(BASE_URI + "/" + reportFailedReason3031.getId())
+        .then()
+        .statusCode(204);
+
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(BASE_URI + "/" + reportFailedReasonUnkownHost.getId())
+        .then()
+        .statusCode(204);
   }
 }

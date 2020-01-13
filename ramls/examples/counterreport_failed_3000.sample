@@ -2,6 +2,8 @@
 	"id": "8c6b1c02-e153-4413-970b-1b1a3eca1328",
 	"downloadTime": "2018-09-13T12:57:01.414+0000",
 	"failedAttempts": 3,
+	"failedReason" : "Report not valid: Exception{Number=3000, Severity=ERROR, Message=Report Not Supported}",
+	"providerId": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd72",
 	"release": "4",
 	"reportName": "JR1",
 	"yearMonth": "2018-06"

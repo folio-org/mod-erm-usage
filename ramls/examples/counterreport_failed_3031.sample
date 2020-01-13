@@ -1,0 +1,10 @@
+{
+	"id": "9c1002a7-28a6-41f7-8da2-d1d4bd7c2fe0",
+	"downloadTime": "2018-09-13T12:57:01.414+0000",
+	"failedAttempts" : 1,
+  "failedReason" : "Report not valid: Exception{Number=3031, Severity=ERROR, Message=Service has not yet processed the usage for one or more of the requested months, Data=Months not processed: 2018-07}",
+	"providerId": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd72",
+	"release": "4",
+	"reportName": "JR1",
+	"yearMonth": "2018-07"
+}
