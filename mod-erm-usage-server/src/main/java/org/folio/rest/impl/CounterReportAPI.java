@@ -334,8 +334,9 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                         GetCounterReportsErrorsCodesResponse.respond200WithApplicationJson(
                             result)));
               } else {
-                System.out.println("FAIL");
-                asyncResultHandler.handle(Future.succeededFuture());
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        GetCounterReportsErrorsCodesResponse.respond500WithTextPlain(ar.cause())));
               }
             });
   }
