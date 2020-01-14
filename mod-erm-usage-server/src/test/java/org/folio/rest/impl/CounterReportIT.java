@@ -317,7 +317,7 @@ public class CounterReportIT {
 
     List<String> udpErrorCodes = udp.getReportErrorCodes();
     assertThat(udpErrorCodes.size()).isEqualTo(1);
-    assertThat(reportFailedReason3000.getFailedReason().contains(udpErrorCodes.get(0)));
+    assertThat(reportFailedReason3000.getFailedReason()).contains(udpErrorCodes.get(0));
 
     // DELETE report
     given()
@@ -386,7 +386,7 @@ public class CounterReportIT {
             .as(ErrorCodes.class);
 
     assertThat(errorCodes.getErrorCodes().size()).isEqualTo(3);
-    assertThat(errorCodes.getErrorCodes().containsAll(Arrays.asList("3000", "3031", "other")));
+    assertThat(errorCodes.getErrorCodes()).containsAll(Arrays.asList("3000", "3031", "other"));
 
     // DELETE reports
     given()
