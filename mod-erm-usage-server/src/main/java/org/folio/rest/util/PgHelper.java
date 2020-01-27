@@ -1,7 +1,9 @@
 package org.folio.rest.util;
 
 import io.vertx.core.*;
+import io.vertx.ext.sql.ResultSet;
 import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.ErrorCodes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -231,6 +233,41 @@ public class PgHelper {
                 result.complete(ar.result().getResults());
               } else {
                 result.tryFail(ar.cause());
+              }
+            });
+    return result.future();
+  }
+
+  public static Future<ErrorCodes> getErrorCodes(Context vertxContext, String tenantId) {
+    String query =
+        "SELECT DISTINCT(SUBSTRING(jsonb->>'failedReason','Number=([0-9]{1,4})')) FROM counter_reports WHERE jsonb->>'failedReason' IS NOT NULL";
+    Promise<ErrorCodes> result = Promise.promise();
+    PostgresClient.getInstance(vertxContext.owner(), tenantId)
+        .select(
+            query,
+            updateResultAsyncResult -> {
+              if (updateResultAsyncResult.succeeded()) {
+                ResultSet result1 = updateResultAsyncResult.result();
+
+                List<String> collect =
+                    result1.getResults().stream()
+                        .map(
+                            code -> {
+                              String value =
+                                  code.toString()
+                                      .replace("\"", "")
+                                      .replace("[", "")
+                                      .replace("]", "");
+                              if ("null".equals(value)) {
+                                value = "other";
+                              }
+                              return value;
+                            })
+                        .collect(Collectors.toList());
+                ErrorCodes errorCodes = new ErrorCodes().withErrorCodes(collect);
+                result.complete(errorCodes);
+              } else {
+                result.fail(updateResultAsyncResult.cause());
               }
             });
     return result.future();
