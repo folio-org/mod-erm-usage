@@ -24,14 +24,74 @@
     },
     {
       "tableName": "counter_reports",
-      "fromModuleVersion": "mod-erm-usage-2.6.0",
-      "withMetadata": true
+      "fromModuleVersion": "mod-erm-usage-2.7.0",
+      "withMetadata": true,
+      "fullTextIndex": [
+        {
+          "fieldName": "providerId",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "failedAttempts",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "yearMonth",
+          "tOps": "ADD"
+        }
+      ],
+      "index": [
+        {
+          "fieldName": "failedAttempts",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "yearMonth",
+          "tOps": "ADD"
+        }
+      ],
+      "likeIndex": [
+        {
+          "fieldName": "providerId",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "reportName",
+          "tOps": "ADD"
+        }
+      ]
     },
     {
       "tableName": "usage_data_providers",
-      "fromModuleVersion": "mod-erm-usage-2.6.0",
+      "fromModuleVersion": "mod-erm-usage-2.7.0",
       "withMetadata": true,
-      "customSnippetPath": "migration/usage_data_providers.sql"
+      "customSnippetPath": "migration/usage_data_providers.sql",
+      "fullTextIndex": [
+        {
+          "fieldName": "harvestingConfig.harvestingStatus",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "harvestingConfig.harvestVia",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "harvestingConfig.aggregator.name",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "reportErrorCodes",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "hasFailedReport",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "tags.tagList",
+          "tOps": "ADD"
+        }
+      ]
     }
   ],
   "views": [
