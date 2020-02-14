@@ -4,7 +4,7 @@
   "provides": [
     {
       "id": "usage-data-providers",
-      "version": "2.3",
+      "version": "2.4",
       "handlers": [
         {
           "methods": [
@@ -125,7 +125,7 @@
     },
     {
       "id": "counter-reports",
-      "version": "1.2",
+      "version": "1.3",
       "handlers": [
         {
           "methods": [
