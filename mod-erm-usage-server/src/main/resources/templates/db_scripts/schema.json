@@ -13,7 +13,17 @@
     {
       "run": "after",
       "snippetPath": "counterreports_triggers.sql",
+      "fromModuleVersion": "mod-erm-usage-2.7.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/2.6.0/usage_data_providers.sql",
       "fromModuleVersion": "mod-erm-usage-2.6.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/2.7.0/usage_data_providers.sql",
+      "fromModuleVersion": "mod-erm-usage-2.7.0"
     }
   ],
   "tables": [
@@ -65,7 +75,6 @@
       "tableName": "usage_data_providers",
       "fromModuleVersion": "mod-erm-usage-2.7.0",
       "withMetadata": true,
-      "customSnippetPath": "migration/usage_data_providers.sql",
       "fullTextIndex": [
         {
           "fieldName": "harvestingConfig.harvestingStatus",

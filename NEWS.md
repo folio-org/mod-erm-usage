@@ -1,3 +1,8 @@
+# 2.7.0
+* Renamed some permissions in accordance to other FOLIO modules (UIEUS-83 & UIEUS-126)
+* Manage harvesting errors: filter providers by error type (UIEUS-117)
+* Add indexes for full-text search (MODEUS-37)
+
 # 2.6.0
 * Update to RMB version 29.1.0
 * Use new base docker image && new JAVA_OPTIONS (FOLIO-2358)
