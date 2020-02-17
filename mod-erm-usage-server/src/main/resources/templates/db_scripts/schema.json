@@ -13,7 +13,7 @@
     {
       "run": "after",
       "snippetPath": "counterreports_triggers.sql",
-      "fromModuleVersion": "mod-erm-usage-2.7.0-SNAPSHOT"
+      "fromModuleVersion": "mod-erm-usage-2.7.0"
     },
     {
       "run": "after",
@@ -23,7 +23,7 @@
     {
       "run": "after",
       "snippetPath": "migration/2.7.0/usage_data_providers.sql",
-      "fromModuleVersion": "mod-erm-usage-2.7.0-SNAPSHOT"
+      "fromModuleVersion": "mod-erm-usage-2.7.0"
     }
   ],
   "tables": [
