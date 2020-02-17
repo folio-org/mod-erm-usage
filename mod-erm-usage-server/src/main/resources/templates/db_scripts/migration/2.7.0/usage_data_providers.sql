@@ -7,4 +7,4 @@ FROM (
   WHERE   jsonb->>'failedReason' IS NOT NULL
   GROUP BY  pId
   ) AS error_codes
-WHERE NOT jsonb ? 'reportErrorCodes';
+WHERE NOT jsonb ? 'reportErrorCodes' AND error_codes.pId::text = usage_data_providers.id::text;
