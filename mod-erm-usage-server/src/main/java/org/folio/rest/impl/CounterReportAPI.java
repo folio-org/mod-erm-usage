@@ -35,6 +35,7 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.olf.erm.usage.counter50.Counter5Utils;
 
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 
@@ -233,6 +234,9 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     if (cr.getRelease().equals("4") && cr.getReport() != null) {
       return Optional.ofNullable(
           Counter4Utils.toCSV(Counter4Utils.fromJSON(Json.encode(cr.getReport()))));
+    } else if (cr.getRelease().equals("5") && cr.getReport() != null) {
+      return Optional.ofNullable(
+        Counter5Utils.toCSV(Counter5Utils.fromJSON(Json.encode(cr.getReport()))));
     }
     return Optional.empty();
   }
