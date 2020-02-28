@@ -1,5 +1,7 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -7,6 +9,17 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import java.io.InputStream;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.ws.rs.core.Response;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.okapi.common.XOkapiHeaders;
@@ -14,6 +27,9 @@ import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.CounterReportsGetOrder;
+import org.folio.rest.jaxrs.model.CounterReportsPerYear;
+import org.folio.rest.jaxrs.model.CounterReportsSorted;
+import org.folio.rest.jaxrs.model.ReportsPerType;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.Criteria.Limit;
@@ -29,15 +45,7 @@ import org.folio.rest.util.PgHelper;
 import org.folio.rest.util.UploadHelper;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
-
-import javax.ws.rs.core.Response;
-import java.io.InputStream;
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
 import org.olf.erm.usage.counter50.Counter5Utils;
-
-import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
@@ -230,13 +238,141 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         asyncResultHandler);
   }
 
+  @Override
+  @Validate
+  public void getCounterReportsSortedByUdpId(
+      String udpId,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+    logger.debug("Getting counter reports");
+    try {
+      Criteria updCrit = new Criteria();
+      updCrit.addField("'providerId'").setOperation("=").setVal(udpId).setJSONB(true);
+      Criterion criterion = new Criterion(updCrit);
+      CQLWrapper cql = new CQLWrapper(criterion);
+      vertxContext.runOnContext(
+          v -> {
+            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
+            logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
+            logger.debug("tenantId = " + tenantId);
+
+            String field = "jsonb - 'report' AS jsonb";
+            String[] fieldList = {field};
+            try {
+              PostgresClient.getInstance(vertxContext.owner(), tenantId)
+                  .get(
+                      TABLE_NAME_COUNTER_REPORTS,
+                      CounterReport.class,
+                      fieldList,
+                      cql,
+                      true,
+                      false,
+                      reply -> {
+                        try {
+                          if (reply.succeeded()) {
+                            List<CounterReport> reports = reply.result().getResults();
+                            CounterReportsSorted counterReportsSorted = sortByYearAndType(reports);
+                            asyncResultHandler.handle(
+                                Future.succeededFuture(
+                                    GetCounterReportsSortedByUdpIdResponse
+                                        .respond200WithApplicationJson(counterReportsSorted)));
+                          } else {
+                            asyncResultHandler.handle(
+                                Future.succeededFuture(
+                                    GetCounterReportsSortedByUdpIdResponse.respond500WithTextPlain(
+                                        reply.cause().getMessage())));
+                          }
+                        } catch (Exception e) {
+                          logger.debug(e.getLocalizedMessage());
+                          asyncResultHandler.handle(
+                              Future.succeededFuture(
+                                  GetCounterReportsSortedByUdpIdResponse.respond500WithTextPlain(
+                                      reply.cause().getMessage())));
+                        }
+                      });
+            } catch (IllegalStateException e) {
+              logger.debug("IllegalStateException: " + e.getLocalizedMessage());
+              asyncResultHandler.handle(
+                  Future.succeededFuture(
+                      GetCounterReportsSortedByUdpIdResponse.respond400WithTextPlain(
+                          "CQL Illegal State Error for '" + "" + "': " + e.getLocalizedMessage())));
+            } catch (Exception e) {
+              Throwable cause = e;
+              while (cause.getCause() != null) {
+                cause = cause.getCause();
+              }
+              logger.debug(
+                  "Got error " + cause.getClass().getSimpleName() + ": " + e.getLocalizedMessage());
+              if (cause.getClass().getSimpleName().contains("CQLParseException")) {
+                logger.debug("BAD CQL");
+                asyncResultHandler.handle(
+                    Future.succeededFuture(
+                        GetCounterReportsSortedByUdpIdResponse.respond400WithTextPlain(
+                            "CQL Parsing Error for '" + "" + "': " + cause.getLocalizedMessage())));
+              } else {
+                asyncResultHandler.handle(
+                    io.vertx.core.Future.succeededFuture(
+                        GetCounterReportsSortedByUdpIdResponse.respond500WithTextPlain(
+                            MessageConsts.InternalServerError)));
+              }
+            }
+          });
+    } catch (Exception e) {
+      logger.error(e.getLocalizedMessage(), e);
+      if (e.getCause() != null
+          && e.getCause().getClass().getSimpleName().contains("CQLParseException")) {
+        logger.debug("BAD CQL");
+        asyncResultHandler.handle(
+            Future.succeededFuture(
+                GetCounterReportsSortedByUdpIdResponse.respond400WithTextPlain(
+                    "CQL Parsing Error for '" + "" + "': " + e.getLocalizedMessage())));
+      } else {
+        asyncResultHandler.handle(
+            io.vertx.core.Future.succeededFuture(
+                GetCounterReportsSortedByUdpIdResponse.respond500WithTextPlain(
+                    MessageConsts.InternalServerError)));
+      }
+    }
+  }
+
+  private CounterReportsSorted sortByYearAndType(List<CounterReport> reports) {
+    CounterReportsSorted result = new CounterReportsSorted();
+
+    Map<String, List<CounterReport>> groupedPerYear =
+        reports.stream()
+            .collect(Collectors.groupingBy(report -> report.getYearMonth().substring(0, 4)));
+
+    List<CounterReportsPerYear> reportsYear = new ArrayList<>();
+    groupedPerYear.forEach(
+        (year, reportsOfYear) -> {
+          CounterReportsPerYear counterReportsPerYear = new CounterReportsPerYear();
+          counterReportsPerYear.setYear(Integer.parseInt(year));
+
+          Map<String, List<CounterReport>> groupedPerType =
+              reportsOfYear.stream().collect(Collectors.groupingBy(CounterReport::getReportName));
+          List<ReportsPerType> typedReports = new ArrayList<>();
+          groupedPerType.forEach(
+              (type, reportsTyped) -> {
+                ReportsPerType reportsPerType = new ReportsPerType();
+                reportsPerType.setReportType(type);
+                reportsPerType.setCounterReports(reportsTyped);
+                typedReports.add(reportsPerType);
+              });
+          counterReportsPerYear.setReportsPerType(typedReports);
+          reportsYear.add(counterReportsPerYear);
+        });
+    result.setCounterReportsPerYear(reportsYear);
+    return result;
+  }
+
   private Optional<String> csvMapper(CounterReport cr) {
     if (cr.getRelease().equals("4") && cr.getReport() != null) {
       return Optional.ofNullable(
           Counter4Utils.toCSV(Counter4Utils.fromJSON(Json.encode(cr.getReport()))));
     } else if (cr.getRelease().equals("5") && cr.getReport() != null) {
       return Optional.ofNullable(
-        Counter5Utils.toCSV(Counter5Utils.fromJSON(Json.encode(cr.getReport()))));
+          Counter5Utils.toCSV(Counter5Utils.fromJSON(Json.encode(cr.getReport()))));
     }
     return Optional.empty();
   }

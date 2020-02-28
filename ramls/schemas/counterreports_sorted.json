@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "CounterReports sorted by year and report",
+  "type": "object",
+  "properties": {
+    "counterReportsPerYear": {
+      "type": "array",
+      "description": "Entries",
+      "id": "counterReportData",
+      "items": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "integer"
+          },
+          "reportsPerType": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "reportType": {
+                  "type": "string"
+                },
+                "counterReports": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "$ref": "counterreport.json"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -10,6 +10,7 @@ documentation:
 types:
   counterReport: !include ./schemas/counterreport.json
   counterReports: !include ./schemas/counterreports.json
+  counterReportsSorted: !include ./schemas/counterreports_sorted.json
   errorCodes: !include ./schemas/errorcodes.json
   errors: !include ./raml-util/schemas/errors.schema
 
@@ -58,6 +59,23 @@ resourceTypes:
       description: Delete report identified by id
     put:
       description: Put report identified by id
+  /sorted:
+    /{udpId}:
+      get:
+        description: Get counter reports sorted by year and report
+        responses:
+          200:
+            description: counter reports sorted by year and report
+            body:
+              application/json:
+                example: !include examples/counterreports_sorted.sample
+                schema: counterReportsSorted
+          400:
+            body:
+              text/plain:
+          500:
+            body:
+              text/plain:
   /csv:
     /{id}:
       get:
