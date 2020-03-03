@@ -5,24 +5,28 @@
   "properties": {
     "counterReportsPerYear": {
       "type": "array",
-      "description": "Entries",
+      "description": "Counter reports grouped year",
       "id": "counterReportData",
       "items": {
         "type": "object",
         "properties": {
           "year": {
-            "type": "integer"
+            "type": "integer",
+            "description": "The current year"
           },
           "reportsPerType": {
             "type": "array",
+            "description": "The reports of the current year",
             "items": {
               "type": "object",
               "properties": {
                 "reportType": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The current report type"
                 },
                 "counterReports": {
                   "type": "array",
+                  "description": "The reports of the current year and the current type",
                   "items": {
                     "type": "object",
                     "$ref": "counterreport.json"
