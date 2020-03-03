@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,9 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
 
   private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
+
+  private final Comparator<CounterReportsPerYear> compareByYear =
+      Comparator.comparing(CounterReportsPerYear::getYear);
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
     CQL2PgJSON cql2PgJSON = new CQL2PgJSON(Arrays.asList(TABLE_NAME_COUNTER_REPORTS + ".jsonb"));
@@ -362,6 +366,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
           counterReportsPerYear.setReportsPerType(typedReports);
           reportsYear.add(counterReportsPerYear);
         });
+    reportsYear.sort(compareByYear);
     result.setCounterReportsPerYear(reportsYear);
     return result;
   }
