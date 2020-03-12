@@ -1,3 +1,10 @@
+# 2.8.1
+* Bugfix: Update version of endpoint 'counter-reports'
+
+# 2.8.0
+* Ability to download COP5 csv reports for single month (UIEUS-106)
+* Add endpoint to return sorted counter-reports (by year, month & report type) (UIEUS-134)
+
 # 2.7.0
 * Renamed some permissions in accordance to other FOLIO modules (UIEUS-83 & UIEUS-126)
 * Manage harvesting errors: filter providers by error type (UIEUS-117)
