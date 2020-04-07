@@ -1,3 +1,6 @@
+# 2.8.2
+* Bugfix: Delete deprecated DB functions and triggers on migration (MODEUS-50)
+
 # 2.8.1
 * Bugfix: Update version of endpoint 'counter-reports'
 
