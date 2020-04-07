@@ -195,6 +195,30 @@ public class CounterReportCsvIT {
   }
 
   @Test
+  public void testGetCSVOkTRMultipleMonths() {
+    String json1 = resourceToString("TR/TR_1.json");
+    String json2 = resourceToString("TR/TR_2.json");
+    String json3 = resourceToString("TR/TR_3.json");
+
+    given().body(json1).post().then().statusCode(201);
+    given().body(json2).post().then().statusCode(201);
+    given().body(json3).post().then().statusCode(201);
+
+    given()
+      .pathParam("id", "4b659cb9-e4bb-493d-ae30-5f5690c54802")
+      .pathParam("name", "TR")
+      .pathParam("version", "5")
+      .pathParam("begin", "2019-09")
+      .pathParam("end", "2019-11")
+      .get("/csv/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}")
+      .then()
+      .statusCode(200)
+      .body(
+        containsString(
+          "Title 1,My Press,Proprietary=my:mypress,My Journals,8910.DOI,my:foo,,0011-1122,0123-4567,,,,,,,Total_Item_Investigations,9,3,,6"));
+  }
+
+  @Test
   public void testGetCSVNoMapper() {
     CounterReport badReleaseNo =
         Json.decodeValue(Json.encode(counterReport), CounterReport.class).withRelease("1");
