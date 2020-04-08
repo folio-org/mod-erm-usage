@@ -515,7 +515,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             .setOperation(Constants.OPERATOR_EQUALS)
             .setVal(version);
     Criteria reportCrit =
-        new Criteria().addField(Constants.FIELD_NAME_REPORT).setOperation("IS NOT NULL");
+        new Criteria().addField("jsonb").setJSONB(false).setOperation("?").setVal("report");
     Criteria yearMonthBeginCrit =
         new Criteria().addField(Constants.FIELD_NAME_YEAR_MONTH).setOperation(">=").setVal(begin);
     Criteria yearMonthEndCrit =
