@@ -536,7 +536,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             CounterReport.class,
             cql,
             true,
-            true,
             ar -> {
               if (ar.succeeded()) {
                 String csv = "";
