@@ -268,29 +268,25 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
         .getById(
             TABLE_NAME_COUNTER_REPORTS,
             id,
             CounterReport.class,
             ar -> {
               if (ar.succeeded()) {
-                Optional<String> csvResult = csvMapper(ar.result());
-                if (csvResult.isPresent()) {
-                  asyncResultHandler.handle(
-                      succeededFuture(
-                          GetCounterReportsCsvByIdResponse.respond200WithTextCsv(csvResult.get())));
-                } else {
-                  asyncResultHandler.handle(
-                      succeededFuture(
-                          GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
-                              "No report data or no mapper available")));
-                }
-              } else {
                 asyncResultHandler.handle(
-                    succeededFuture(
-                        GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
-                            ar.cause().getMessage())));
+                    csvMapper(ar.result())
+                        .<AsyncResult<Response>>map(
+                            csv ->
+                                succeededFuture(
+                                    GetCounterReportsCsvByIdResponse.respond200WithTextCsv(csv)))
+                        .orElse(
+                            succeededFuture(
+                                GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
+                                    "No report data or no mapper available"))));
+              } else {
+                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
               }
             });
   }
