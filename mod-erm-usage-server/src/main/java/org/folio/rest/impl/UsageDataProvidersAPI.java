@@ -8,36 +8,25 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
-import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.jaxrs.model.UsageDataProvidersGetOrder;
-import org.folio.rest.persist.Criteria.Limit;
-import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
-import org.folio.rest.tools.messages.MessageConsts;
-import org.folio.rest.tools.messages.Messages;
-import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.tools.utils.ValidationHelper;
 
 public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.UsageDataProviders {
 
-  private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(UsageDataProvidersAPI.class);
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
-    CQL2PgJSON cql2pgJson = new CQL2PgJSON(Arrays.asList(TABLE_NAME_UDP + ".jsonb"));
-    return new CQLWrapper(cql2pgJson, query)
-        .setLimit(new Limit(limit))
-        .setOffset(new Offset(offset));
+    return new CQLWrapper(new CQL2PgJSON(TABLE_NAME_UDP + ".jsonb"), query, limit, offset);
   }
 
   @Override
@@ -53,93 +42,37 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting usage data providers");
-    try {
-      CQLWrapper cql = getCQL(query, limit, offset);
-      vertxContext.runOnContext(
-          v -> {
-            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
-            logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
-            logger.debug("tenantId = " + tenantId);
-            String[] fieldList = {"*"};
-            try {
-              PostgresClient.getInstance(vertxContext.owner(), tenantId)
-                  .get(
-                      TABLE_NAME_UDP,
-                      UsageDataProvider.class,
-                      fieldList,
-                      cql,
-                      true,
-                      false,
-                      reply -> {
-                        try {
-                          if (reply.succeeded()) {
-                            UsageDataProviders udProvidersDataCollection = new UsageDataProviders();
-                            List<UsageDataProvider> dataProviders = reply.result().getResults();
-                            udProvidersDataCollection.setUsageDataProviders(dataProviders);
-                            udProvidersDataCollection.setTotalRecords(
-                                reply.result().getResultInfo().getTotalRecords());
-                            asyncResultHandler.handle(
-                                Future.succeededFuture(
-                                    GetUsageDataProvidersResponse.respond200WithApplicationJson(
-                                        udProvidersDataCollection)));
-                          } else {
-                            asyncResultHandler.handle(
-                                Future.succeededFuture(
-                                    GetUsageDataProvidersResponse.respond500WithTextPlain(
-                                        reply.cause().getMessage())));
-                          }
-                        } catch (Exception e) {
-                          logger.debug(e.getLocalizedMessage());
+    logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
 
-                          asyncResultHandler.handle(
-                              Future.succeededFuture(
-                                  GetUsageDataProvidersResponse.respond500WithTextPlain(
-                                      reply.cause().getMessage())));
-                        }
-                      });
-            } catch (IllegalStateException e) {
-              logger.debug("IllegalStateException: " + e.getLocalizedMessage());
-              asyncResultHandler.handle(
-                  Future.succeededFuture(
-                      GetUsageDataProvidersResponse.respond400WithTextPlain(
-                          "CQL Illegal State Error for '" + "" + "': " + e.getLocalizedMessage())));
-            } catch (Exception e) {
-              Throwable cause = e;
-              while (cause.getCause() != null) {
-                cause = cause.getCause();
-              }
-              logger.debug(
-                  "Got error " + cause.getClass().getSimpleName() + ": " + e.getLocalizedMessage());
-              if (cause.getClass().getSimpleName().contains("CQLParseException")) {
-                logger.debug("BAD CQL");
+    CQLWrapper cql;
+    try {
+      cql = getCQL(query, limit, offset);
+    } catch (Exception e) {
+      ValidationHelper.handleError(e, asyncResultHandler);
+      return;
+    }
+
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .get(
+            TABLE_NAME_UDP,
+            UsageDataProvider.class,
+            cql,
+            true,
+            reply -> {
+              if (reply.succeeded()) {
+                UsageDataProviders udProvidersDataCollection = new UsageDataProviders();
+                List<UsageDataProvider> dataProviders = reply.result().getResults();
+                udProvidersDataCollection.setUsageDataProviders(dataProviders);
+                udProvidersDataCollection.setTotalRecords(
+                    reply.result().getResultInfo().getTotalRecords());
                 asyncResultHandler.handle(
                     Future.succeededFuture(
-                        GetUsageDataProvidersResponse.respond400WithTextPlain(
-                            "CQL Parsing Error for '" + "" + "': " + cause.getLocalizedMessage())));
+                        GetUsageDataProvidersResponse.respond200WithApplicationJson(
+                            udProvidersDataCollection)));
               } else {
-                asyncResultHandler.handle(
-                    io.vertx.core.Future.succeededFuture(
-                        GetUsageDataProvidersResponse.respond500WithTextPlain(
-                            messages.getMessage(lang, MessageConsts.InternalServerError))));
+                ValidationHelper.handleError(reply.cause(), asyncResultHandler);
               }
-            }
-          });
-    } catch (Exception e) {
-      logger.error(e.getLocalizedMessage(), e);
-      if (e.getCause() != null
-          && e.getCause().getClass().getSimpleName().contains("CQLParseException")) {
-        logger.debug("BAD CQL");
-        asyncResultHandler.handle(
-            Future.succeededFuture(
-                GetUsageDataProvidersResponse.respond400WithTextPlain(
-                    "CQL Parsing Error for '" + "" + "': " + e.getLocalizedMessage())));
-      } else {
-        asyncResultHandler.handle(
-            io.vertx.core.Future.succeededFuture(
-                GetUsageDataProvidersResponse.respond500WithTextPlain(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-      }
-    }
+            });
   }
 
   @Override
