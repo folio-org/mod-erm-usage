@@ -12,18 +12,18 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.ext.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.ErrorCodes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.cql.CQLWrapper;
 
 public class PgHelper {
@@ -31,9 +31,9 @@ public class PgHelper {
   private PgHelper() {}
 
   public static Future<UsageDataProvider> getUDPfromDbById(
-      Vertx vertx, String tenantId, String id) {
+      Context vertxContext, Map<String, String> okapiHeaders, String id) {
     Promise<UsageDataProvider> udpPromise = Promise.promise();
-    PostgresClient.getInstance(vertx, tenantId)
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
         .getById(
             TABLE_NAME_UDP,
             id,
@@ -86,13 +86,16 @@ public class PgHelper {
   }
 
   public static Future<String> saveCounterReportToDb(
-      Vertx vertx, String tenantId, CounterReport counterReport, boolean overwrite) {
+      Context vertxContext,
+      Map<String, String> okapiHeaders,
+      CounterReport counterReport,
+      boolean overwrite) {
 
     // check if CounterReport already exists
     CQLWrapper cql = createGetReportCQL(counterReport);
 
     Promise<String> idPromise = Promise.promise();
-    PostgresClient.getInstance(vertx, tenantId)
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
         .get(
             TABLE_NAME_COUNTER_REPORTS,
             CounterReport.class,
@@ -123,7 +126,7 @@ public class PgHelper {
               }
 
               Promise<String> upsertPromise = Promise.promise();
-              PostgresClient.getInstance(vertx, tenantId)
+              PgUtil.postgresClient(vertxContext, okapiHeaders)
                   .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertPromise);
               return upsertPromise.future();
             });
@@ -131,7 +134,7 @@ public class PgHelper {
 
   public static Future<List<String>> saveCounterReportsToDb(
       Context vertxContext,
-      String tenantId,
+      Map<String, String> okapiHeaders,
       List<CounterReport> counterReports,
       boolean overwrite) {
 
@@ -153,7 +156,7 @@ public class PgHelper {
     Future<List<CounterReport>> existingReports =
         PgHelper.getExistingReports(
             vertxContext,
-            tenantId,
+            okapiHeaders,
             providerId,
             reportName,
             release,
@@ -168,11 +171,10 @@ public class PgHelper {
                         .map(CounterReport::getYearMonth)
                         .collect(Collectors.joining(", ")));
           } else {
+            @SuppressWarnings("rawtypes")
             List<Future> saveFutures = new ArrayList<>();
             counterReports.forEach(
-                cr ->
-                    saveFutures.add(
-                        saveCounterReportToDb(vertxContext.owner(), tenantId, cr, true)));
+                cr -> saveFutures.add(saveCounterReportToDb(vertxContext, okapiHeaders, cr, true)));
 
             return CompositeFuture.join(saveFutures)
                 .map(cf -> cf.list().stream().map(o -> (String) o).collect(Collectors.toList()));
@@ -184,7 +186,7 @@ public class PgHelper {
    * Returns those CounterReports that are present in the database.
    *
    * @param vertxContext Vertx context
-   * @param tenantId Tenant
+   * @param okapiHeaders okapiHeaders
    * @param providerId ProviderId
    * @param reportName Report name
    * @param release Counter release/version
@@ -193,7 +195,7 @@ public class PgHelper {
    */
   public static Future<List<CounterReport>> getExistingReports(
       Context vertxContext,
-      String tenantId,
+      Map<String, String> okapiHeaders,
       String providerId,
       String reportName,
       String release,
@@ -230,7 +232,7 @@ public class PgHelper {
     CQLWrapper cql = new CQLWrapper(criterion);
 
     Promise<List<CounterReport>> result = Promise.promise();
-    PostgresClient.getInstance(vertxContext.owner(), tenantId)
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
         .get(
             TABLE_NAME_COUNTER_REPORTS,
             CounterReport.class,
@@ -246,11 +248,12 @@ public class PgHelper {
     return result.future();
   }
 
-  public static Future<ErrorCodes> getErrorCodes(Context vertxContext, String tenantId) {
+  public static Future<ErrorCodes> getErrorCodes(
+      Context vertxContext, Map<String, String> okapiHeaders) {
     String query =
         "SELECT DISTINCT(SUBSTRING(jsonb->>'failedReason','Number=([0-9]{1,4})')) FROM counter_reports WHERE jsonb->>'failedReason' IS NOT NULL";
     Promise<ErrorCodes> result = Promise.promise();
-    PostgresClient.getInstance(vertxContext.owner(), tenantId)
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
         .select(
             query,
             updateResultAsyncResult -> {

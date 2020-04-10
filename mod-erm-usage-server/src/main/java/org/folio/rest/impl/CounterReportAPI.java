@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
-import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
@@ -299,8 +298,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    String tenantId = okapiHeaders.get(XOkapiHeaders.TENANT);
-
     List<CounterReport> counterReports;
     try {
       counterReports = UploadHelper.getCounterReportsFromInputStream(entity);
@@ -312,14 +309,14 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       return;
     }
 
-    PgHelper.getUDPfromDbById(vertxContext.owner(), tenantId, id)
+    PgHelper.getUDPfromDbById(vertxContext, okapiHeaders, id)
         .compose(
             udp -> {
               counterReports.forEach(
                   cr -> cr.withProviderId(udp.getId()).withDownloadTime(Date.from(Instant.now())));
               return succeededFuture(counterReports);
             })
-        .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, tenantId, crs, overwrite))
+        .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, okapiHeaders, crs, overwrite))
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
@@ -342,8 +339,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-    String tenantId = okapiHeaders.get(XOkapiHeaders.TENANT);
-    PgHelper.getErrorCodes(vertxContext, tenantId)
+    PgHelper.getErrorCodes(vertxContext, okapiHeaders)
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
