@@ -10,7 +10,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,14 +24,10 @@ import org.folio.rest.jaxrs.model.AggregatorSettingsGetOrder;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.Criteria.Limit;
-import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
-import org.folio.rest.tools.messages.MessageConsts;
-import org.folio.rest.tools.messages.Messages;
-import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.Constants;
 import org.folio.rest.util.ExportObject;
 
@@ -40,7 +35,6 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
 
   private static final String TABLE_NAME_AGGREGATOR_SETTINGS = "aggregator_settings";
 
-  private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(AggregatorSettingsAPI.class);
 
   public static String getCredentialsCSV(List<UsageDataProvider> udps)
@@ -56,11 +50,8 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
   }
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
-    CQL2PgJSON cql2pgJson =
-        new CQL2PgJSON(Arrays.asList(TABLE_NAME_AGGREGATOR_SETTINGS + ".jsonb"));
-    return new CQLWrapper(cql2pgJson, query)
-        .setLimit(new Limit(limit))
-        .setOffset(new Offset(offset));
+    return new CQLWrapper(
+        new CQL2PgJSON(TABLE_NAME_AGGREGATOR_SETTINGS + ".jsonb"), query, limit, offset);
   }
 
   @Override
@@ -76,102 +67,37 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting aggregator settings");
-    try {
-      CQLWrapper cql = getCQL(query, limit, offset);
-      vertxContext.runOnContext(
-          v -> {
-            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
-            logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
-            logger.debug("tenantId = " + tenantId);
-            String[] fieldList = {"*"};
-            try {
-              PostgresClient.getInstance(vertxContext.owner(), tenantId)
-                  .get(
-                      TABLE_NAME_AGGREGATOR_SETTINGS,
-                      AggregatorSetting.class,
-                      fieldList,
-                      cql,
-                      true,
-                      false,
-                      reply -> {
-                        try {
-                          if (reply.succeeded()) {
-                            AggregatorSettings aggregatorSettingsDataCollection =
-                                new AggregatorSettings();
-                            List<AggregatorSetting> aggregatorSettings =
-                                reply.result().getResults();
-                            aggregatorSettingsDataCollection.setAggregatorSettings(
-                                aggregatorSettings);
-                            aggregatorSettingsDataCollection.setTotalRecords(
-                                reply.result().getResultInfo().getTotalRecords());
-                            asyncResultHandler.handle(
-                                Future.succeededFuture(
-                                    GetAggregatorSettingsResponse.respond200WithApplicationJson(
-                                        aggregatorSettingsDataCollection)));
-                          } else {
-                            asyncResultHandler.handle(
-                                Future.succeededFuture(
-                                    GetAggregatorSettingsResponse.respond500WithTextPlain(
-                                        reply.cause().getMessage())));
-                          }
-                        } catch (Exception e) {
-                          logger.debug(e.getLocalizedMessage());
+    logger.debug("Headers present are: " + okapiHeaders.toString());
 
-                          asyncResultHandler.handle(
-                              Future.succeededFuture(
-                                  GetAggregatorSettingsResponse.respond500WithTextPlain(
-                                      reply.cause().getMessage())));
-                        }
-                      });
-            } catch (IllegalStateException e) {
-              logger.debug("IllegalStateException: " + e.getLocalizedMessage());
-              asyncResultHandler.handle(
-                  Future.succeededFuture(
-                      GetAggregatorSettingsResponse.respond400WithTextPlain(
-                          "CQL Illegal State Error for '"
-                              + query
-                              + "': "
-                              + e.getLocalizedMessage())));
-            } catch (Exception e) {
-              Throwable cause = e;
-              while (cause.getCause() != null) {
-                cause = cause.getCause();
-              }
-              logger.debug(
-                  "Got error " + cause.getClass().getSimpleName() + ": " + e.getLocalizedMessage());
-              if (cause.getClass().getSimpleName().contains("CQLParseException")) {
-                logger.debug("BAD CQL");
+    CQLWrapper cql;
+    try {
+      cql = getCQL(query, limit, offset);
+    } catch (Exception e) {
+      ValidationHelper.handleError(e, asyncResultHandler);
+      return;
+    }
+
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .get(
+            TABLE_NAME_AGGREGATOR_SETTINGS,
+            AggregatorSetting.class,
+            cql,
+            true,
+            reply -> {
+              if (reply.succeeded()) {
+                AggregatorSettings aggregatorSettings = new AggregatorSettings();
+                List<AggregatorSetting> aggregatorSettingList = reply.result().getResults();
+                aggregatorSettings.setAggregatorSettings(aggregatorSettingList);
+                aggregatorSettings.setTotalRecords(
+                    reply.result().getResultInfo().getTotalRecords());
                 asyncResultHandler.handle(
                     Future.succeededFuture(
-                        GetAggregatorSettingsResponse.respond400WithTextPlain(
-                            "CQL Parsing Error for '"
-                                + query
-                                + "': "
-                                + cause.getLocalizedMessage())));
+                        GetAggregatorSettingsResponse.respond200WithApplicationJson(
+                            aggregatorSettings)));
               } else {
-                asyncResultHandler.handle(
-                    io.vertx.core.Future.succeededFuture(
-                        GetAggregatorSettingsResponse.respond500WithTextPlain(
-                            messages.getMessage(lang, MessageConsts.InternalServerError))));
+                ValidationHelper.handleError(reply.cause(), asyncResultHandler);
               }
-            }
-          });
-    } catch (Exception e) {
-      logger.error(e.getLocalizedMessage(), e);
-      if (e.getCause() != null
-          && e.getCause().getClass().getSimpleName().contains("CQLParseException")) {
-        logger.debug("BAD CQL");
-        asyncResultHandler.handle(
-            Future.succeededFuture(
-                GetAggregatorSettingsResponse.respond400WithTextPlain(
-                    "CQL Parsing Error for '" + query + "': " + e.getLocalizedMessage())));
-      } else {
-        asyncResultHandler.handle(
-            io.vertx.core.Future.succeededFuture(
-                GetAggregatorSettingsResponse.respond500WithTextPlain(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-      }
-    }
+            });
   }
 
   @Override
