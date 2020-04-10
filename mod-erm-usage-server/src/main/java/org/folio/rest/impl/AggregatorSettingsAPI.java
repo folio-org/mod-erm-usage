@@ -1,12 +1,12 @@
 package org.folio.rest.impl;
 
+import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -89,7 +89,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
                 aggregatorSettings.setTotalRecords(
                     reply.result().getResultInfo().getTotalRecords());
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetAggregatorSettingsResponse.respond200WithApplicationJson(
                             aggregatorSettings)));
               } else {
@@ -202,12 +202,12 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
                 try {
                   String resultString = getCredentialsCSV(providerList);
                   asyncResultHandler.handle(
-                      Future.succeededFuture(
+                      succeededFuture(
                           GetAggregatorSettingsExportcredentialsByIdResponse.respond200WithTextCsv(
                               resultString)));
                 } catch (JsonProcessingException e) {
                   asyncResultHandler.handle(
-                      Future.succeededFuture(
+                      succeededFuture(
                           GetAggregatorSettingsExportcredentialsByIdResponse
                               .respond500WithTextPlain("Error creating CSV")));
                 }
