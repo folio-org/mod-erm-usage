@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
-import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.AggregatorSettings;
@@ -25,7 +24,6 @@ import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.Constants;
@@ -192,12 +190,12 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
     Criterion criterion = new Criterion(criteria);
     CQLWrapper cql = new CQLWrapper(criterion);
 
-    PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
         .get(
             TABLE_NAME_UDP,
             UsageDataProvider.class,
             cql,
-            true,
+            false,
             ar -> {
               if (ar.succeeded()) {
                 List<UsageDataProvider> providerList = ar.result().getResults();
@@ -214,10 +212,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
                               .respond500WithTextPlain("Error creating CSV")));
                 }
               } else {
-                asyncResultHandler.handle(
-                    Future.succeededFuture(
-                        GetAggregatorSettingsExportcredentialsByIdResponse.respond500WithTextPlain(
-                            "Error creating CSV")));
+                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
               }
             });
   }
