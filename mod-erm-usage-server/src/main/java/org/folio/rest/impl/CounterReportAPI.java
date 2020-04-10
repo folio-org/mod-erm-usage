@@ -12,7 +12,6 @@ import io.vertx.core.logging.LoggerFactory;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -33,14 +32,12 @@ import org.folio.rest.jaxrs.model.CounterReportsSorted;
 import org.folio.rest.jaxrs.model.ReportsPerType;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.Criteria.Limit;
-import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.messages.MessageConsts;
-import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.Constants;
 import org.folio.rest.util.PgHelper;
 import org.folio.rest.util.UploadHelper;
@@ -52,17 +49,14 @@ import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
-  private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
 
   private final Comparator<CounterReportsPerYear> compareByYear =
       Comparator.comparing(CounterReportsPerYear::getYear);
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
-    CQL2PgJSON cql2PgJSON = new CQL2PgJSON(Arrays.asList(TABLE_NAME_COUNTER_REPORTS + ".jsonb"));
-    return new CQLWrapper(cql2PgJSON, query)
-        .setLimit(new Limit(limit))
-        .setOffset(new Offset(offset));
+    return new CQLWrapper(
+        new CQL2PgJSON(TABLE_NAME_COUNTER_REPORTS + ".jsonb"), query, limit, offset);
   }
 
   @Validate
@@ -79,94 +73,40 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting counter reports");
-    try {
-      CQLWrapper cql = getCQL(query, limit, offset);
-      vertxContext.runOnContext(
-          v -> {
-            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
-            logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
-            logger.debug("tenantId = " + tenantId);
+    logger.debug("Headers present are: " + okapiHeaders.toString());
 
-            String field = (tiny) ? "jsonb - 'report' AS jsonb" : "*";
-            String[] fieldList = {field};
-            try {
-              PostgresClient.getInstance(vertxContext.owner(), tenantId)
-                  .get(
-                      TABLE_NAME_COUNTER_REPORTS,
-                      CounterReport.class,
-                      fieldList,
-                      cql,
-                      true,
-                      false,
-                      reply -> {
-                        try {
-                          if (reply.succeeded()) {
-                            CounterReports counterReportDataDataCollection = new CounterReports();
-                            List<CounterReport> reports = reply.result().getResults();
-                            counterReportDataDataCollection.setCounterReports(reports);
-                            counterReportDataDataCollection.setTotalRecords(
-                                reply.result().getResultInfo().getTotalRecords());
-                            asyncResultHandler.handle(
-                                Future.succeededFuture(
-                                    GetCounterReportsResponse.respond200WithApplicationJson(
-                                        counterReportDataDataCollection)));
-                          } else {
-                            asyncResultHandler.handle(
-                                Future.succeededFuture(
-                                    GetCounterReportsResponse.respond500WithTextPlain(
-                                        reply.cause().getMessage())));
-                          }
-                        } catch (Exception e) {
-                          logger.debug(e.getLocalizedMessage());
-                          asyncResultHandler.handle(
-                              Future.succeededFuture(
-                                  GetCounterReportsResponse.respond500WithTextPlain(
-                                      reply.cause().getMessage())));
-                        }
-                      });
-            } catch (IllegalStateException e) {
-              logger.debug("IllegalStateException: " + e.getLocalizedMessage());
-              asyncResultHandler.handle(
-                  Future.succeededFuture(
-                      GetCounterReportsResponse.respond400WithTextPlain(
-                          "CQL Illegal State Error for '" + "" + "': " + e.getLocalizedMessage())));
-            } catch (Exception e) {
-              Throwable cause = e;
-              while (cause.getCause() != null) {
-                cause = cause.getCause();
-              }
-              logger.debug(
-                  "Got error " + cause.getClass().getSimpleName() + ": " + e.getLocalizedMessage());
-              if (cause.getClass().getSimpleName().contains("CQLParseException")) {
-                logger.debug("BAD CQL");
+    CQLWrapper cql;
+    try {
+      cql = getCQL(query, limit, offset);
+    } catch (FieldException e) {
+      ValidationHelper.handleError(e, asyncResultHandler);
+      return;
+    }
+
+    String field = (tiny) ? "jsonb - 'report' AS jsonb" : "*";
+    String[] fieldList = {field};
+
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .get(
+            TABLE_NAME_COUNTER_REPORTS,
+            CounterReport.class,
+            fieldList,
+            cql,
+            true,
+            false,
+            ar -> {
+              if (ar.succeeded()) {
+                CounterReports counterReports = new CounterReports();
+                List<CounterReport> reportList = ar.result().getResults();
+                counterReports.setCounterReports(reportList);
+                counterReports.setTotalRecords(ar.result().getResultInfo().getTotalRecords());
                 asyncResultHandler.handle(
                     Future.succeededFuture(
-                        GetCounterReportsResponse.respond400WithTextPlain(
-                            "CQL Parsing Error for '" + "" + "': " + cause.getLocalizedMessage())));
+                        GetCounterReportsResponse.respond200WithApplicationJson(counterReports)));
               } else {
-                asyncResultHandler.handle(
-                    io.vertx.core.Future.succeededFuture(
-                        GetCounterReportsResponse.respond500WithTextPlain(
-                            messages.getMessage(lang, MessageConsts.InternalServerError))));
+                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
               }
-            }
-          });
-    } catch (Exception e) {
-      logger.error(e.getLocalizedMessage(), e);
-      if (e.getCause() != null
-          && e.getCause().getClass().getSimpleName().contains("CQLParseException")) {
-        logger.debug("BAD CQL");
-        asyncResultHandler.handle(
-            Future.succeededFuture(
-                GetCounterReportsResponse.respond400WithTextPlain(
-                    "CQL Parsing Error for '" + "" + "': " + e.getLocalizedMessage())));
-      } else {
-        asyncResultHandler.handle(
-            io.vertx.core.Future.succeededFuture(
-                GetCounterReportsResponse.respond500WithTextPlain(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-      }
-    }
+            });
   }
 
   @Override
