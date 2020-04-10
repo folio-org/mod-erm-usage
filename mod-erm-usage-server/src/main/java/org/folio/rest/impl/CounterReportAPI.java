@@ -1,10 +1,10 @@
 package org.folio.rest.impl;
 
+import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
@@ -99,7 +99,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 counterReports.setCounterReports(reportList);
                 counterReports.setTotalRecords(ar.result().getResultInfo().getTotalRecords());
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetCounterReportsResponse.respond200WithApplicationJson(counterReports)));
               } else {
                 ValidationHelper.handleError(ar.cause(), asyncResultHandler);
@@ -210,7 +210,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 List<CounterReport> reports = reply.result().getResults();
                 CounterReportsSorted counterReportsSorted = sortByYearAndType(reports);
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetCounterReportsSortedByUdpIdResponse.respond200WithApplicationJson(
                             counterReportsSorted)));
               } else {
@@ -278,17 +278,17 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 Optional<String> csvResult = csvMapper(ar.result());
                 if (csvResult.isPresent()) {
                   asyncResultHandler.handle(
-                      Future.succeededFuture(
+                      succeededFuture(
                           GetCounterReportsCsvByIdResponse.respond200WithTextCsv(csvResult.get())));
                 } else {
                   asyncResultHandler.handle(
-                      Future.succeededFuture(
+                      succeededFuture(
                           GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
                               "No report data or no mapper available")));
                 }
               } else {
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
                             ar.cause().getMessage())));
               }
@@ -311,7 +311,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       counterReports = UploadHelper.getCounterReportsFromInputStream(entity);
     } catch (Exception e) {
       asyncResultHandler.handle(
-          Future.succeededFuture(
+          succeededFuture(
               PostCounterReportsUploadProviderByIdResponse.respond500WithTextPlain(
                   String.format("Error uploading file: %s", e.getMessage()))));
       return;
@@ -322,20 +322,20 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             udp -> {
               counterReports.forEach(
                   cr -> cr.withProviderId(udp.getId()).withDownloadTime(Date.from(Instant.now())));
-              return Future.succeededFuture(counterReports);
+              return succeededFuture(counterReports);
             })
         .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, tenantId, crs, overwrite))
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         PostCounterReportsUploadProviderByIdResponse.respond200WithTextPlain(
                             String.format(
                                 "Saved report with ids: %s", String.join(",", ar.result())))));
               } else {
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         PostCounterReportsUploadProviderByIdResponse.respond500WithTextPlain(
                             String.format("Error saving report: %s", ar.cause()))));
               }
@@ -354,12 +354,12 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               if (ar.succeeded()) {
                 org.folio.rest.jaxrs.model.ErrorCodes result = ar.result();
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetCounterReportsErrorsCodesResponse.respond200WithApplicationJson(
                             result)));
               } else {
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetCounterReportsErrorsCodesResponse.respond500WithTextPlain(ar.cause())));
               }
             });
@@ -423,26 +423,26 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                     csv = counter5ReportsToCsv(ar.result().getResults());
                   } else {
                     asyncResultHandler.handle(
-                        Future.succeededFuture(
+                        succeededFuture(
                             GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
                                 .respond500WithTextPlain("Unknown counter version:" + version)));
                     return;
                   }
                 } catch (ReportMergeException | Counter5UtilsException e) {
                   asyncResultHandler.handle(
-                      Future.succeededFuture(
+                      succeededFuture(
                           GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
                               .respond500WithTextPlain(e.getMessage())));
                   return;
                 }
 
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
                             .respond200WithTextCsv(csv)));
               } else {
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
                             .respond500WithTextPlain("Query Error: " + ar.cause())));
               }
