@@ -1,10 +1,10 @@
 package org.folio.rest.impl;
 
+import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
@@ -12,7 +12,6 @@ import io.vertx.core.logging.LoggerFactory;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -23,7 +22,6 @@ import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
-import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
@@ -33,14 +31,9 @@ import org.folio.rest.jaxrs.model.CounterReportsSorted;
 import org.folio.rest.jaxrs.model.ReportsPerType;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.Criteria.Limit;
-import org.folio.rest.persist.Criteria.Offset;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
-import org.folio.rest.tools.messages.MessageConsts;
-import org.folio.rest.tools.messages.Messages;
-import org.folio.rest.tools.utils.TenantTool;
+import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.Constants;
 import org.folio.rest.util.PgHelper;
 import org.folio.rest.util.UploadHelper;
@@ -52,17 +45,14 @@ import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
-  private final Messages messages = Messages.getInstance();
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
 
   private final Comparator<CounterReportsPerYear> compareByYear =
       Comparator.comparing(CounterReportsPerYear::getYear);
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
-    CQL2PgJSON cql2PgJSON = new CQL2PgJSON(Arrays.asList(TABLE_NAME_COUNTER_REPORTS + ".jsonb"));
-    return new CQLWrapper(cql2PgJSON, query)
-        .setLimit(new Limit(limit))
-        .setOffset(new Offset(offset));
+    return new CQLWrapper(
+        new CQL2PgJSON(TABLE_NAME_COUNTER_REPORTS + ".jsonb"), query, limit, offset);
   }
 
   @Validate
@@ -79,94 +69,40 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting counter reports");
-    try {
-      CQLWrapper cql = getCQL(query, limit, offset);
-      vertxContext.runOnContext(
-          v -> {
-            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
-            logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
-            logger.debug("tenantId = " + tenantId);
+    logger.debug("Headers present are: " + okapiHeaders.toString());
 
-            String field = (tiny) ? "jsonb - 'report' AS jsonb" : "*";
-            String[] fieldList = {field};
-            try {
-              PostgresClient.getInstance(vertxContext.owner(), tenantId)
-                  .get(
-                      TABLE_NAME_COUNTER_REPORTS,
-                      CounterReport.class,
-                      fieldList,
-                      cql,
-                      true,
-                      false,
-                      reply -> {
-                        try {
-                          if (reply.succeeded()) {
-                            CounterReports counterReportDataDataCollection = new CounterReports();
-                            List<CounterReport> reports = reply.result().getResults();
-                            counterReportDataDataCollection.setCounterReports(reports);
-                            counterReportDataDataCollection.setTotalRecords(
-                                reply.result().getResultInfo().getTotalRecords());
-                            asyncResultHandler.handle(
-                                Future.succeededFuture(
-                                    GetCounterReportsResponse.respond200WithApplicationJson(
-                                        counterReportDataDataCollection)));
-                          } else {
-                            asyncResultHandler.handle(
-                                Future.succeededFuture(
-                                    GetCounterReportsResponse.respond500WithTextPlain(
-                                        reply.cause().getMessage())));
-                          }
-                        } catch (Exception e) {
-                          logger.debug(e.getLocalizedMessage());
-                          asyncResultHandler.handle(
-                              Future.succeededFuture(
-                                  GetCounterReportsResponse.respond500WithTextPlain(
-                                      reply.cause().getMessage())));
-                        }
-                      });
-            } catch (IllegalStateException e) {
-              logger.debug("IllegalStateException: " + e.getLocalizedMessage());
-              asyncResultHandler.handle(
-                  Future.succeededFuture(
-                      GetCounterReportsResponse.respond400WithTextPlain(
-                          "CQL Illegal State Error for '" + "" + "': " + e.getLocalizedMessage())));
-            } catch (Exception e) {
-              Throwable cause = e;
-              while (cause.getCause() != null) {
-                cause = cause.getCause();
-              }
-              logger.debug(
-                  "Got error " + cause.getClass().getSimpleName() + ": " + e.getLocalizedMessage());
-              if (cause.getClass().getSimpleName().contains("CQLParseException")) {
-                logger.debug("BAD CQL");
-                asyncResultHandler.handle(
-                    Future.succeededFuture(
-                        GetCounterReportsResponse.respond400WithTextPlain(
-                            "CQL Parsing Error for '" + "" + "': " + cause.getLocalizedMessage())));
-              } else {
-                asyncResultHandler.handle(
-                    io.vertx.core.Future.succeededFuture(
-                        GetCounterReportsResponse.respond500WithTextPlain(
-                            messages.getMessage(lang, MessageConsts.InternalServerError))));
-              }
-            }
-          });
-    } catch (Exception e) {
-      logger.error(e.getLocalizedMessage(), e);
-      if (e.getCause() != null
-          && e.getCause().getClass().getSimpleName().contains("CQLParseException")) {
-        logger.debug("BAD CQL");
-        asyncResultHandler.handle(
-            Future.succeededFuture(
-                GetCounterReportsResponse.respond400WithTextPlain(
-                    "CQL Parsing Error for '" + "" + "': " + e.getLocalizedMessage())));
-      } else {
-        asyncResultHandler.handle(
-            io.vertx.core.Future.succeededFuture(
-                GetCounterReportsResponse.respond500WithTextPlain(
-                    messages.getMessage(lang, MessageConsts.InternalServerError))));
-      }
+    CQLWrapper cql;
+    try {
+      cql = getCQL(query, limit, offset);
+    } catch (FieldException e) {
+      ValidationHelper.handleError(e, asyncResultHandler);
+      return;
     }
+
+    String field = (tiny) ? "jsonb - 'report' AS jsonb" : "*";
+    String[] fieldList = {field};
+
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .get(
+            TABLE_NAME_COUNTER_REPORTS,
+            CounterReport.class,
+            fieldList,
+            cql,
+            true,
+            false,
+            ar -> {
+              if (ar.succeeded()) {
+                CounterReports counterReports = new CounterReports();
+                List<CounterReport> reportList = ar.result().getResults();
+                counterReports.setCounterReports(reportList);
+                counterReports.setTotalRecords(ar.result().getResultInfo().getTotalRecords());
+                asyncResultHandler.handle(
+                    succeededFuture(
+                        GetCounterReportsResponse.respond200WithApplicationJson(counterReports)));
+              } else {
+                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
+              }
+            });
   }
 
   @Override
@@ -251,95 +187,34 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-    logger.debug("Getting counter reports");
-    try {
-      Criteria updCrit = new Criteria();
-      updCrit.addField("'providerId'").setOperation("=").setVal(udpId).setJSONB(true);
-      Criterion criterion = new Criterion(updCrit);
-      CQLWrapper cql = new CQLWrapper(criterion);
-      vertxContext.runOnContext(
-          v -> {
-            String tenantId = TenantTool.calculateTenantId(okapiHeaders.get(XOkapiHeaders.TENANT));
-            logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
-            logger.debug("tenantId = " + tenantId);
+    logger.debug("Getting sorted counter reports");
+    logger.debug("Headers present are: " + okapiHeaders.toString());
 
-            String field = "jsonb - 'report' AS jsonb";
-            String[] fieldList = {field};
-            try {
-              PostgresClient.getInstance(vertxContext.owner(), tenantId)
-                  .get(
-                      TABLE_NAME_COUNTER_REPORTS,
-                      CounterReport.class,
-                      fieldList,
-                      cql,
-                      true,
-                      false,
-                      reply -> {
-                        try {
-                          if (reply.succeeded()) {
-                            List<CounterReport> reports = reply.result().getResults();
-                            CounterReportsSorted counterReportsSorted = sortByYearAndType(reports);
-                            asyncResultHandler.handle(
-                                Future.succeededFuture(
-                                    GetCounterReportsSortedByUdpIdResponse
-                                        .respond200WithApplicationJson(counterReportsSorted)));
-                          } else {
-                            asyncResultHandler.handle(
-                                Future.succeededFuture(
-                                    GetCounterReportsSortedByUdpIdResponse.respond500WithTextPlain(
-                                        reply.cause().getMessage())));
-                          }
-                        } catch (Exception e) {
-                          logger.debug(e.getLocalizedMessage());
-                          asyncResultHandler.handle(
-                              Future.succeededFuture(
-                                  GetCounterReportsSortedByUdpIdResponse.respond500WithTextPlain(
-                                      reply.cause().getMessage())));
-                        }
-                      });
-            } catch (IllegalStateException e) {
-              logger.debug("IllegalStateException: " + e.getLocalizedMessage());
-              asyncResultHandler.handle(
-                  Future.succeededFuture(
-                      GetCounterReportsSortedByUdpIdResponse.respond400WithTextPlain(
-                          "CQL Illegal State Error for '" + "" + "': " + e.getLocalizedMessage())));
-            } catch (Exception e) {
-              Throwable cause = e;
-              while (cause.getCause() != null) {
-                cause = cause.getCause();
-              }
-              logger.debug(
-                  "Got error " + cause.getClass().getSimpleName() + ": " + e.getLocalizedMessage());
-              if (cause.getClass().getSimpleName().contains("CQLParseException")) {
-                logger.debug("BAD CQL");
+    Criteria updCrit = new Criteria();
+    updCrit.addField("'providerId'").setOperation("=").setVal(udpId).setJSONB(true);
+    Criterion criterion = new Criterion(updCrit);
+    CQLWrapper cql = new CQLWrapper(criterion);
+
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .get(
+            TABLE_NAME_COUNTER_REPORTS,
+            CounterReport.class,
+            new String[] {"jsonb - 'report' AS jsonb"},
+            cql,
+            true,
+            false,
+            reply -> {
+              if (reply.succeeded()) {
+                List<CounterReport> reports = reply.result().getResults();
+                CounterReportsSorted counterReportsSorted = sortByYearAndType(reports);
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
-                        GetCounterReportsSortedByUdpIdResponse.respond400WithTextPlain(
-                            "CQL Parsing Error for '" + "" + "': " + cause.getLocalizedMessage())));
+                    succeededFuture(
+                        GetCounterReportsSortedByUdpIdResponse.respond200WithApplicationJson(
+                            counterReportsSorted)));
               } else {
-                asyncResultHandler.handle(
-                    io.vertx.core.Future.succeededFuture(
-                        GetCounterReportsSortedByUdpIdResponse.respond500WithTextPlain(
-                            MessageConsts.InternalServerError)));
+                ValidationHelper.handleError(reply.cause(), asyncResultHandler);
               }
-            }
-          });
-    } catch (Exception e) {
-      logger.error(e.getLocalizedMessage(), e);
-      if (e.getCause() != null
-          && e.getCause().getClass().getSimpleName().contains("CQLParseException")) {
-        logger.debug("BAD CQL");
-        asyncResultHandler.handle(
-            Future.succeededFuture(
-                GetCounterReportsSortedByUdpIdResponse.respond400WithTextPlain(
-                    "CQL Parsing Error for '" + "" + "': " + e.getLocalizedMessage())));
-      } else {
-        asyncResultHandler.handle(
-            io.vertx.core.Future.succeededFuture(
-                GetCounterReportsSortedByUdpIdResponse.respond500WithTextPlain(
-                    MessageConsts.InternalServerError)));
-      }
-    }
+            });
   }
 
   private CounterReportsSorted sortByYearAndType(List<CounterReport> reports) {
@@ -391,29 +266,25 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
         .getById(
             TABLE_NAME_COUNTER_REPORTS,
             id,
             CounterReport.class,
             ar -> {
               if (ar.succeeded()) {
-                Optional<String> csvResult = csvMapper(ar.result());
-                if (csvResult.isPresent()) {
-                  asyncResultHandler.handle(
-                      Future.succeededFuture(
-                          GetCounterReportsCsvByIdResponse.respond200WithTextCsv(csvResult.get())));
-                } else {
-                  asyncResultHandler.handle(
-                      Future.succeededFuture(
-                          GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
-                              "No report data or no mapper available")));
-                }
-              } else {
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
-                        GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
-                            ar.cause().getMessage())));
+                    csvMapper(ar.result())
+                        .<AsyncResult<Response>>map(
+                            csv ->
+                                succeededFuture(
+                                    GetCounterReportsCsvByIdResponse.respond200WithTextCsv(csv)))
+                        .orElse(
+                            succeededFuture(
+                                GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
+                                    "No report data or no mapper available"))));
+              } else {
+                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
               }
             });
   }
@@ -427,38 +298,36 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    String tenantId = okapiHeaders.get(XOkapiHeaders.TENANT);
-
     List<CounterReport> counterReports;
     try {
       counterReports = UploadHelper.getCounterReportsFromInputStream(entity);
     } catch (Exception e) {
       asyncResultHandler.handle(
-          Future.succeededFuture(
+          succeededFuture(
               PostCounterReportsUploadProviderByIdResponse.respond500WithTextPlain(
                   String.format("Error uploading file: %s", e.getMessage()))));
       return;
     }
 
-    PgHelper.getUDPfromDbById(vertxContext.owner(), tenantId, id)
+    PgHelper.getUDPfromDbById(vertxContext, okapiHeaders, id)
         .compose(
             udp -> {
               counterReports.forEach(
                   cr -> cr.withProviderId(udp.getId()).withDownloadTime(Date.from(Instant.now())));
-              return Future.succeededFuture(counterReports);
+              return succeededFuture(counterReports);
             })
-        .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, tenantId, crs, overwrite))
+        .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, okapiHeaders, crs, overwrite))
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         PostCounterReportsUploadProviderByIdResponse.respond200WithTextPlain(
                             String.format(
                                 "Saved report with ids: %s", String.join(",", ar.result())))));
               } else {
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         PostCounterReportsUploadProviderByIdResponse.respond500WithTextPlain(
                             String.format("Error saving report: %s", ar.cause()))));
               }
@@ -470,19 +339,18 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-    String tenantId = okapiHeaders.get(XOkapiHeaders.TENANT);
-    PgHelper.getErrorCodes(vertxContext, tenantId)
+    PgHelper.getErrorCodes(vertxContext, okapiHeaders)
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
                 org.folio.rest.jaxrs.model.ErrorCodes result = ar.result();
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetCounterReportsErrorsCodesResponse.respond200WithApplicationJson(
                             result)));
               } else {
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetCounterReportsErrorsCodesResponse.respond500WithTextPlain(ar.cause())));
               }
             });
@@ -530,44 +398,33 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             .addCriterion(yearMonthEndCrit);
     CQLWrapper cql = new CQLWrapper(criterion);
 
-    PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
         .get(
             TABLE_NAME_COUNTER_REPORTS,
             CounterReport.class,
             cql,
-            true,
+            false,
             ar -> {
               if (ar.succeeded()) {
-                String csv = "";
+                String csv;
                 try {
                   if (version.equals("4")) {
                     csv = counter4ReportsToCsv(ar.result().getResults());
                   } else if (version.equals("5")) {
                     csv = counter5ReportsToCsv(ar.result().getResults());
                   } else {
-                    asyncResultHandler.handle(
-                        Future.succeededFuture(
-                            GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
-                                .respond500WithTextPlain("Unknown counter version:" + version)));
-                    return;
+                    throw new CounterReportAPIException("Unknown counter version:" + version);
                   }
-                } catch (ReportMergeException | Counter5UtilsException e) {
-                  asyncResultHandler.handle(
-                      Future.succeededFuture(
-                          GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
-                              .respond500WithTextPlain(e.getMessage())));
+                } catch (Exception e) {
+                  ValidationHelper.handleError(e, asyncResultHandler);
                   return;
                 }
-
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
                             .respond200WithTextCsv(csv)));
               } else {
-                asyncResultHandler.handle(
-                    Future.succeededFuture(
-                        GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
-                            .respond500WithTextPlain("Query Error: " + ar.cause())));
+                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
               }
             });
   }
@@ -590,5 +447,12 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             .collect(Collectors.toList());
     Object merge = Counter5Utils.merge(c5Reports);
     return Counter5Utils.toCSV(merge);
+  }
+
+  private static class CounterReportAPIException extends Exception {
+
+    public CounterReportAPIException(String message) {
+      super(message);
+    }
   }
 }
