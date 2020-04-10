@@ -1,10 +1,10 @@
 package org.folio.rest.impl;
 
+import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -66,7 +66,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
                 udProvidersDataCollection.setTotalRecords(
                     reply.result().getResultInfo().getTotalRecords());
                 asyncResultHandler.handle(
-                    Future.succeededFuture(
+                    succeededFuture(
                         GetUsageDataProvidersResponse.respond200WithApplicationJson(
                             udProvidersDataCollection)));
               } else {
