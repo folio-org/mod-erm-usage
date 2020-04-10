@@ -33,7 +33,6 @@ import org.folio.rest.jaxrs.model.ReportsPerType;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PgUtil;
-import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.Constants;
@@ -403,44 +402,33 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             .addCriterion(yearMonthEndCrit);
     CQLWrapper cql = new CQLWrapper(criterion);
 
-    PostgresClient.getInstance(vertxContext.owner(), okapiHeaders.get(XOkapiHeaders.TENANT))
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
         .get(
             TABLE_NAME_COUNTER_REPORTS,
             CounterReport.class,
             cql,
-            true,
+            false,
             ar -> {
               if (ar.succeeded()) {
-                String csv = "";
+                String csv;
                 try {
                   if (version.equals("4")) {
                     csv = counter4ReportsToCsv(ar.result().getResults());
                   } else if (version.equals("5")) {
                     csv = counter5ReportsToCsv(ar.result().getResults());
                   } else {
-                    asyncResultHandler.handle(
-                        succeededFuture(
-                            GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
-                                .respond500WithTextPlain("Unknown counter version:" + version)));
-                    return;
+                    throw new CounterReportAPIException("Unknown counter version:" + version);
                   }
-                } catch (ReportMergeException | Counter5UtilsException e) {
-                  asyncResultHandler.handle(
-                      succeededFuture(
-                          GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
-                              .respond500WithTextPlain(e.getMessage())));
+                } catch (Exception e) {
+                  ValidationHelper.handleError(e, asyncResultHandler);
                   return;
                 }
-
                 asyncResultHandler.handle(
                     succeededFuture(
                         GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
                             .respond200WithTextCsv(csv)));
               } else {
-                asyncResultHandler.handle(
-                    succeededFuture(
-                        GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
-                            .respond500WithTextPlain("Query Error: " + ar.cause())));
+                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
               }
             });
   }
@@ -463,5 +451,12 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             .collect(Collectors.toList());
     Object merge = Counter5Utils.merge(c5Reports);
     return Counter5Utils.toCSV(merge);
+  }
+
+  private static class CounterReportAPIException extends Exception {
+
+    public CounterReportAPIException(String message) {
+      super(message);
+    }
   }
 }
