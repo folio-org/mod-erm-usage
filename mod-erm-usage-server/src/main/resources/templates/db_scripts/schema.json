@@ -17,6 +17,11 @@
     },
     {
       "run": "after",
+      "snippetPath": "custom_indexes.sql",
+      "fromModuleVersion": "mod-erm-usage-2.9.0"
+    },
+    {
+      "run": "after",
       "snippetPath": "migration/2.6.0/usage_data_providers.sql",
       "fromModuleVersion": "mod-erm-usage-2.6.0"
     },

@@ -1,5 +1,7 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import io.vertx.core.AsyncResult;
@@ -8,6 +10,11 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.ws.rs.core.Response;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.okapi.common.XOkapiHeaders;
@@ -28,14 +35,6 @@ import org.folio.rest.tools.messages.Messages;
 import org.folio.rest.tools.utils.TenantTool;
 import org.folio.rest.util.Constants;
 import org.folio.rest.util.ExportObject;
-
-import javax.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
 public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.AggregatorSettings {
 
@@ -272,7 +271,6 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
             TABLE_NAME_UDP,
             UsageDataProvider.class,
             cql,
-            true,
             true,
             ar -> {
               if (ar.succeeded()) {

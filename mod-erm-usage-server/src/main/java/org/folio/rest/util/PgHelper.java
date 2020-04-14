@@ -1,7 +1,23 @@
 package org.folio.rest.util;
 
-import io.vertx.core.*;
+import static org.folio.rest.util.Constants.FIELD_NAME_PROVIDER_ID;
+import static org.folio.rest.util.Constants.FIELD_NAME_RELEASE;
+import static org.folio.rest.util.Constants.FIELD_NAME_REPORT_NAME;
+import static org.folio.rest.util.Constants.FIELD_NAME_YEAR_MONTH;
+import static org.folio.rest.util.Constants.OPERATOR_EQUALS;
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.ext.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.ErrorCodes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
@@ -9,13 +25,6 @@ import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.cql.CQLWrapper;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.folio.rest.util.Constants.*;
 
 public class PgHelper {
 
@@ -226,7 +235,6 @@ public class PgHelper {
             TABLE_NAME_COUNTER_REPORTS,
             CounterReport.class,
             cql,
-            false,
             false,
             ar -> {
               if (ar.succeeded()) {
