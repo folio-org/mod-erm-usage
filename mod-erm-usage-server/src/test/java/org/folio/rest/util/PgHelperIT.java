@@ -1,9 +1,20 @@
 package org.folio.rest.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
+
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -14,21 +25,14 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
-
 @RunWith(VertxUnitRunner.class)
 public class PgHelperIT {
 
   private static final String providerId = "81932a44-82ef-437e-8f53-c3fa508c0fb1";
   private static final String providerId2 = "6c0b057b-0bad-4559-93b8-b4d9b1062f40";
   private static final String tenant = "tenant1";
+  private static final Map<String, String> okapiHeaders =
+      Collections.singletonMap(XOkapiHeaders.TENANT.toLowerCase(), tenant);
 
   @ClassRule public static EmbeddedPostgresRule pgRule = new EmbeddedPostgresRule(tenant);
 
@@ -147,7 +151,7 @@ public class PgHelperIT {
 
     PgHelper.getExistingReports(
             vertx.getOrCreateContext(),
-            tenant,
+            okapiHeaders,
             providerId,
             "JR1",
             "4",
@@ -169,7 +173,7 @@ public class PgHelperIT {
 
     PgHelper.getExistingReports(
             vertx.getOrCreateContext(),
-            tenant,
+            okapiHeaders,
             providerId2,
             "JR1",
             "4",
@@ -191,7 +195,7 @@ public class PgHelperIT {
     reports2.forEach(li -> li.withFailedAttempts(5));
     CQLWrapper cql = createGetCounterReportCQL(providerId2, "4", "JR1");
 
-    PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), tenant, reports2, false)
+    PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), okapiHeaders, reports2, false)
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
@@ -225,7 +229,7 @@ public class PgHelperIT {
 
     Async async2 = context.async();
     reports2.forEach(li -> li.withFailedAttempts(5));
-    PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), tenant, reports2, true)
+    PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), okapiHeaders, reports2, true)
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
@@ -266,7 +270,7 @@ public class PgHelperIT {
     Async async = context.async();
     CQLWrapper cql = createGetCounterReportCQL(providerId2, "4", "PR1");
 
-    PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), tenant, reports3, false)
+    PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), okapiHeaders, reports3, false)
         .setHandler(
             ar -> {
               if (ar.succeeded()) {
