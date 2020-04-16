@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
 import io.reactivex.Single;
@@ -22,14 +23,17 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.Year;
 import java.time.YearMonth;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.ws.rs.core.MediaType;
+import org.codehaus.plexus.util.StringUtils;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.Report;
@@ -47,14 +51,14 @@ import org.slf4j.LoggerFactory;
 
 @Category(PerformanceTest.class)
 @RunWith(VertxUnitRunner.class)
-public class GetCSVMultiMonthPerformanceIT {
+public class CounterReportAPIPerformanceIT {
   private static final int PORT = NetworkUtils.nextFreePort();
   private static final String TENANT = "diku";
   private static final List<String> PROVIDER_IDS =
       IntStream.rangeClosed(1, 20)
           .mapToObj(i -> UUID.randomUUID().toString())
           .collect(Collectors.toList());
-  private static final Logger log = LoggerFactory.getLogger(GetCSVMultiMonthPerformanceIT.class);
+  private static final Logger log = LoggerFactory.getLogger(CounterReportAPIPerformanceIT.class);
   @ClassRule public static EmbeddedPostgresRule postgresRule = new EmbeddedPostgresRule(TENANT);
   private static Vertx vertx = Vertx.vertx();
   private static WebClient wc = WebClient.create(vertx);
@@ -120,6 +124,11 @@ public class GetCSVMultiMonthPerformanceIT {
     cr.setYearMonth(yearMonth.toString());
     cr.setReport(report);
     cr.setDownloadTime(Date.from(Instant.now()));
+    if (report == null) {
+      cr.setFailedReason(
+          "Report not valid: Exception{Number=3000, Severity=ERROR, Message=Report Not Supported}");
+      cr.setFailedAttempts(1);
+    }
     return cr;
   }
 
@@ -192,7 +201,7 @@ public class GetCSVMultiMonthPerformanceIT {
     return Single.merge(singles).toList();
   }
 
-  private Single<Double> getCsvReport(String providerId, Year year) {
+  private Single<Entry<HttpResponse<Buffer>, Double>> getCsvReport(String providerId, Year year) {
     String url =
         String.format(
             "/counter-reports/csv/provider/%s/report/JR1/version/4/from/%s/to/%s",
@@ -205,22 +214,58 @@ public class GetCSVMultiMonthPerformanceIT {
         .rxSend()
         .doOnSubscribe(d -> stopwatch.start())
         .doAfterTerminate(stopwatch::stop)
-        .map(resp -> stopwatch.elapsed(TimeUnit.MILLISECONDS) / 1000.0);
+        .map(resp -> Maps.immutableEntry(resp, stopwatch.elapsed(TimeUnit.MILLISECONDS) / 1000.0));
+  }
+
+  private Single<Entry<HttpResponse<Buffer>, Double>> getErrorCodes() {
+    String url = "/counter-reports/errors/codes";
+    Stopwatch stopwatch = Stopwatch.createUnstarted();
+    return wc.get(url)
+        .putHeader("X-Okapi-Tenant", TENANT)
+        .putHeader(HttpHeaders.ACCEPT, "application/json")
+        .port(PORT)
+        .rxSend()
+        .doOnSubscribe(d -> stopwatch.start())
+        .doAfterTerminate(stopwatch::stop)
+        .map(resp -> Maps.immutableEntry(resp, stopwatch.elapsed(TimeUnit.MILLISECONDS) / 1000.0));
   }
 
   @Test
   public void testGetCsvReportMultipleMonthsPerformance(TestContext context) {
-    Async async = context.async(2);
+    Async async = context.async();
 
-    Single<Double> d1 = getCsvReport(PROVIDER_IDS.get(0), Year.of(2019));
-    Single<Double> d2 = getCsvReport(PROVIDER_IDS.get(PROVIDER_IDS.size() - 1), Year.of(2019));
-    Single<Double> d3 = getCsvReport(PROVIDER_IDS.get(PROVIDER_IDS.size() - 1), Year.of(2028));
+    List<Single<Entry<HttpResponse<Buffer>, Double>>> singles =
+        Arrays.asList(
+            getCsvReport(PROVIDER_IDS.get(0), Year.of(2019)),
+            getCsvReport(PROVIDER_IDS.get(PROVIDER_IDS.size() - 1), Year.of(2019)),
+            getCsvReport(PROVIDER_IDS.get(PROVIDER_IDS.size() - 1), Year.of(2028)));
 
-    Single.merge(d1, d2, d3)
+    Single.merge(singles)
         .toList()
         .subscribe(
             list -> {
-              list.forEach(System.out::println);
+              list.forEach(
+                  e ->
+                      System.out.println(
+                          String.format(
+                              "Received csv response in %ss: %s",
+                              e.getValue(),
+                              StringUtils.abbreviate(e.getKey().bodyAsString(), 30))));
+              async.complete();
+            },
+            context::fail);
+  }
+
+  @Test
+  public void testGetErrorCodesPerformance(TestContext context) {
+    Async async = context.async();
+    getErrorCodes()
+        .subscribe(
+            e -> {
+              System.out.println(
+                  String.format(
+                      "Received error codes response in %ss: %s",
+                      e.getValue(), e.getKey().bodyAsJsonObject().encode()));
               async.complete();
             },
             context::fail);
