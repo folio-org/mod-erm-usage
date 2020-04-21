@@ -173,6 +173,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
         asyncResultHandler);
   }
 
+  // index: usage_data_providers_custom_aggregatorid_idx
   @Override
   public void getAggregatorSettingsExportcredentialsById(
       String id,

@@ -17,7 +17,11 @@ import org.junit.runner.RunWith;
 public class CustomIndexesIT {
 
   private static final String[] TENANTS = {"aTenant", "bTenant"};
-  private static final String[] INDEXES = {"counter_reports_custom_getcsv_idx"};
+  private static final String[] INDEXES = {
+    "counter_reports_custom_getcsv_idx",
+    "counter_reports_custom_errorcodes_idx",
+    "usage_data_providers_custom_aggregatorid_idx"
+  };
   @ClassRule public static EmbeddedPostgresRule postgresRule = new EmbeddedPostgresRule(TENANTS);
   @Rule public Timeout timeout = Timeout.seconds(5);
 

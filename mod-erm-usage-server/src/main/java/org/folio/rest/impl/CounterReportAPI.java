@@ -180,6 +180,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         asyncResultHandler);
   }
 
+  // index: counter_reports_custom_getcsv_idx
   @Override
   @Validate
   public void getCounterReportsSortedByUdpId(
@@ -356,6 +357,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             });
   }
 
+  // index: counter_reports_custom_getcsv_idx
   @Override
   public void getCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEnd(
       String id,

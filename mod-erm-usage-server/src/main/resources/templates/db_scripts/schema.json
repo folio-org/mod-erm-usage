@@ -83,7 +83,7 @@
     },
     {
       "tableName": "usage_data_providers",
-      "fromModuleVersion": "mod-erm-usage-2.7.0",
+      "fromModuleVersion": "mod-erm-usage-2.9.0",
       "withMetadata": true,
       "fullTextIndex": [
         {
@@ -109,6 +109,9 @@
         {
           "fieldName": "tags.tagList",
           "tOps": "ADD"
+        },
+        {
+          "fieldName": "label"
         }
       ]
     }
