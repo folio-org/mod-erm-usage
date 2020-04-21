@@ -85,6 +85,7 @@ public class PgHelper {
     return new CQLWrapper(criterion);
   }
 
+  // index: counter_reports_custom_getcsv_idx
   public static Future<String> saveCounterReportToDb(
       Context vertxContext,
       Map<String, String> okapiHeaders,
@@ -193,6 +194,7 @@ public class PgHelper {
    * @param yearMonths Months to check
    * @return List of CounterReport
    */
+  // index: counter_reports_custom_getcsv_idx
   public static Future<List<CounterReport>> getExistingReports(
       Context vertxContext,
       Map<String, String> okapiHeaders,
