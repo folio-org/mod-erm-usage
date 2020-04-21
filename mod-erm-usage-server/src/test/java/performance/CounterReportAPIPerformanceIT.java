@@ -11,6 +11,7 @@ import io.reactivex.Single;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.sql.UpdateResult;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
@@ -94,6 +95,8 @@ public class CounterReportAPIPerformanceIT {
     vertx
         .rxDeployVerticle(RestVerticle.class.getName(), options)
         .flatMap(resp -> saveBatch2())
+        .flatMap(r -> executeSQL("REINDEX TABLE " + TENANT + "_mod_erm_usage.counter_reports;"))
+        .flatMap(r -> executeSQL("VACUUM ANALYZE " + TENANT + "_mod_erm_usage.counter_reports;"))
         .flatMap(resultSet -> getCounterReports())
         .subscribe(
             resp -> {
@@ -104,6 +107,23 @@ public class CounterReportAPIPerformanceIT {
               async.complete();
             },
             context::fail);
+  }
+
+  private static Single<UpdateResult> executeSQL(String sql) {
+    return vertx
+        .<UpdateResult>rxExecuteBlocking(
+            promise ->
+                PostgresClient.getInstance(vertx.getDelegate())
+                    .execute(
+                        sql,
+                        ar -> {
+                          if (ar.succeeded()) {
+                            promise.complete(ar.result());
+                          } else {
+                            promise.fail(ar.cause());
+                          }
+                        }))
+        .toSingle();
   }
 
   private static Single<HttpResponse<Buffer>> getCounterReports() {
