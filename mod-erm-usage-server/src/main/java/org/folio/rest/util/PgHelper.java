@@ -250,6 +250,7 @@ public class PgHelper {
     return result.future();
   }
 
+  // index: counter_reports_custom_errorcodes_idx
   public static Future<ErrorCodes> getErrorCodes(
       Context vertxContext, Map<String, String> okapiHeaders) {
     String query =
