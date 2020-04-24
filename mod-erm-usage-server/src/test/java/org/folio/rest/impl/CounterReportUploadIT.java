@@ -1,5 +1,10 @@
 package org.folio.rest.impl;
 
+import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
@@ -17,6 +22,13 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.xml.bind.JAXB;
 import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
@@ -30,7 +42,11 @@ import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
 import org.folio.rest.util.ModuleVersion;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.niso.schemas.counter.Metric;
 import org.niso.schemas.counter.MetricType;
@@ -38,19 +54,10 @@ import org.niso.schemas.counter.Report;
 import org.niso.schemas.sushi.counter.CounterReportResponse;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
-
-import javax.xml.bind.JAXB;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static io.restassured.RestAssured.get;
-import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsString;
+import org.olf.erm.usage.counter50.Counter5Utils;
+import org.openapitools.client.model.COUNTERDatabaseReport;
+import org.openapitools.client.model.COUNTERDatabaseUsage;
+import org.openapitools.client.model.COUNTERTitleUsage;
 
 @RunWith(VertxUnitRunner.class)
 public class CounterReportUploadIT {
@@ -64,14 +71,17 @@ public class CounterReportUploadIT {
       new File(Resources.getResource("fileupload/reportNSS.xml").getFile());
   private static final File FILE_NO_REPORT =
       new File(Resources.getResource("fileupload/noreport.txt").getFile());
-  private static final File FILE_REPORT_MULTI =
+  private static final File FILE_REPORT_MULTI_COP4 =
       new File(Resources.getResource("fileupload/reportJSTORMultiMonth.xml").getFile());
+  private static final File FILE_REPORT_MULTI_COP5 =
+      new File(Resources.getResource("fileupload/reportCOP5TRMultiMonth.json").getFile());
   private static final File FILE_REPORT5_OK =
       new File(Resources.getResource("fileupload/hwire_trj1.json").getFile());
   private static final File FILE_REPORT5_MULTI =
       new File(Resources.getResource("fileupload/hwire_pr.json").getFile());
   private static Vertx vertx;
-  @Rule public Timeout timeout = Timeout.seconds(10);
+  @Rule
+  public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void setUp(TestContext context) {
@@ -166,7 +176,9 @@ public class CounterReportUploadIT {
             Constants.TABLE_NAME_COUNTER_REPORTS,
             new Criterion(),
             ar -> {
-              if (ar.failed()) ctx.fail(ar.cause());
+              if (ar.failed()) {
+                ctx.fail(ar.cause());
+              }
               async.complete();
             });
     async.await();
@@ -343,7 +355,7 @@ public class CounterReportUploadIT {
     String createdIds =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(FILE_REPORT_MULTI)
+            .body(FILE_REPORT_MULTI_COP4)
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
             .statusCode(200)
@@ -362,7 +374,7 @@ public class CounterReportUploadIT {
 
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT_MULTI)
+        .body(FILE_REPORT_MULTI_COP4)
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
@@ -385,7 +397,7 @@ public class CounterReportUploadIT {
 
   @Test
   public void testReportMultipleMonthsC4FromCsv() throws IOException, ReportSplitException {
-    String csvString = Counter4Utils.toCSV(JAXB.unmarshal(FILE_REPORT_MULTI, Report.class));
+    String csvString = Counter4Utils.toCSV(JAXB.unmarshal(FILE_REPORT_MULTI_COP4, Report.class));
     assertThat(csvString).isNotNull();
 
     String createdIds =
@@ -413,7 +425,7 @@ public class CounterReportUploadIT {
     // check content here
     Report report =
         Counter4Utils.fromString(
-            Files.asCharSource(FILE_REPORT_MULTI, StandardCharsets.UTF_8).read());
+            Files.asCharSource(FILE_REPORT_MULTI_COP4, StandardCharsets.UTF_8).read());
     assertThat(report).isNotNull();
     List<Report> expectedReports = new ArrayList<>(Counter4Utils.split(report));
     expectedReports.forEach(this::removeAttributes);
@@ -439,7 +451,7 @@ public class CounterReportUploadIT {
 
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT_MULTI)
+        .body(FILE_REPORT_MULTI_COP4)
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
@@ -450,13 +462,120 @@ public class CounterReportUploadIT {
 
   @Test
   public void testReportMultipleMonthsC5() {
+    String createdIds =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(FILE_REPORT_MULTI_COP5)
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report with ids"))
+            .extract()
+            .asString()
+            .replace("Saved report with ids: ", "");
+
+    String query =
+        String.format("/counter-reports?query=(reportName=TR AND providerId=%s)", PROVIDER_ID);
+    CounterReports reports = given().get(query).then().extract().as(CounterReports.class);
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getYearMonth))
+        .containsExactlyInAnyOrder("2019-09", "2019-10", "2019-11");
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getId))
+        .containsExactlyInAnyOrder(createdIds.split(","));
+
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT5_MULTI)
+        .body(FILE_REPORT_MULTI_COP5)
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
-        .body(containsString("exactly one month"));
+        .body(containsString("Report already existing"))
+        .body(containsString("2019-09"))
+        .body(containsString("2019-10"))
+        .body(containsString("2019-11"));
+  }
+
+  @Test
+  public void testReportMultipleMonthsC5FromCsv() throws IOException, ReportSplitException {
+    String jsonString = Resources
+        .toString(FILE_REPORT_MULTI_COP5.toURI().toURL(), StandardCharsets.UTF_8);
+    assertThat(jsonString).isNotNull();
+
+    Object report = Counter5Utils.fromJSON(jsonString);
+    String csvString = Counter5Utils.toCSV(report);
+
+    String createdIds =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(IOUtils.toInputStream(csvString, StandardCharsets.UTF_8))
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report with ids"))
+            .extract()
+            .asString()
+            .replace("Saved report with ids: ", "");
+
+    String query =
+        String.format(
+            "/counter-reports?query=(reportName=TR AND providerId=%s) sortby yearMonth",
+            PROVIDER_ID);
+    CounterReports reports = given().get(query).then().extract().as(CounterReports.class);
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getYearMonth))
+        .containsExactly("2019-09", "2019-10", "2019-11");
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getId))
+        .containsExactly(createdIds.split(","));
+
+    // check content here
+    assertThat(report).isNotNull();
+    List<Object> expectedReports = new ArrayList<>(Counter5Utils.split(report));
+    // expectedReports.forEach(this::removeAttributes);
+
+    List<Object> actualReports =
+        reports.getCounterReports().stream()
+            .map(CounterReport::getReport)
+            .map(Json::encode)
+            .map(Counter5Utils::fromJSON)
+            .collect(Collectors.toList());
+
+    compareCOP5Reports(actualReports, expectedReports, 0);
+    compareCOP5Reports(actualReports, expectedReports, 1);
+    compareCOP5Reports(actualReports, expectedReports, 2);
+
+    given()
+        .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+        .body(FILE_REPORT_MULTI_COP5)
+        .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+        .then()
+        .statusCode(500)
+        .body(containsString("Report already existing"))
+        .body(containsString("2019-09"))
+        .body(containsString("2019-10"))
+        .body(containsString("2019-11"));
+  }
+
+  private void compareCOP5Reports(List<Object> actualReports, List<Object> expectedReports, int index) {
+    Object first = expectedReports.get(index);
+    if (first instanceof COUNTERDatabaseReport) {
+      COUNTERDatabaseReport actual = (COUNTERDatabaseReport) actualReports.get(index);
+      COUNTERDatabaseReport expected = (COUNTERDatabaseReport) expectedReports.get(index);
+      assertThat(actual.getReportHeader()).usingRecursiveComparison()
+          .ignoringCollectionOrder().isEqualTo(expected.getReportHeader());
+      assertThat(actual.getReportItems().size())
+          .isEqualTo(expected.getReportItems().size());
+
+      // Compare each platform usage
+      for (int i = 0; i < actual.getReportItems().size(); i++) {
+        COUNTERDatabaseUsage actualUsage = actual.getReportItems().get(i);
+        COUNTERDatabaseUsage expectedUsage = expected.getReportItems().stream()
+            .filter(item -> item.getDatabase().equals(actualUsage.getDatabase()))
+            .findFirst().get();
+        assertThat(actualUsage).usingRecursiveComparison().ignoringCollectionOrder()
+            .isEqualTo(expectedUsage);
+      }
+    } else {
+      // casting to other types not implemented
+      assertThat(true == false);
+    }
   }
 
   @Test
