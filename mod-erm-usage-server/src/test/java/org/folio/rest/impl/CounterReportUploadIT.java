@@ -55,9 +55,9 @@ import org.niso.schemas.sushi.counter.CounterReportResponse;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
 import org.olf.erm.usage.counter50.Counter5Utils;
+import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.openapitools.client.model.COUNTERDatabaseReport;
 import org.openapitools.client.model.COUNTERDatabaseUsage;
-import org.openapitools.client.model.COUNTERTitleUsage;
 
 @RunWith(VertxUnitRunner.class)
 public class CounterReportUploadIT {
@@ -495,7 +495,8 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportMultipleMonthsC5FromCsv() throws IOException, ReportSplitException {
+  public void testReportMultipleMonthsC5FromCsv()
+      throws IOException, ReportSplitException, Counter5UtilsException {
     String jsonString = Resources
         .toString(FILE_REPORT_MULTI_COP5.toURI().toURL(), StandardCharsets.UTF_8);
     assertThat(jsonString).isNotNull();
@@ -534,7 +535,7 @@ public class CounterReportUploadIT {
         reports.getCounterReports().stream()
             .map(CounterReport::getReport)
             .map(Json::encode)
-            .map(Counter5Utils::fromJSON)
+            .map(this::cop5ReportFromJson)
             .collect(Collectors.toList());
 
     compareCOP5Reports(actualReports, expectedReports, 0);
@@ -553,7 +554,8 @@ public class CounterReportUploadIT {
         .body(containsString("2019-11"));
   }
 
-  private void compareCOP5Reports(List<Object> actualReports, List<Object> expectedReports, int index) {
+  private void compareCOP5Reports(List<Object> actualReports, List<Object> expectedReports,
+      int index) {
     Object first = expectedReports.get(index);
     if (first instanceof COUNTERDatabaseReport) {
       COUNTERDatabaseReport actual = (COUNTERDatabaseReport) actualReports.get(index);
@@ -575,6 +577,14 @@ public class CounterReportUploadIT {
     } else {
       // casting to other types not implemented
       assertThat(true == false);
+    }
+  }
+
+  private Object cop5ReportFromJson(String json) {
+    try {
+      return Counter5Utils.fromJSON(json);
+    } catch (Counter5UtilsException e) {
+      throw new RuntimeException(e);
     }
   }
 

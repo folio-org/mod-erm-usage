@@ -16,6 +16,7 @@ import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
 import org.olf.erm.usage.counter41.csv.mapper.MapperException;
 import org.olf.erm.usage.counter50.Counter5Utils;
+import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.openapitools.client.model.COUNTERDatabaseReport;
 import org.openapitools.client.model.COUNTERItemReport;
 import org.openapitools.client.model.COUNTERPlatformReport;
@@ -27,7 +28,7 @@ public class UploadHelper {
   private static final String MSG_WRONG_FORMAT = "Wrong format supplied";
 
   public static List<CounterReport> getCounterReportsFromInputStream(InputStream entity)
-      throws FileUploadException, ReportSplitException {
+      throws FileUploadException, ReportSplitException, Counter5UtilsException {
     String content;
     try {
       content = IOUtils.toString(entity, Charsets.UTF_8);
@@ -94,7 +95,7 @@ public class UploadHelper {
   }
 
   private static List<CounterReport> getCOP5Reports(String content)
-      throws FileUploadException {
+      throws FileUploadException, Counter5UtilsException {
     // Counter 5
     Object cop5Report = createCOP5Report(content);
     SUSHIReportHeader header = Counter5Utils.getSushiReportHeaderFromReportObject(cop5Report);
@@ -105,11 +106,11 @@ public class UploadHelper {
       reports = Counter5Utils.split(cop5Report);
     }
 
+    Gson gson = new Gson();
     return reports.stream()
         .map(r -> {
           List<YearMonth> ym = Counter5Utils.getYearMonthFromReport(r);
           if (!ym.isEmpty()) {
-            Gson gson = new Gson();
             return new CounterReport()
                 .withRelease("5")
                 .withReportName(header.getReportID())
@@ -147,19 +148,23 @@ public class UploadHelper {
       Object r = Counter5Utils.fromCSV(content);
       SUSHIReportHeader header = Counter5Utils.getSushiReportHeaderFromReportObject(r);
       return header.getRelease();
-    } catch (org.olf.erm.usage.counter50.csv.mapper.MapperException e) {
+    } catch (org.olf.erm.usage.counter50.csv.mapper.MapperException | Counter5UtilsException e) {
       // bad practice, but we need to check counter version...
     }
 
-    Object o = Counter5Utils.fromJSON(content);
-    if (o instanceof COUNTERDatabaseReport) {
-      return ((COUNTERDatabaseReport) o).getReportHeader().getRelease();
-    } else if (o instanceof COUNTERItemReport) {
-      return ((COUNTERItemReport) o).getReportHeader().getRelease();
-    } else if (o instanceof COUNTERPlatformReport) {
-      return ((COUNTERPlatformReport) o).getReportHeader().getRelease();
-    } else if (o instanceof COUNTERTitleReport) {
-      return ((COUNTERTitleReport) o).getReportHeader().getRelease();
+    try {
+      Object o = Counter5Utils.fromJSON(content);
+      if (o instanceof COUNTERDatabaseReport) {
+        return ((COUNTERDatabaseReport) o).getReportHeader().getRelease();
+      } else if (o instanceof COUNTERItemReport) {
+        return ((COUNTERItemReport) o).getReportHeader().getRelease();
+      } else if (o instanceof COUNTERPlatformReport) {
+        return ((COUNTERPlatformReport) o).getReportHeader().getRelease();
+      } else if (o instanceof COUNTERTitleReport) {
+        return ((COUNTERTitleReport) o).getReportHeader().getRelease();
+      }
+    } catch (Counter5UtilsException e) {
+      // I know...
     }
     return release;
   }

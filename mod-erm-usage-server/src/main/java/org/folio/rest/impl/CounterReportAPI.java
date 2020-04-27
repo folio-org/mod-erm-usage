@@ -200,7 +200,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         .get(
             TABLE_NAME_COUNTER_REPORTS,
             CounterReport.class,
-            new String[] {"jsonb - 'report' AS jsonb"},
+            new String[]{"jsonb - 'report' AS jsonb"},
             cql,
             true,
             false,
@@ -249,7 +249,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     return result;
   }
 
-  private Optional<String> csvMapper(CounterReport cr) {
+  private Optional<String> csvMapper(CounterReport cr) throws Counter5UtilsException {
     if (cr.getRelease().equals("4") && cr.getReport() != null) {
       return Optional.ofNullable(
           Counter4Utils.toCSV(Counter4Utils.fromJSON(Json.encode(cr.getReport()))));
@@ -274,16 +274,21 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             CounterReport.class,
             ar -> {
               if (ar.succeeded()) {
-                asyncResultHandler.handle(
-                    csvMapper(ar.result())
-                        .<AsyncResult<Response>>map(
-                            csv ->
-                                succeededFuture(
-                                    GetCounterReportsCsvByIdResponse.respond200WithTextCsv(csv)))
-                        .orElse(
-                            succeededFuture(
-                                GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
-                                    "No report data or no mapper available"))));
+
+                try {
+                  asyncResultHandler.handle(
+                      csvMapper(ar.result())
+                          .<AsyncResult<Response>>map(
+                              csv ->
+                                  succeededFuture(
+                                      GetCounterReportsCsvByIdResponse.respond200WithTextCsv(csv)))
+                          .orElse(
+                              succeededFuture(
+                                  GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
+                                      "No report data or no mapper available"))));
+                } catch (Counter5UtilsException e) {
+                  ValidationHelper.handleError(e, asyncResultHandler);
+                }
               } else {
                 ValidationHelper.handleError(ar.cause(), asyncResultHandler);
               }
@@ -444,11 +449,19 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   private String counter5ReportsToCsv(List<CounterReport> reports) throws Counter5UtilsException {
     List<Object> c5Reports =
         reports.stream()
-            .map(cr -> Counter5Utils.fromJSON(Json.encode(cr.getReport())))
+            .map(this::internalReportToCOP5Report)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     Object merge = Counter5Utils.merge(c5Reports);
     return Counter5Utils.toCSV(merge);
+  }
+
+  private Object internalReportToCOP5Report(CounterReport report) {
+    try {
+      return Counter5Utils.fromJSON(Json.encode(report.getReport()));
+    } catch (Counter5UtilsException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static class CounterReportAPIException extends Exception {
