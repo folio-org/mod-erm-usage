@@ -77,8 +77,6 @@ public class CounterReportUploadIT {
       new File(Resources.getResource("fileupload/reportCOP5TRMultiMonth.json").getFile());
   private static final File FILE_REPORT5_OK =
       new File(Resources.getResource("fileupload/hwire_trj1.json").getFile());
-  private static final File FILE_REPORT5_MULTI =
-      new File(Resources.getResource("fileupload/hwire_pr.json").getFile());
   private static Vertx vertx;
   @Rule
   public Timeout timeout = Timeout.seconds(10);
@@ -496,7 +494,7 @@ public class CounterReportUploadIT {
 
   @Test
   public void testReportMultipleMonthsC5FromCsv()
-      throws IOException, ReportSplitException, Counter5UtilsException {
+      throws IOException, Counter5UtilsException {
     String jsonString = Resources
         .toString(FILE_REPORT_MULTI_COP5.toURI().toURL(), StandardCharsets.UTF_8);
     assertThat(jsonString).isNotNull();
@@ -576,7 +574,7 @@ public class CounterReportUploadIT {
       }
     } else {
       // casting to other types not implemented
-      assertThat(true == false);
+      assertThat(true).isEqualTo(false);
     }
   }
 
@@ -584,7 +582,7 @@ public class CounterReportUploadIT {
     try {
       return Counter5Utils.fromJSON(json);
     } catch (Counter5UtilsException e) {
-      throw new RuntimeException(e);
+      throw new CounterReportUploadException(e);
     }
   }
 
@@ -597,5 +595,13 @@ public class CounterReportUploadIT {
         .then()
         .statusCode(500)
         .body(containsString(PROVIDER_ID2), containsString("not found"));
+  }
+
+  public static class CounterReportUploadException extends RuntimeException {
+
+    public CounterReportUploadException(Throwable cause) {
+      super(cause);
+    }
+
   }
 }
