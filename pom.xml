@@ -30,7 +30,7 @@
     <raml-module-builder.version>29.2.2</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
     <vertx.version>3.8.4</vertx.version>
-    <erm.usage.counter.version>1.5.0-SNAPSHOT</erm.usage.counter.version>
+    <erm.usage.counter.version>1.6.0-SNAPSHOT</erm.usage.counter.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
   </properties>
