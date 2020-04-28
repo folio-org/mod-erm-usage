@@ -58,6 +58,9 @@ import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.openapitools.client.model.COUNTERDatabaseReport;
 import org.openapitools.client.model.COUNTERDatabaseUsage;
+import org.openapitools.client.model.COUNTERItemIdentifiers;
+import org.openapitools.client.model.COUNTERTitleReport;
+import org.openapitools.client.model.COUNTERTitleUsage;
 
 @RunWith(VertxUnitRunner.class)
 public class CounterReportUploadIT {
@@ -572,9 +575,38 @@ public class CounterReportUploadIT {
         assertThat(actualUsage).usingRecursiveComparison().ignoringCollectionOrder()
             .isEqualTo(expectedUsage);
       }
+    } else if (first instanceof COUNTERTitleReport) {
+      COUNTERTitleReport actual = (COUNTERTitleReport) actualReports.get(index);
+      COUNTERTitleReport expected = (COUNTERTitleReport) expectedReports.get(index);
+      assertThat(actual.getReportHeader())
+          .usingRecursiveComparison()
+          .ignoringFields("customerID")
+          .ignoringCollectionOrder()
+          .isEqualTo(expected.getReportHeader());
+      assertThat(actual.getReportItems().size())
+          .isEqualTo(expected.getReportItems().size());
+
+      // Compare each platform usage
+      for (int i = 0; i < actual.getReportItems().size(); i++) {
+
+        COUNTERTitleUsage actualUsage = actual.getReportItems().get(i);
+        List<COUNTERItemIdentifiers> itemIDsWoNull = actual.getReportItems().get(i).getItemID()
+            .stream()
+            .filter(itemId -> itemId != null).collect(Collectors.toList());
+        actualUsage.setItemID(itemIDsWoNull);
+
+        COUNTERTitleUsage expectedUsage = expected.getReportItems().stream()
+            .filter(item -> item.getTitle().equals(actualUsage.getTitle()))
+            .findFirst().get();
+
+        assertThat(actualUsage).usingRecursiveComparison().ignoringCollectionOrder()
+            .isEqualTo(expectedUsage);
+      }
     } else {
       // casting to other types not implemented
-      assertThat(true).isEqualTo(false);
+      assertThat(true).as(String
+          .format("Comparing reports of type %s not implemented", first.getClass().toString()))
+          .isEqualTo(false);
     }
   }
 
