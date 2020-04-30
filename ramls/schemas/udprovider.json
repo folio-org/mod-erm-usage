@@ -41,11 +41,11 @@
           "properties": {
             "serviceType": {
               "type": "string",
-              "description": "Type of SUSHI service (i.e. cs41 for Counter-Sushi 4.1) for direct harvesting."
+              "description": "Type of SUSHI service (i.e. cs41 for Counter-Sushi 4.1) for direct harvesting (see /erm-usage-harvester/impl)."
             },
             "serviceUrl": {
               "type": "string",
-              "description": "Direct SUSHI service URL to access provider's SUSHI service."
+              "description": "SUSHI service URL to access provider's SUSHI service."
             }
           },
           "required": [
@@ -79,7 +79,7 @@
           "description": "Specifies the counter report version."
         },
         "requestedReports": {
-          "description": "Report types that are harvested",
+          "description": "Report types that are harvested. Note, types differ between counter 4 and counter 5.",
           "type": "array",
           "minItems": 0,
           "items": {
