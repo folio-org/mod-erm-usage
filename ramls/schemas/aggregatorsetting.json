@@ -13,7 +13,7 @@
     },
     "serviceType": {
       "type": "string",
-      "description": "Specifies implementation specific for this aggregator."
+      "description": "Specifies implementation specific for this aggregator as defined in mod-erm-usage-harvester."
     },
     "serviceUrl": {
       "type": "string",

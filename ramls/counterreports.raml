@@ -35,16 +35,16 @@ resourceTypes:
       schemaItem: counterReport
   get:
     is: [
-      searchable: {description: "", example: "active=true sortBy username"},
-      orderable: {fieldsList: "field A, field B"},
+      searchable: {description: "", example: "yearMonth=\"2018-03\" and reportName=\"JR1\""},
+      orderable: {fieldsList: ""},
       pageable
     ]
     queryParameters:
-        tiny:
-            type: boolean
-            required: false
-            default: false
-    description: Get all reports
+      tiny:
+        type: boolean
+        required: false
+        default: false
+    description: Get all reports. If query parameter tiny is set to true, the reports' metadata is returned without the actual counter reports.
   post:
     is: [validate]
     description: Post new report
