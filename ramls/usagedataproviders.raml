@@ -33,7 +33,7 @@ resourceTypes:
       schemaItem: usageDataProvider
   get:
     is: [
-      searchable: {description: "", example: "((label="Journal*" or vendor="Journal*" or platform="Journal*" or harvestingConfig.aggregator.name="Journal*") and harvestingConfig.harvestingStatus="active" and harvestingConfig.harvestVia="sushi" and hasFailedReport="no") sortby label"},
+      searchable: {description: "", example: "((label=\"Journal*\" or vendor=\"Journal*\" or platform=\"Journal*\" or harvestingConfig.aggregator.name=\"Journal*\") and harvestingConfig.harvestingStatus=\"active\" and harvestingConfig.harvestVia=\"sushi\" and hasFailedReport=\"no\") sortby label"},
       orderable: {fieldsList: "label, harvestingConfig.harvestingStatus, latestReport, harvestingConfig.aggregator.name"},
       pageable
     ]
