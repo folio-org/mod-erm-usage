@@ -200,7 +200,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         .get(
             TABLE_NAME_COUNTER_REPORTS,
             CounterReport.class,
-            new String[]{"jsonb - 'report' AS jsonb"},
+            new String[] {"jsonb - 'report' AS jsonb"},
             cql,
             true,
             false,
@@ -323,7 +323,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               return succeededFuture(counterReports);
             })
         .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, okapiHeaders, crs, overwrite))
-        .setHandler(
+        .onComplete(
             ar -> {
               if (ar.succeeded()) {
                 asyncResultHandler.handle(
@@ -346,7 +346,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     PgHelper.getErrorCodes(vertxContext, okapiHeaders)
-        .setHandler(
+        .onComplete(
             ar -> {
               if (ar.succeeded()) {
                 org.folio.rest.jaxrs.model.ErrorCodes result = ar.result();
@@ -460,7 +460,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     try {
       return Counter5Utils.fromJSON(Json.encode(report.getReport()));
     } catch (Counter5UtilsException e) {
-      throw new RuntimeException(e);
+      throw new CounterReportAPIRuntimeException(e);
     }
   }
 
@@ -468,6 +468,13 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
 
     public CounterReportAPIException(String message) {
       super(message);
+    }
+  }
+
+  private static class CounterReportAPIRuntimeException extends RuntimeException {
+
+    public CounterReportAPIRuntimeException(Throwable cause) {
+      super(cause);
     }
   }
 }

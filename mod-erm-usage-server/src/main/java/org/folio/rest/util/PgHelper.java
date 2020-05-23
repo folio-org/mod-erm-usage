@@ -173,7 +173,7 @@ public class PgHelper {
                         .map(CounterReport::getYearMonth)
                         .collect(Collectors.joining(", ")));
           } else {
-            @SuppressWarnings("rawtypes")
+            @SuppressWarnings({"rawtypes", "squid:S3740"})
             List<Future> saveFutures = new ArrayList<>();
             counterReports.forEach(
                 cr -> saveFutures.add(saveCounterReportToDb(vertxContext, okapiHeaders, cr, true)));
