@@ -1,27 +1,20 @@
 package org.folio.rest.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.Resources;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import org.folio.rest.impl.TenantAPI;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.ddlgen.Schema;
-import org.folio.rest.persist.ddlgen.SchemaMaker;
-import org.folio.rest.persist.ddlgen.TenantOperation;
 import org.folio.rest.tools.utils.VertxUtils;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class EmbeddedPostgresRule implements TestRule {
 
@@ -30,7 +23,7 @@ public class EmbeddedPostgresRule implements TestRule {
   List<String> tenants = new ArrayList<>();
 
   public EmbeddedPostgresRule(String... tenants) {
-    this.tenants = Arrays.stream(tenants).collect(Collectors.toCollection(ArrayList::new));
+    this.tenants = Arrays.asList(tenants);
   }
 
   public EmbeddedPostgresRule() {}
@@ -39,15 +32,7 @@ public class EmbeddedPostgresRule implements TestRule {
     log.info("Creating schema for tenant: {}", tenant);
     Promise<List<String>> createSchema = Promise.promise();
     try {
-      String tableInput =
-          Resources.toString(
-              Resources.getResource("templates/db_scripts/schema.json"), StandardCharsets.UTF_8);
-      SchemaMaker sMaker =
-          new SchemaMaker(
-              tenant, PostgresClient.getModuleName(), TenantOperation.CREATE, null, null);
-      sMaker.setSchema(new ObjectMapper().readValue(tableInput, Schema.class));
-      String sqlFile = sMaker.generateDDL();
-
+      String sqlFile = new TenantAPI().sqlFile(tenant, false, null, null);
       PostgresClient.getInstance(vertx)
           .runSQLFile(
               sqlFile,
@@ -83,7 +68,7 @@ public class EmbeddedPostgresRule implements TestRule {
 
       CompletableFuture<List<String>> future = new CompletableFuture<>();
       createSchemas(Future.succeededFuture(), new ArrayList<>(tenants))
-          .setHandler(
+          .onComplete(
               ar -> {
                 if (ar.succeeded()) {
                   future.complete(ar.result());
