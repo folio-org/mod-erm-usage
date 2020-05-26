@@ -37,8 +37,8 @@ public class CustomIndexesIT {
                     ar -> {
                       if (ar.succeeded()) {
                         if (ar.result()
-                            .getRows()
-                            .get(0)
+                            .iterator()
+                            .next()
                             .getInteger("count")
                             .equals(TENANTS.length)) {
                           async.complete();

@@ -12,12 +12,13 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.ext.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.ErrorCodes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
@@ -172,7 +173,7 @@ public class PgHelper {
                         .map(CounterReport::getYearMonth)
                         .collect(Collectors.joining(", ")));
           } else {
-            @SuppressWarnings("rawtypes")
+            @SuppressWarnings({"rawtypes", "squid:S3740"})
             List<Future> saveFutures = new ArrayList<>();
             counterReports.forEach(
                 cr -> saveFutures.add(saveCounterReportToDb(vertxContext, okapiHeaders, cr, true)));
@@ -261,22 +262,9 @@ public class PgHelper {
             query,
             updateResultAsyncResult -> {
               if (updateResultAsyncResult.succeeded()) {
-                ResultSet result1 = updateResultAsyncResult.result();
-
                 List<String> collect =
-                    result1.getResults().stream()
-                        .map(
-                            code -> {
-                              String value =
-                                  code.toString()
-                                      .replace("\"", "")
-                                      .replace("[", "")
-                                      .replace("]", "");
-                              if ("null".equals(value)) {
-                                value = "other";
-                              }
-                              return value;
-                            })
+                    StreamSupport.stream(updateResultAsyncResult.result().spliterator(), false)
+                        .map(row -> Optional.ofNullable(row.getString(0)).orElse("other"))
                         .collect(Collectors.toList());
                 ErrorCodes errorCodes = new ErrorCodes().withErrorCodes(collect);
                 result.complete(errorCodes);

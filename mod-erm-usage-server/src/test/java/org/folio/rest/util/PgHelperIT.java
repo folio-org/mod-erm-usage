@@ -7,13 +7,18 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Objects;
+import java.util.Spliterator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.Stream.Builder;
+import java.util.stream.StreamSupport;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.persist.Criteria.Criteria;
@@ -75,11 +80,18 @@ public class PgHelperIT {
             .collect(Collectors.toList());
   }
 
+  private static Stream<Row> getRowSetResults(RowSet<Row> rowset) {
+    Builder<Spliterator<Row>> sb = Stream.builder();
+    while (rowset != null) {
+      sb.add(rowset.spliterator());
+      rowset = rowset.next();
+    }
+    return sb.build().flatMap(spliterator -> StreamSupport.stream(spliterator, false));
+  }
+
   @BeforeClass
   public static void setUp(TestContext context) {
     Async async = context.async();
-
-    System.out.println(UUID.nameUUIDFromBytes((providerId + "2020-03").getBytes()).toString());
 
     PostgresClient.getInstance(vertx, tenant)
         .saveBatch(
@@ -88,8 +100,10 @@ public class PgHelperIT {
             ar -> {
               if (ar.succeeded()) {
                 uuids =
-                    ar.result().getResults().stream()
-                        .map(ja -> ja.getString(0))
+                    getRowSetResults(ar.result())
+                        .map(row -> row.getUUID(0))
+                        .filter(Objects::nonNull)
+                        .map(Objects::toString)
                         .collect(Collectors.toList());
 
                 CQLWrapper cql = new CQLWrapper(new Criterion());
