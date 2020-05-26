@@ -1,5 +1,9 @@
 package templates.db_scripts;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+
 import com.google.common.io.Resources;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
@@ -11,25 +15,29 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
-import org.folio.rest.jaxrs.model.*;
-import org.folio.rest.persist.Criteria.Criterion;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.folio.rest.util.ModuleVersion;
-import org.junit.*;
-import org.junit.runner.RunWith;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
-import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+import org.folio.rest.RestVerticle;
+import org.folio.rest.client.TenantClient;
+import org.folio.rest.jaxrs.model.Aggregator;
+import org.folio.rest.jaxrs.model.AggregatorSetting;
+import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.Parameter;
+import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.ModuleVersion;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
 public class SQLTriggersIT {
@@ -53,8 +61,8 @@ public class SQLTriggersIT {
 
   private static String jwtToken(JsonObject payload) {
     return "header."
-      + Base64.getEncoder().encodeToString(payload.encode().getBytes())
-      + ".signature";
+        + Base64.getEncoder().encodeToString(payload.encode().getBytes())
+        + ".signature";
   }
 
   @BeforeClass
@@ -189,7 +197,7 @@ public class SQLTriggersIT {
         .delete(
             tableName,
             new Criterion(),
-            ar -> promise.complete((ar.succeeded()) ? ar.result().getUpdated() : null));
+            ar -> promise.complete((ar.succeeded()) ? ar.result().rowCount() : null));
     return promise.future();
   }
 

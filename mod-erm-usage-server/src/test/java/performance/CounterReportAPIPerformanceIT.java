@@ -11,7 +11,6 @@ import io.reactivex.Single;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.sql.UpdateResult;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
@@ -20,6 +19,8 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.ext.web.client.HttpResponse;
 import io.vertx.reactivex.ext.web.client.WebClient;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.Year;
@@ -109,9 +110,9 @@ public class CounterReportAPIPerformanceIT {
             context::fail);
   }
 
-  private static Single<UpdateResult> executeSQL(String sql) {
+  private static Single<RowSet<Row>> executeSQL(String sql) {
     return vertx
-        .<UpdateResult>rxExecuteBlocking(
+        .<RowSet<Row>>rxExecuteBlocking(
             promise ->
                 PostgresClient.getInstance(vertx.getDelegate())
                     .execute(
