@@ -220,6 +220,57 @@
       ]
     },
     {
+      "id": "custom-reports",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/custom-reports",
+          "permissionsRequired": [
+            "customreports.collection.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/custom-reports/{id}",
+          "permissionsRequired": [
+            "customreports.item.get"
+          ]
+        },
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/custom-reports",
+          "permissionsRequired": [
+            "customreports.item.post"
+          ]
+        },
+        {
+          "methods": [
+            "PUT"
+          ],
+          "pathPattern": "/custom-reports/{id}",
+          "permissionsRequired": [
+            "customreports.item.put"
+          ]
+        },
+        {
+          "methods": [
+            "DELETE"
+          ],
+          "pathPattern": "/custom-reports/{id}",
+          "permissionsRequired": [
+            "customreports.item.delete"
+          ]
+        }
+      ]
+    },
+    {
       "id": "erm-usage/files",
       "version": "1.0",
       "handlers": [
@@ -335,13 +386,38 @@
     },
     {
       "permissionName": "counterreports.item.put",
-      "displayName": "counter reports item get",
+      "displayName": "counter reports item put",
       "description": "Edit an counter report"
     },
     {
       "permissionName": "counterreports.item.delete",
-      "displayName": "counter reports item get",
+      "displayName": "counter reports item delete",
       "description": "Delete an counter report"
+    },
+    {
+      "permissionName": "customreports.collection.get",
+      "displayName": "custom reports collection get",
+      "description": "Get a collection of custom reports"
+    },
+    {
+      "permissionName": "customreports.item.get",
+      "displayName": "custom reports item get",
+      "description": "Get a single custom report"
+    },
+    {
+      "permissionName": "customreports.item.post",
+      "displayName": "custom reports item post",
+      "description": "Create a new custom report"
+    },
+    {
+      "permissionName": "customreports.item.put",
+      "displayName": "custom reports item get",
+      "description": "Edit an custom report"
+    },
+    {
+      "permissionName": "customreports.item.delete",
+      "displayName": "custom reports item delete",
+      "description": "Delete an custom report"
     },
     {
       "permissionName": "erm-usage.files.item.get",
@@ -378,6 +454,11 @@
         "counterreports.item.post",
         "counterreports.item.put",
         "counterreports.item.delete",
+        "customreports.collection.get",
+        "customreports.item.get",
+        "customreports.item.post",
+        "customreports.item.put",
+        "customreports.item.delete",
         "erm-usage.files.item.get",
         "erm-usage.files.item.post",
         "erm-usage.files.item.delete"
@@ -400,6 +481,11 @@
         "counterreports.item.post",
         "counterreports.item.put",
         "counterreports.item.delete",
+        "customreports.collection.get",
+        "customreports.item.get",
+        "customreports.item.post",
+        "customreports.item.put",
+        "customreports.item.delete",
         "erm-usage.files.item.get",
         "erm-usage.files.item.post",
         "erm-usage.files.item.delete"

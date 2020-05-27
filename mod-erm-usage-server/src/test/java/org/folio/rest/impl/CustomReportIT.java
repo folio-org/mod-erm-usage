@@ -4,22 +4,20 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 
 import io.restassured.RestAssured;
-import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.filter.log.RequestLoggingFilter;
-import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.parsing.Parser;
-import io.restassured.response.Response;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.folio.okapi.common.XOkapiHeaders;
+import java.util.UUID;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
+import org.folio.rest.jaxrs.model.CustomReport;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -31,19 +29,31 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
-public class ErmUsageFilesIT {
+public class CustomReportIT {
+
+  private static final String APPLICATION_JSON = "application/json";
+  private static final String BASE_URI = "/custom-reports";
+  private static final String TENANT = "diku";
+  private static Vertx vertx;
+  private static CustomReport report;
+  private static CustomReport reportChanged;
 
   @Rule
   public Timeout timeout = Timeout.seconds(10);
 
-  private static final String TENANT = "diku";
-  private static final String ERM_USAGE_FILES_ENDPOINT = "/erm-usage/files";
-  private static final String TEST_CONTENT = "This is the test content!!!!";
-  private static Vertx vertx;
-
   @BeforeClass
   public static void setUp(TestContext context) {
     vertx = Vertx.vertx();
+
+    report = new CustomReport()
+        .withId(UUID.randomUUID().toString())
+    .withFileId(UUID.randomUUID().toString())
+    .withFileName("filename.txt")
+    .withFileSize(new Double(1024))
+    .withProviderId(UUID.randomUUID().toString())
+    .withYear(2019);
+
+    reportChanged = report.withFileName("newFileName.txt");
 
     try {
       PostgresClient.setIsEmbedded(true);
@@ -54,23 +64,17 @@ public class ErmUsageFilesIT {
       context.fail(e);
       return;
     }
-
+    Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 
     RestAssured.reset();
     RestAssured.baseURI = "http://localhost";
-    RestAssured.basePath = "";
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
-    RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
-    RestAssured.requestSpecification =
-        new RequestSpecBuilder().addHeader(XOkapiHeaders.TENANT, TENANT).build();
 
     TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
-
-    Async async = context.async();
     vertx.deployVerticle(
         RestVerticle.class.getName(),
         options,
@@ -83,7 +87,6 @@ public class ErmUsageFilesIT {
             context.fail(e);
           }
         });
-    async.await();
   }
 
   @AfterClass
@@ -99,46 +102,67 @@ public class ErmUsageFilesIT {
   }
 
   @Test
-  public void checkThatWeCanAddGetAndDeleteFiles() {
-    // POST File
-    Response postResponse =
-        given()
-            .body(TEST_CONTENT.getBytes())
-            .header("X-Okapi-Tenant", TENANT)
-            .header("content-type", ContentType.BINARY)
-            .post(ERM_USAGE_FILES_ENDPOINT)
-            .then()
-            .statusCode(200)
-            .extract()
-            .response();
-    String response = postResponse.getBody().print();
-    JsonObject jsonResponse = new JsonObject(response);
-    String id = jsonResponse.getString("id");
+  public void checkThatWeCanAddGetPutAndDeleteCustomReports() {
+    // POST
+    given()
+        .body(Json.encode(report))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201)
+        .body("fileName", equalTo(report.getFileName()))
+        .body("id", equalTo(report.getId()));
 
     // GET
     given()
         .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", ContentType.BINARY)
-        .get(ERM_USAGE_FILES_ENDPOINT + "/" + id)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + "/" + report.getId())
         .then()
-        .contentType(ContentType.BINARY.toString())
+        .contentType(ContentType.JSON)
         .statusCode(200)
-        .body(equalTo(TEST_CONTENT));
+        .body("id", equalTo(report.getId()));
+
+    // PUT
+    given()
+        .body(Json.encode(reportChanged))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .put(BASE_URI + "/" + report.getId())
+        .then()
+        .statusCode(204);
+
+    // GET again
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + "/" + report.getId())
+        .then()
+        .statusCode(200)
+        .body("id", equalTo(reportChanged.getId()))
+        .body("fileName", equalTo(reportChanged.getFileName()));
 
     // DELETE
     given()
         .header("X-Okapi-Tenant", TENANT)
-        .delete(ERM_USAGE_FILES_ENDPOINT + "/" + id)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(BASE_URI + "/" + report.getId())
         .then()
         .statusCode(204);
 
-    // GET
+    // GET again
     given()
         .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", ContentType.BINARY)
-        .get(ERM_USAGE_FILES_ENDPOINT + "/" + id)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + "/" + report.getId())
         .then()
-        .contentType(ContentType.TEXT)
         .statusCode(404);
   }
 
