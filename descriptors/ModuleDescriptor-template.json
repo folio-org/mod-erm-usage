@@ -220,6 +220,39 @@
       ]
     },
     {
+      "id": "erm-usage/files",
+      "version": "1.0",
+      "handlers": [
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/erm-usage/files/{id}",
+          "permissionsRequired": [
+            "erm-usage.files.item.get"
+          ]
+        },
+        {
+          "methods": [
+            "DELETE"
+          ],
+          "pathPattern": "/erm-usage/files/{id}",
+          "permissionsRequired": [
+            "erm-usage.files.item.delete"
+          ]
+        },
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/erm-usage/files",
+          "permissionsRequired": [
+            "erm-usage.files.item.post"
+          ]
+        }
+      ]
+    },
+    {
       "id": "_tenant",
       "version": "1.2",
       "interfaceType": "system",
@@ -311,6 +344,21 @@
       "description": "Delete an counter report"
     },
     {
+      "permissionName": "erm-usage.files.item.get",
+      "displayName": "erm-usage files item get",
+      "description": "Get a single file"
+    },
+    {
+      "permissionName": "erm-usage.files.item.post",
+      "displayName": "erm-usage files item post",
+      "description": "Post a single file"
+    },
+    {
+      "permissionName": "erm-usage.files.item.delete",
+      "displayName": "erm-usage files item delete",
+      "description": "Delete a single file"
+    },
+    {
       "permissionName": "eusage.all",
       "displayName": "eusage all",
       "description": "All permissions for the mod-erm-usage module. An admin should get all permission, e.g. to edit aggregators.",
@@ -329,7 +377,10 @@
         "counterreports.item.get",
         "counterreports.item.post",
         "counterreports.item.put",
-        "counterreports.item.delete"
+        "counterreports.item.delete",
+        "erm-usage.files.item.get",
+        "erm-usage.files.item.post",
+        "erm-usage.files.item.delete"
       ]
     },
     {
@@ -348,7 +399,10 @@
         "counterreports.item.get",
         "counterreports.item.post",
         "counterreports.item.put",
-        "counterreports.item.delete"
+        "counterreports.item.delete",
+        "erm-usage.files.item.get",
+        "erm-usage.files.item.post",
+        "erm-usage.files.item.delete"
       ]
     }
   ],

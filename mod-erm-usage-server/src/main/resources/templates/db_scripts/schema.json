@@ -114,6 +114,11 @@
           "fieldName": "label"
         }
       ]
+    },
+    {
+      "tableName": "files",
+      "fromModuleVersion": "mod-erm-usage-2.9.0-SNAPSHOT",
+      "withMetadata": true
     }
   ],
   "views": [

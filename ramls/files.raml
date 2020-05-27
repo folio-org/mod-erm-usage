@@ -1,0 +1,72 @@
+#%RAML 1.0
+title: File Storage of erm-usage module
+version: v1
+baseUri: http://localhost/mod-erm-usage
+
+documentation:
+  - title: mod-erm-usage API
+    content: This documents the API calls that can be made to query and manage files in module erm-usage
+
+types:
+  counterReport: !include ./schemas/counterreport.json
+  counterReports: !include ./schemas/counterreports.json
+  counterReportsSorted: !include ./schemas/counterreports_sorted.json
+  errorCodes: !include ./schemas/errorcodes.json
+  errors: !include ./raml-util/schemas/errors.schema
+
+traits:
+  orderable: !include ./raml-util/traits/orderable.raml
+  pageable: !include ./raml-util/traits/pageable.raml
+  searchable: !include ./raml-util/traits/searchable.raml
+  language: !include ./raml-util/traits/language.raml
+  validate: !include ./raml-util/traits/validation.raml
+
+resourceTypes:
+  collection: !include ./raml-util/rtypes/collection.raml
+  collection-item: !include ./raml-util/rtypes/item-collection.raml
+
+/erm-usage/files:
+  displayName: Erm Usage files
+  post:
+    description: Upload/update a file in module erm-usage.
+    body:
+      application/octet-stream:
+    responses:
+      200:
+        description: Uploading the file was successful. Returns uuid of uploaded file. This uuid may be referenced in other elements.
+        body:
+          text/plain:
+      404:
+        body:
+          text/plain:
+      500:
+        body:
+          text/plain:
+  /{id}:
+    get:
+      description: Get file by id
+      responses:
+        200:
+          body:
+            application/octet-stream:
+        404:
+          body:
+            text/plain:
+        500:
+          description: Server Error
+          body:
+            text/plain:
+    delete:
+      description: Delete a file identified by id
+      responses:
+        204:
+          description: "Delete succeeded"
+        400:
+          description: "Bad request"
+          body:
+            text/plain:
+        500:
+          description: "Internal server error"
+          body:
+            text/plain:
+              example: "Internal server error, contact administrator"
