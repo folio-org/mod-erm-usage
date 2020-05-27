@@ -35,7 +35,8 @@ public class CustomReportIT {
   private static final String BASE_URI = "/custom-reports";
   private static final String TENANT = "diku";
   private static Vertx vertx;
-  private static CustomReport report;
+  private static CustomReport reportFirst;
+  private static CustomReport reportSecond;
   private static CustomReport reportChanged;
 
   @Rule
@@ -45,15 +46,23 @@ public class CustomReportIT {
   public static void setUp(TestContext context) {
     vertx = Vertx.vertx();
 
-    report = new CustomReport()
+    reportFirst = new CustomReport()
         .withId(UUID.randomUUID().toString())
-    .withFileId(UUID.randomUUID().toString())
-    .withFileName("filename.txt")
-    .withFileSize(new Double(1024))
-    .withProviderId(UUID.randomUUID().toString())
-    .withYear(2019);
+        .withFileId(UUID.randomUUID().toString())
+        .withFileName("filename.txt")
+        .withFileSize(new Double(1024))
+        .withProviderId(UUID.randomUUID().toString())
+        .withYear(2019);
 
-    reportChanged = report.withFileName("newFileName.txt");
+    reportSecond = new CustomReport()
+        .withId(UUID.randomUUID().toString())
+        .withFileId(UUID.randomUUID().toString())
+        .withFileName("filename2.txt")
+        .withFileSize(new Double(2024))
+        .withProviderId(UUID.randomUUID().toString())
+        .withYear(2020);
+
+    reportChanged = reportFirst.withFileName("newFileName.txt");
 
     try {
       PostgresClient.setIsEmbedded(true);
@@ -105,26 +114,26 @@ public class CustomReportIT {
   public void checkThatWeCanAddGetPutAndDeleteCustomReports() {
     // POST
     given()
-        .body(Json.encode(report))
+        .body(Json.encode(reportFirst))
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .post(BASE_URI)
         .then()
         .statusCode(201)
-        .body("fileName", equalTo(report.getFileName()))
-        .body("id", equalTo(report.getId()));
+        .body("fileName", equalTo(reportFirst.getFileName()))
+        .body("id", equalTo(reportFirst.getId()));
 
     // GET
     given()
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + "/" + report.getId())
+        .get(BASE_URI + "/" + reportFirst.getId())
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
-        .body("id", equalTo(report.getId()));
+        .body("id", equalTo(reportFirst.getId()));
 
     // PUT
     given()
@@ -132,7 +141,7 @@ public class CustomReportIT {
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
-        .put(BASE_URI + "/" + report.getId())
+        .put(BASE_URI + "/" + reportFirst.getId())
         .then()
         .statusCode(204);
 
@@ -141,18 +150,49 @@ public class CustomReportIT {
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + "/" + report.getId())
+        .get(BASE_URI + "/" + reportFirst.getId())
         .then()
         .statusCode(200)
         .body("id", equalTo(reportChanged.getId()))
         .body("fileName", equalTo(reportChanged.getFileName()));
+
+    // POST second report
+    given()
+        .body(Json.encode(reportSecond))
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201)
+        .body("fileName", equalTo(reportSecond.getFileName()))
+        .body("id", equalTo(reportSecond.getId()));
+
+    // GET all
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI)
+        .then()
+        .statusCode(200)
+        .body("customReports.size()", equalTo(2));
 
     // DELETE
     given()
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + report.getId())
+        .delete(BASE_URI + "/" + reportFirst.getId())
+        .then()
+        .statusCode(204);
+
+    // DELETE
+    given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", "text/plain")
+        .delete(BASE_URI + "/" + reportSecond.getId())
         .then()
         .statusCode(204);
 
@@ -161,7 +201,7 @@ public class CustomReportIT {
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + "/" + report.getId())
+        .get(BASE_URI + "/" + reportFirst.getId())
         .then()
         .statusCode(404);
   }
