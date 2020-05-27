@@ -3,15 +3,18 @@ package org.folio.rest.impl;
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 
+import com.google.common.io.ByteStreams;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -33,11 +36,13 @@ import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.cql.CQLWrapper;
+import org.folio.rest.tools.utils.BinaryOutStream;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.Constants;
 import org.folio.rest.util.PgHelper;
 import org.folio.rest.util.UploadHelper;
 import org.niso.schemas.counter.Report;
+import org.olf.erm.usage.counter.common.ExcelUtil;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportMergeException;
 import org.olf.erm.usage.counter50.Counter5Utils;
@@ -45,6 +50,11 @@ import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
+  private static final List<String> SUPPORTED_FORMATS = Arrays.asList("csv", "xlsx");
+  private static final String UNSUPPORTED_MSG = "Requested format \"%s\" is not supported.";
+  private static final String UNSUPPORTED_COUNTER_VERSION_MSG =
+      "Requested counter version \"%s\" is not supported.";
+  private static final String XLSX_ERR_MSG = "An error occured while creating xlsx data: %s";
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
 
   private final Comparator<CounterReportsPerYear> compareByYear =
@@ -260,6 +270,8 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     return Optional.empty();
   }
 
+  /** @deprecated As of 2.9.0 */
+  @Deprecated
   @Override
   public void getCounterReportsCsvById(
       String id,
@@ -363,6 +375,8 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   }
 
   // index: counter_reports_custom_getcsv_idx
+  /** @deprecated As of 2.9.0 */
+  @Deprecated
   @Override
   public void getCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEnd(
       String id,
@@ -374,36 +388,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    Criteria providerCrit =
-        new Criteria()
-            .addField(Constants.FIELD_NAME_PROVIDER_ID)
-            .setOperation(Constants.OPERATOR_EQUALS)
-            .setVal(id);
-    Criteria reportNameCrit =
-        new Criteria()
-            .addField(Constants.FIELD_NAME_REPORT_NAME)
-            .setOperation(Constants.OPERATOR_EQUALS)
-            .setVal(name);
-    Criteria releaseCrit =
-        new Criteria()
-            .addField(Constants.FIELD_NAME_RELEASE)
-            .setOperation(Constants.OPERATOR_EQUALS)
-            .setVal(version);
-    Criteria reportCrit =
-        new Criteria().addField("jsonb").setJSONB(false).setOperation("?").setVal("report");
-    Criteria yearMonthBeginCrit =
-        new Criteria().addField(Constants.FIELD_NAME_YEAR_MONTH).setOperation(">=").setVal(begin);
-    Criteria yearMonthEndCrit =
-        new Criteria().addField(Constants.FIELD_NAME_YEAR_MONTH).setOperation("<=").setVal(end);
-    Criterion criterion =
-        new Criterion()
-            .addCriterion(providerCrit)
-            .addCriterion(reportNameCrit)
-            .addCriterion(releaseCrit)
-            .addCriterion(reportCrit)
-            .addCriterion(yearMonthBeginCrit)
-            .addCriterion(yearMonthEndCrit);
-    CQLWrapper cql = new CQLWrapper(criterion);
+    CQLWrapper cql = createGetMultipleReportsCQL(id, name, version, begin, end);
 
     PgUtil.postgresClient(vertxContext, okapiHeaders)
         .get(
@@ -434,6 +419,183 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 ValidationHelper.handleError(ar.cause(), asyncResultHandler);
               }
             });
+  }
+
+  private Response createGetCounterReportExportByIdResponse(CounterReport cr, String format) {
+    try {
+      return csvMapper(cr)
+          .map(
+              csvString -> {
+                if ("xlsx".equals(format)) {
+                  try {
+                    InputStream in = ExcelUtil.fromCSV(csvString);
+                    BinaryOutStream bos = new BinaryOutStream();
+                    bos.setData(ByteStreams.toByteArray(in));
+                    return GetCounterReportsExportByIdResponse
+                        .respond200WithApplicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet(
+                            bos);
+                  } catch (IOException e) {
+                    return GetCounterReportsExportByIdResponse.respond500WithTextPlain(
+                        String.format(XLSX_ERR_MSG, e.getMessage()));
+                  }
+                }
+                return GetCounterReportsExportByIdResponse.respond200WithTextCsv(csvString);
+              })
+          .orElse(
+              GetCounterReportsExportByIdResponse.respond500WithTextPlain(
+                  "No report data or no mapper available"));
+    } catch (Counter5UtilsException e) {
+      return GetCounterReportsExportByIdResponse.respond500WithTextPlain(e.getMessage());
+    }
+  }
+
+  private Response
+      createGetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse(
+          String csvString, String format) {
+    if ("xlsx".equals(format)) {
+      try {
+        InputStream in = ExcelUtil.fromCSV(csvString);
+        BinaryOutStream bos = new BinaryOutStream();
+        bos.setData(ByteStreams.toByteArray(in));
+        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+            .respond200WithApplicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet(bos);
+      } catch (IOException e) {
+        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+            .respond500WithTextPlain(String.format(XLSX_ERR_MSG, e.getMessage()));
+      }
+    }
+    return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+        .respond200WithTextCsv(csvString);
+  }
+
+  @Override
+  public void getCounterReportsExportById(
+      String id,
+      String format,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+
+    if (SUPPORTED_FORMATS.contains(format)) {
+      PgUtil.postgresClient(vertxContext, okapiHeaders)
+          .getById(
+              TABLE_NAME_COUNTER_REPORTS,
+              id,
+              CounterReport.class,
+              ar -> {
+                if (ar.succeeded()) {
+                  Response response = createGetCounterReportExportByIdResponse(ar.result(), format);
+                  asyncResultHandler.handle(succeededFuture(response));
+                } else {
+                  ValidationHelper.handleError(ar.cause(), asyncResultHandler);
+                }
+              });
+    } else {
+      asyncResultHandler.handle(
+          succeededFuture(
+              GetCounterReportsExportByIdResponse.respond400WithTextPlain(
+                  String.format(UNSUPPORTED_MSG, format))));
+    }
+  }
+
+  @Override
+  public void getCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEnd(
+      String id,
+      String name,
+      String version,
+      String begin,
+      String end,
+      String format,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+
+    if (SUPPORTED_FORMATS.contains(format)) {
+      CQLWrapper cql = createGetMultipleReportsCQL(id, name, version, begin, end);
+      PgUtil.postgresClient(vertxContext, okapiHeaders)
+          .get(
+              TABLE_NAME_COUNTER_REPORTS,
+              CounterReport.class,
+              cql,
+              false,
+              ar -> {
+                if (ar.succeeded()) {
+                  String csv;
+                  try {
+                    if (version.equals("4")) {
+                      csv = counter4ReportsToCsv(ar.result().getResults());
+                    } else if (version.equals("5")) {
+                      csv = counter5ReportsToCsv(ar.result().getResults());
+                    } else {
+                      asyncResultHandler.handle(
+                          succeededFuture(
+                              GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+                                  .respond400WithTextPlain(
+                                      String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version))));
+                      return;
+                    }
+                  } catch (Exception e) {
+                    ValidationHelper.handleError(e, asyncResultHandler);
+                    return;
+                  }
+                  Response response =
+                      createGetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse(
+                          csv, format);
+                  asyncResultHandler.handle(succeededFuture(response));
+                } else {
+                  ValidationHelper.handleError(ar.cause(), asyncResultHandler);
+                }
+              });
+    } else {
+      asyncResultHandler.handle(
+          succeededFuture(
+              GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+                  .respond400WithTextPlain(String.format(UNSUPPORTED_MSG, format))));
+    }
+  }
+
+  private CQLWrapper createGetMultipleReportsCQL(
+      String providerId,
+      String reportName,
+      String reportVersion,
+      String beginMonth,
+      String endMonth) {
+    Criteria providerCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_PROVIDER_ID)
+            .setOperation(Constants.OPERATOR_EQUALS)
+            .setVal(providerId);
+    Criteria reportNameCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_REPORT_NAME)
+            .setOperation(Constants.OPERATOR_EQUALS)
+            .setVal(reportName);
+    Criteria releaseCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_RELEASE)
+            .setOperation(Constants.OPERATOR_EQUALS)
+            .setVal(reportVersion);
+    Criteria reportCrit =
+        new Criteria().addField("jsonb").setJSONB(false).setOperation("?").setVal("report");
+    Criteria yearMonthBeginCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_YEAR_MONTH)
+            .setOperation(">=")
+            .setVal(beginMonth);
+    Criteria yearMonthEndCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_YEAR_MONTH)
+            .setOperation("<=")
+            .setVal(endMonth);
+    Criterion criterion =
+        new Criterion()
+            .addCriterion(providerCrit)
+            .addCriterion(reportNameCrit)
+            .addCriterion(releaseCrit)
+            .addCriterion(reportCrit)
+            .addCriterion(yearMonthBeginCrit)
+            .addCriterion(yearMonthEndCrit);
+    return new CQLWrapper(criterion);
   }
 
   private String counter4ReportsToCsv(List<CounterReport> reports) throws ReportMergeException {
