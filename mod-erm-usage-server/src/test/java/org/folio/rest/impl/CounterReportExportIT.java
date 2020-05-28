@@ -16,6 +16,8 @@ import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
@@ -23,32 +25,32 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
-import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
-import org.folio.rest.util.ModuleVersion;
+import org.folio.rest.util.EmbeddedPostgresRule;
 import org.joda.time.LocalDate;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@Deprecated
 @RunWith(VertxUnitRunner.class)
-public class CounterReportCsvIT {
+public class CounterReportExportIT {
 
   private static final String TENANT = "diku";
   private static Vertx vertx;
@@ -56,10 +58,13 @@ public class CounterReportCsvIT {
   private static CounterReport counterReport;
   private static String expected;
 
+  @ClassRule
+  public static EmbeddedPostgresRule embeddedPostgresRule = new EmbeddedPostgresRule(TENANT);
+
   @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
-  public static void setUp(TestContext context) {
+  public static void beforeClass(TestContext context) {
     vertx = Vertx.vertx();
 
     try {
@@ -73,19 +78,7 @@ public class CounterReportCsvIT {
       context.fail(ex);
     }
 
-    try {
-      PostgresClient.setIsEmbedded(true);
-      PostgresClient instance = PostgresClient.getInstance(vertx);
-      instance.startEmbeddedPostgres();
-    } catch (Exception e) {
-      e.printStackTrace();
-      context.fail(e);
-      return;
-    }
-
-    Async async = context.async();
     int port = NetworkUtils.nextFreePort();
-
     RestAssured.reset();
     RestAssured.baseURI = "http://localhost";
     RestAssured.basePath = "/counter-reports";
@@ -98,49 +91,37 @@ public class CounterReportCsvIT {
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
             .build();
 
-    TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
+    Async async = context.async();
     vertx.deployVerticle(
         RestVerticle.class.getName(),
         options,
-        res -> {
-          try {
-            tenantClient.postTenant(
-                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
-                res2 -> async.complete());
-          } catch (Exception e) {
-            context.fail(e);
+        ar -> {
+          if (ar.succeeded()) {
+            async.complete();
+          } else {
+            context.fail(ar.cause());
           }
         });
   }
 
   @AfterClass
-  public static void teardown(TestContext context) {
+  public static void afterClass() {
     RestAssured.reset();
-    Async async = context.async();
-    vertx.close(
-        context.asyncAssertSuccess(
-            res -> {
-              PostgresClient.stopEmbeddedPostgres();
-              async.complete();
-            }));
   }
 
   @Before
-  public void before(TestContext ctx) {
-    Async async = ctx.async();
-    PostgresClient.getInstance(vertx, TENANT)
-        .delete(
-            Constants.TABLE_NAME_COUNTER_REPORTS,
-            new Criterion(),
-            ar -> {
-              if (ar.failed()) ctx.fail(ar.cause());
-              async.complete();
-            });
-    async.await();
-
+  public void before(TestContext context) {
+    clearCounterReports().onComplete(context.asyncAssertSuccess());
     testThatDBIsEmpty();
+  }
+
+  private Future<RowSet<Row>> clearCounterReports() {
+    Promise<RowSet<Row>> promise = Promise.promise();
+    PostgresClient.getInstance(vertx, TENANT)
+        .delete(Constants.TABLE_NAME_COUNTER_REPORTS, new Criterion(), promise);
+    return promise.future();
   }
 
   private String resourceToString(String path) {
@@ -159,13 +140,13 @@ public class CounterReportCsvIT {
   }
 
   @Test
-  public void testGetCSVOkJR1() {
+  public void testExportCSVOkJR1() {
     given().body(counterReport).post().then().statusCode(201);
 
     String csvResult =
         given()
             .pathParam("id", counterReport.getId())
-            .get("/csv/{id}")
+            .get("/export/{id}")
             .then()
             .statusCode(200)
             .contentType(equalTo("text/csv"))
@@ -175,7 +156,7 @@ public class CounterReportCsvIT {
   }
 
   @Test
-  public void testGetCSVOkJR1MultipleMonths() {
+  public void testExportCSVOkJR1MultipleMonths() {
     String json1 = resourceToString("JR1/jr1_1.json");
     String json2 = resourceToString("JR1/jr1_2.json");
     String json3 = resourceToString("JR1/jr1_3.json");
@@ -190,7 +171,7 @@ public class CounterReportCsvIT {
         .pathParam("version", "4")
         .pathParam("begin", "2018-12")
         .pathParam("end", "2019-03")
-        .get("/csv/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}")
+        .get("/export/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}")
         .then()
         .statusCode(200)
         .body(
@@ -199,7 +180,7 @@ public class CounterReportCsvIT {
   }
 
   @Test
-  public void testGetCSVOkTRMultipleMonths() {
+  public void testExportCSVOkTRMultipleMonths() {
     String json1 = resourceToString("TR/TR_1.json");
     String json2 = resourceToString("TR/TR_2.json");
     String json3 = resourceToString("TR/TR_3.json");
@@ -214,7 +195,7 @@ public class CounterReportCsvIT {
         .pathParam("version", "5")
         .pathParam("begin", "2019-09")
         .pathParam("end", "2019-11")
-        .get("/csv/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}")
+        .get("/export/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}")
         .then()
         .statusCode(200)
         .body(
@@ -223,28 +204,28 @@ public class CounterReportCsvIT {
   }
 
   @Test
-  public void testGetCSVNoMapper() {
+  public void testExportCSVNoMapper() {
     CounterReport badReleaseNo =
         Json.decodeValue(Json.encode(counterReport), CounterReport.class).withRelease("1");
     given().body(badReleaseNo).post().then().statusCode(201);
 
     given()
         .pathParam("id", badReleaseNo.getId())
-        .get("/csv/{id}")
+        .get("/export/{id}")
         .then()
         .statusCode(500)
         .body(containsString("no mapper"));
   }
 
   @Test
-  public void testGetCSVNoReport() {
+  public void testExportCSVNoReport() {
     CounterReport noReport =
         Json.decodeValue(Json.encode(counterReport), CounterReport.class).withReport(null);
     given().body(noReport).post().then().statusCode(201);
 
     given()
         .pathParam("id", noReport.getId())
-        .get("/csv/{id}")
+        .get("/export/{id}")
         .then()
         .statusCode(500)
         .body(containsString("No report"));
