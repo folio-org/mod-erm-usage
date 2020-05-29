@@ -21,16 +21,17 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.UUID;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -48,6 +49,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.olf.erm.usage.counter.common.ExcelUtil;
 
 @RunWith(VertxUnitRunner.class)
 public class CounterReportExportIT {
@@ -93,17 +95,7 @@ public class CounterReportExportIT {
 
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
-    Async async = context.async();
-    vertx.deployVerticle(
-        RestVerticle.class.getName(),
-        options,
-        ar -> {
-          if (ar.succeeded()) {
-            async.complete();
-          } else {
-            context.fail(ar.cause());
-          }
-        });
+    vertx.deployVerticle(RestVerticle.class.getName(), options, context.asyncAssertSuccess());
   }
 
   @AfterClass
@@ -229,5 +221,104 @@ public class CounterReportExportIT {
         .then()
         .statusCode(500)
         .body(containsString("No report"));
+  }
+
+  @Test
+  public void testExportUnsupportedFormatById() {
+    given()
+        .pathParam("id", UUID.randomUUID().toString())
+        .queryParam("format", "jpg")
+        .get("/export/{id}")
+        .then()
+        .statusCode(400)
+        .body(containsString("Requested format \"jpg\" is not supported."));
+  }
+
+  @Test
+  public void testExportUnsupportedCounterVersionMultipleMonths() {
+    given()
+        .pathParam("id", UUID.randomUUID().toString())
+        .pathParam("name", "JR1")
+        .pathParam("version", 1)
+        .pathParam("begin", "2018-01")
+        .pathParam("end", "2018-12")
+        .queryParam("format", "xlsx")
+        .get("/export/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}")
+        .then()
+        .statusCode(400)
+        .body(equalTo("Requested counter version \"1\" is not supported."));
+  }
+
+  @Test
+  public void testExportUnsupportedFormatMultipleMonths() {
+    given()
+        .pathParam("id", UUID.randomUUID().toString())
+        .pathParam("name", "JR1")
+        .pathParam("version", 4)
+        .pathParam("begin", "2018-01")
+        .pathParam("end", "2018-12")
+        .queryParam("format", "jpg")
+        .get("/export/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}")
+        .then()
+        .statusCode(400)
+        .body(containsString("Requested format \"jpg\" is not supported."));
+  }
+
+  @Test
+  public void testExportXLSXOkJR1() throws IOException {
+    given().body(counterReport).post().then().statusCode(201);
+
+    InputStream xlsx =
+        given()
+            .pathParam("id", counterReport.getId())
+            .queryParam("format", "xlsx")
+            .get("/export/{id}")
+            .then()
+            .statusCode(200)
+            .contentType(equalTo(MediaType.OOXML_SHEET.toString()))
+            .extract()
+            .asInputStream();
+    assertThat(ExcelUtil.toCSV(xlsx)).isEqualToNormalizingNewlines(expected);
+  }
+
+  @Test
+  public void testExportXLSXOkTRMultipleMonths() throws IOException {
+    String json1 = resourceToString("TR/TR_1.json");
+    String json2 = resourceToString("TR/TR_2.json");
+    String json3 = resourceToString("TR/TR_3.json");
+
+    given().body(json1).post().then().statusCode(201);
+    given().body(json2).post().then().statusCode(201);
+    given().body(json3).post().then().statusCode(201);
+
+    String csv =
+        given()
+            .pathParam("id", "4b659cb9-e4bb-493d-ae30-5f5690c54802")
+            .pathParam("name", "TR")
+            .pathParam("version", "5")
+            .pathParam("begin", "2019-09")
+            .pathParam("end", "2019-11")
+            .get("/export/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}")
+            .then()
+            .statusCode(200)
+            .contentType(equalTo("text/csv"))
+            .extract()
+            .asString();
+
+    InputStream xlsx =
+        given()
+            .pathParam("id", "4b659cb9-e4bb-493d-ae30-5f5690c54802")
+            .pathParam("name", "TR")
+            .pathParam("version", "5")
+            .pathParam("begin", "2019-09")
+            .pathParam("end", "2019-11")
+            .queryParam("format", "xlsx")
+            .get("/export/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}")
+            .then()
+            .statusCode(200)
+            .contentType(equalTo(MediaType.OOXML_SHEET.toString()))
+            .extract()
+            .asInputStream();
+    assertThat(ExcelUtil.toCSV(xlsx)).isEqualToNormalizingNewlines(csv);
   }
 }
