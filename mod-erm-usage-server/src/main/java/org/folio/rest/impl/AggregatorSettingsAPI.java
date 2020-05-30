@@ -5,11 +5,15 @@ import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.google.common.io.ByteStreams;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,13 +29,17 @@ import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.cql.CQLWrapper;
+import org.folio.rest.tools.utils.BinaryOutStream;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.Constants;
 import org.folio.rest.util.ExportObject;
+import org.olf.erm.usage.counter.common.ExcelUtil;
 
 public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.AggregatorSettings {
 
   private static final String TABLE_NAME_AGGREGATOR_SETTINGS = "aggregator_settings";
+  private static final List<String> SUPPORTED_FORMATS = Arrays.asList("csv", "xlsx");
+  private static final String UNSUPPORTED_MSG = "Requested format \"%s\" is not supported.";
 
   private final Logger logger = LoggerFactory.getLogger(AggregatorSettingsAPI.class);
 
@@ -173,48 +181,69 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
         asyncResultHandler);
   }
 
+  private Response createExportcredialsResponse(List<UsageDataProvider> udps, String format) {
+    String csvString;
+    try {
+      csvString = getCredentialsCSV(udps);
+    } catch (JsonProcessingException e) {
+      return GetAggregatorSettingsExportcredentialsByIdResponse.respond500WithTextPlain(
+          "Error creating CSV: " + e.getMessage());
+    }
+
+    if ("xlsx".equals(format)) {
+      try {
+        InputStream in = ExcelUtil.fromCSV(csvString);
+        BinaryOutStream bos = new BinaryOutStream();
+        bos.setData(ByteStreams.toByteArray(in));
+        return GetAggregatorSettingsExportcredentialsByIdResponse
+            .respond200WithApplicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet(bos);
+      } catch (IOException e) {
+        return GetAggregatorSettingsExportcredentialsByIdResponse.respond500WithTextPlain(
+            "Error creating xlsx content: " + e.getMessage());
+      }
+    }
+    return GetAggregatorSettingsExportcredentialsByIdResponse.respond200WithTextCsv(csvString);
+  }
+
   // index: usage_data_providers_custom_aggregatorid_idx
   @Override
   public void getAggregatorSettingsExportcredentialsById(
       String id,
+      String format,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    Criteria criteria =
-        new Criteria()
-            .addField(Constants.FIELD_NAME_HARVESTING_CONFIG)
-            .addField(Constants.FIELD_NAME_AGGREGATOR)
-            .addField(Constants.FIELD_NAME_ID)
-            .setOperation(Constants.OPERATOR_EQUALS)
-            .setVal(id);
-    Criterion criterion = new Criterion(criteria);
-    CQLWrapper cql = new CQLWrapper(criterion);
-
-    PgUtil.postgresClient(vertxContext, okapiHeaders)
-        .get(
-            TABLE_NAME_UDP,
-            UsageDataProvider.class,
-            cql,
-            false,
-            ar -> {
-              if (ar.succeeded()) {
-                List<UsageDataProvider> providerList = ar.result().getResults();
-                try {
-                  String resultString = getCredentialsCSV(providerList);
-                  asyncResultHandler.handle(
-                      succeededFuture(
-                          GetAggregatorSettingsExportcredentialsByIdResponse.respond200WithTextCsv(
-                              resultString)));
-                } catch (JsonProcessingException e) {
-                  asyncResultHandler.handle(
-                      succeededFuture(
-                          GetAggregatorSettingsExportcredentialsByIdResponse
-                              .respond500WithTextPlain("Error creating CSV")));
+    if (SUPPORTED_FORMATS.contains(format)) {
+      Criteria criteria =
+          new Criteria()
+              .addField(Constants.FIELD_NAME_HARVESTING_CONFIG)
+              .addField(Constants.FIELD_NAME_AGGREGATOR)
+              .addField(Constants.FIELD_NAME_ID)
+              .setOperation(Constants.OPERATOR_EQUALS)
+              .setVal(id);
+      Criterion criterion = new Criterion(criteria);
+      CQLWrapper cql = new CQLWrapper(criterion);
+      PgUtil.postgresClient(vertxContext, okapiHeaders)
+          .get(
+              TABLE_NAME_UDP,
+              UsageDataProvider.class,
+              cql,
+              false,
+              ar -> {
+                if (ar.succeeded()) {
+                  Response response =
+                      createExportcredialsResponse(ar.result().getResults(), format);
+                  asyncResultHandler.handle(succeededFuture(response));
+                } else {
+                  ValidationHelper.handleError(ar.cause(), asyncResultHandler);
                 }
-              } else {
-                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
-              }
-            });
+              });
+    } else {
+      asyncResultHandler.handle(
+          succeededFuture(
+              GetAggregatorSettingsExportcredentialsByIdResponse.respond400WithTextPlain(
+                  String.format(UNSUPPORTED_MSG, format))));
+    }
   }
 }

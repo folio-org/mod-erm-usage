@@ -2,6 +2,7 @@ package org.folio.rest.impl;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
@@ -19,6 +20,7 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -41,6 +43,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.olf.erm.usage.counter.common.ExcelUtil;
 
 @RunWith(VertxUnitRunner.class)
 public class AggregatorSettingsIT {
@@ -48,6 +51,13 @@ public class AggregatorSettingsIT {
   private static final String BASE_URI = "/aggregator-settings";
   private static final String TENANT = "diku";
   private static final String QUERY_PARAM = "query";
+  private static final String EXPECTED_CSV_RESULT_EMPTY =
+      "providerName,harvestingStatus,reportRelease,requestedReports,customerId,requestorId,apiKey,requestorName,requestorMail,createdDate,updatedDate\n";
+  private static final String EXPECTED_CSV_RESULT =
+      "providerName,harvestingStatus,reportRelease,requestedReports,customerId,requestorId,apiKey,requestorName,requestorMail,createdDate,updatedDate\n"
+          + "Provider1,inactive,4,\"JR1, JR4\",CustomerId1,RequestorId1,ApiKey1,RequestorName1,RequestorMail1,,\n"
+          + "Provider2,active,4,\"JR1, JR4\",CustomerId2,RequestorId2,ApiKey2,\"RequestorName2,WithComma\",RequestorMail2,,\n"
+          + "Provider3,active,4,\"JR1, JR4\",CustomerId3,RequestorId3,ApiKey3,RequestorName3,RequestorMail3,,\n";
   private static Vertx vertx;
 
   private static String aggregatorSettingSampleString;
@@ -389,7 +399,7 @@ public class AggregatorSettingsIT {
   }
 
   @Test
-  public void testExportSushiCredentialsForAggregator(TestContext ctx) throws IOException {
+  public void testExportSushiCredentialsForAggregatorAsCsv(TestContext ctx) throws IOException {
     try {
       setupTestData(ctx);
 
@@ -403,12 +413,7 @@ public class AggregatorSettingsIT {
               .contentType(MediaType.CSV_UTF_8.type())
               .extract()
               .asString();
-      String expectedResult =
-          "providerName,harvestingStatus,reportRelease,requestedReports,customerId,requestorId,apiKey,requestorName,requestorMail,createdDate,updatedDate\n"
-              + "Provider1,inactive,4,\"JR1, JR4\",CustomerId1,RequestorId1,ApiKey1,RequestorName1,RequestorMail1,,\n"
-              + "Provider2,active,4,\"JR1, JR4\",CustomerId2,RequestorId2,ApiKey2,\"RequestorName2,WithComma\",RequestorMail2,,\n"
-              + "Provider3,active,4,\"JR1, JR4\",CustomerId3,RequestorId3,ApiKey3,RequestorName3,RequestorMail3,,\n";
-      assertThat(result).isEqualTo(expectedResult);
+      assertThat(result).isEqualTo(EXPECTED_CSV_RESULT);
 
       // no providers for id
       String result2 =
@@ -420,11 +425,56 @@ public class AggregatorSettingsIT {
               .contentType(MediaType.CSV_UTF_8.type())
               .extract()
               .asString();
-      String expectedResult2 =
-          "providerName,harvestingStatus,reportRelease,requestedReports,customerId,requestorId,apiKey,requestorName,requestorMail,createdDate,updatedDate\n";
-      assertThat(result2).isEqualTo(expectedResult2);
+      assertThat(result2).isEqualTo(EXPECTED_CSV_RESULT_EMPTY);
     } finally {
       clearTestData(ctx);
     }
+  }
+
+  @Test
+  public void testExportSushiCredentialsForAggregatorAsXlsx(TestContext ctx) throws IOException {
+    try {
+      setupTestData(ctx);
+
+      // three providers for id
+      InputStream result =
+          given()
+              .pathParam("id", "0adec15b-8230-48fe-b4df-87106c5dc36e")
+              .queryParam("format", "xlsx")
+              .get("/{id}/exportcredentials")
+              .then()
+              .statusCode(200)
+              .contentType(MediaType.OOXML_SHEET.type())
+              .extract()
+              .asInputStream();
+      assertThat(ExcelUtil.toCSV(result)).isEqualToNormalizingNewlines(EXPECTED_CSV_RESULT);
+
+      // no providers for id
+      InputStream result2 =
+          given()
+              .pathParam("id", "c53dfc71-5086-4bbe-b592-26b2c977bc1f")
+              .queryParam("format", "xlsx")
+              .get("/{id}/exportcredentials")
+              .then()
+              .statusCode(200)
+              .contentType(MediaType.OOXML_SHEET.type())
+              .extract()
+              .asInputStream();
+      assertThat(ExcelUtil.toCSV(result2)).isEqualToNormalizingNewlines(EXPECTED_CSV_RESULT_EMPTY);
+    } finally {
+      clearTestData(ctx);
+    }
+  }
+
+  @Test
+  public void testExportSushiCredentialsForAggregatorAsUnsupportedFormat() {
+    given()
+        .pathParam("id", "0adec15b-8230-48fe-b4df-87106c5dc36e")
+        .queryParam("format", "jpg")
+        .get("/{id}/exportcredentials")
+        .then()
+        .statusCode(400)
+        .contentType(MediaType.PLAIN_TEXT_UTF_8.type())
+        .body(containsString("Requested format \"jpg\" is not supported."));
   }
 }
