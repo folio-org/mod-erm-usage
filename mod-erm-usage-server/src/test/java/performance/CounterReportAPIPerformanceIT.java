@@ -61,8 +61,13 @@ public class CounterReportAPIPerformanceIT {
           .mapToObj(i -> UUID.randomUUID().toString())
           .collect(Collectors.toList());
   private static final Logger log = LoggerFactory.getLogger(CounterReportAPIPerformanceIT.class);
-  @ClassRule public static EmbeddedPostgresRule postgresRule = new EmbeddedPostgresRule(TENANT);
+
   private static Vertx vertx = Vertx.vertx();
+
+  @ClassRule
+  public static EmbeddedPostgresRule postgresRule =
+      new EmbeddedPostgresRule(vertx.getDelegate(), TENANT);
+
   private static WebClient wc = WebClient.create(vertx);
   private static Report[] reports = new Report[12];
   @Rule public Timeout timeout = Timeout.seconds(300);
