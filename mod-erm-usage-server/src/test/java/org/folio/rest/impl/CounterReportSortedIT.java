@@ -10,8 +10,6 @@ import com.google.common.net.MediaType;
 import com.google.gson.Gson;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.filter.log.RequestLoggingFilter;
-import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
@@ -87,7 +85,7 @@ public class CounterReportSortedIT {
     RestAssured.basePath = "/counter-reports";
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
-    RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
+    // RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
     RestAssured.requestSpecification =
         new RequestSpecBuilder()
             .addHeader(XOkapiHeaders.TENANT, TENANT)

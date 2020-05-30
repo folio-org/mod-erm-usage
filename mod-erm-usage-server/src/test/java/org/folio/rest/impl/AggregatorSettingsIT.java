@@ -1,12 +1,13 @@
 package org.folio.rest.impl;
 
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.filter.log.RequestLoggingFilter;
-import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
@@ -17,6 +18,11 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.UUID;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
@@ -35,15 +41,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.UUID;
-
-import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(VertxUnitRunner.class)
 public class AggregatorSettingsIT {
@@ -91,7 +88,7 @@ public class AggregatorSettingsIT {
     RestAssured.basePath = BASE_URI;
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
-    RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
+    // RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
     RestAssured.requestSpecification =
         new RequestSpecBuilder()
             .addHeader(XOkapiHeaders.TENANT, TENANT)

@@ -10,8 +10,6 @@ import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.filter.log.RequestLoggingFilter;
-import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.parsing.Parser;
 import io.vertx.core.DeploymentOptions;
@@ -81,8 +79,7 @@ public class CounterReportUploadIT {
   private static final File FILE_REPORT5_OK =
       new File(Resources.getResource("fileupload/hwire_trj1.json").getFile());
   private static Vertx vertx;
-  @Rule
-  public Timeout timeout = Timeout.seconds(10);
+  @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void setUp(TestContext context) {
@@ -105,7 +102,7 @@ public class CounterReportUploadIT {
     RestAssured.basePath = "";
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
-    RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
+    // RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
     RestAssured.requestSpecification =
         new RequestSpecBuilder().addHeader(XOkapiHeaders.TENANT, TENANT).build();
 
@@ -496,10 +493,9 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportMultipleMonthsC5FromCsv()
-      throws IOException, Counter5UtilsException {
-    String jsonString = Resources
-        .toString(FILE_REPORT_MULTI_COP5.toURI().toURL(), StandardCharsets.UTF_8);
+  public void testReportMultipleMonthsC5FromCsv() throws IOException, Counter5UtilsException {
+    String jsonString =
+        Resources.toString(FILE_REPORT_MULTI_COP5.toURI().toURL(), StandardCharsets.UTF_8);
     assertThat(jsonString).isNotNull();
 
     Object report = Counter5Utils.fromJSON(jsonString);
@@ -555,24 +551,29 @@ public class CounterReportUploadIT {
         .body(containsString("2019-11"));
   }
 
-  private void compareCOP5Reports(List<Object> actualReports, List<Object> expectedReports,
-      int index) {
+  private void compareCOP5Reports(
+      List<Object> actualReports, List<Object> expectedReports, int index) {
     Object first = expectedReports.get(index);
     if (first instanceof COUNTERDatabaseReport) {
       COUNTERDatabaseReport actual = (COUNTERDatabaseReport) actualReports.get(index);
       COUNTERDatabaseReport expected = (COUNTERDatabaseReport) expectedReports.get(index);
-      assertThat(actual.getReportHeader()).usingRecursiveComparison()
-          .ignoringCollectionOrder().isEqualTo(expected.getReportHeader());
-      assertThat(actual.getReportItems().size())
-          .isEqualTo(expected.getReportItems().size());
+      assertThat(actual.getReportHeader())
+          .usingRecursiveComparison()
+          .ignoringCollectionOrder()
+          .isEqualTo(expected.getReportHeader());
+      assertThat(actual.getReportItems().size()).isEqualTo(expected.getReportItems().size());
 
       // Compare each platform usage
       for (int i = 0; i < actual.getReportItems().size(); i++) {
         COUNTERDatabaseUsage actualUsage = actual.getReportItems().get(i);
-        COUNTERDatabaseUsage expectedUsage = expected.getReportItems().stream()
-            .filter(item -> item.getDatabase().equals(actualUsage.getDatabase()))
-            .findFirst().get();
-        assertThat(actualUsage).usingRecursiveComparison().ignoringCollectionOrder()
+        COUNTERDatabaseUsage expectedUsage =
+            expected.getReportItems().stream()
+                .filter(item -> item.getDatabase().equals(actualUsage.getDatabase()))
+                .findFirst()
+                .get();
+        assertThat(actualUsage)
+            .usingRecursiveComparison()
+            .ignoringCollectionOrder()
             .isEqualTo(expectedUsage);
       }
     } else if (first instanceof COUNTERTitleReport) {
@@ -583,29 +584,35 @@ public class CounterReportUploadIT {
           .ignoringFields("customerID")
           .ignoringCollectionOrder()
           .isEqualTo(expected.getReportHeader());
-      assertThat(actual.getReportItems().size())
-          .isEqualTo(expected.getReportItems().size());
+      assertThat(actual.getReportItems().size()).isEqualTo(expected.getReportItems().size());
 
       // Compare each platform usage
       for (int i = 0; i < actual.getReportItems().size(); i++) {
 
         COUNTERTitleUsage actualUsage = actual.getReportItems().get(i);
-        List<COUNTERItemIdentifiers> itemIDsWoNull = actual.getReportItems().get(i).getItemID()
-            .stream()
-            .filter(itemId -> itemId != null).collect(Collectors.toList());
+        List<COUNTERItemIdentifiers> itemIDsWoNull =
+            actual.getReportItems().get(i).getItemID().stream()
+                .filter(itemId -> itemId != null)
+                .collect(Collectors.toList());
         actualUsage.setItemID(itemIDsWoNull);
 
-        COUNTERTitleUsage expectedUsage = expected.getReportItems().stream()
-            .filter(item -> item.getTitle().equals(actualUsage.getTitle()))
-            .findFirst().get();
+        COUNTERTitleUsage expectedUsage =
+            expected.getReportItems().stream()
+                .filter(item -> item.getTitle().equals(actualUsage.getTitle()))
+                .findFirst()
+                .get();
 
-        assertThat(actualUsage).usingRecursiveComparison().ignoringCollectionOrder()
+        assertThat(actualUsage)
+            .usingRecursiveComparison()
+            .ignoringCollectionOrder()
             .isEqualTo(expectedUsage);
       }
     } else {
       // casting to other types not implemented
-      assertThat(true).as(String
-          .format("Comparing reports of type %s not implemented", first.getClass().toString()))
+      assertThat(true)
+          .as(
+              String.format(
+                  "Comparing reports of type %s not implemented", first.getClass().toString()))
           .isEqualTo(false);
     }
   }
@@ -634,6 +641,5 @@ public class CounterReportUploadIT {
     public CounterReportUploadException(Throwable cause) {
       super(cause);
     }
-
   }
 }

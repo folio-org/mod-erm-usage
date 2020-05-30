@@ -12,8 +12,6 @@ import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.filter.log.RequestLoggingFilter;
-import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
@@ -86,7 +84,7 @@ public class CounterReportExportIT {
     RestAssured.basePath = "/counter-reports";
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
-    RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
+    // RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
     RestAssured.requestSpecification =
         new RequestSpecBuilder()
             .addHeader(XOkapiHeaders.TENANT, TENANT)
