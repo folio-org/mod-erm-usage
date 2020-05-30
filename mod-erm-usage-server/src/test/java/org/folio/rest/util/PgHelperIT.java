@@ -39,9 +39,9 @@ public class PgHelperIT {
   private static final Map<String, String> okapiHeaders =
       Collections.singletonMap(XOkapiHeaders.TENANT.toLowerCase(), tenant);
 
-  @ClassRule public static EmbeddedPostgresRule pgRule = new EmbeddedPostgresRule(tenant);
+  private static Vertx vertx = Vertx.vertx();
+  @ClassRule public static EmbeddedPostgresRule pgRule = new EmbeddedPostgresRule(vertx, tenant);
 
-  private static Vertx vertx = pgRule.vertx;
   private static List<CounterReport> reports1;
   private static List<CounterReport> reports2;
   private static List<CounterReport> reports3;

@@ -53,20 +53,18 @@ import org.olf.erm.usage.counter.common.ExcelUtil;
 public class CounterReportExportIT {
 
   private static final String TENANT = "diku";
-  private static Vertx vertx;
+  private static Vertx vertx = Vertx.vertx();
 
   private static CounterReport counterReport;
   private static String expected;
 
   @ClassRule
-  public static EmbeddedPostgresRule embeddedPostgresRule = new EmbeddedPostgresRule(TENANT);
+  public static EmbeddedPostgresRule embeddedPostgresRule = new EmbeddedPostgresRule(vertx, TENANT);
 
   @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void beforeClass(TestContext context) {
-    vertx = Vertx.vertx();
-
     try {
       String reportStr =
           new String(Files.readAllBytes(Paths.get("../ramls/examples/counterreport.sample")));
