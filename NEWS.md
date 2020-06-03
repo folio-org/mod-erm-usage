@@ -1,3 +1,15 @@
+# 2.9.0
+* Support xlsx download of udp credentials (MODEUS-63)
+* Create endpoint for exporting counter reports in different formats (MODEUS-61)
+* Add endpoint to manage custom-report files (MODEUS-59)
+* Upgrade to RMB v30 (MODEUS-57)
+* Complete documentation (MODEUS-49)
+* Mapping from Counter 5 CSV to corresponding reports (MODEUS-54)
+* Create missing indexes (MODEUS-56)
+* Make downloading multi month CSV reports faster (MODEUS-52)
+* Code refactoring
+* Download stored reports for a range of several month (CSV, CoP 5) (UIEUS-162)
+
 # 2.8.2
 * Bugfix: Delete deprecated DB functions and triggers on migration (MODEUS-50)
 
