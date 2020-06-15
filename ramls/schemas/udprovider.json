@@ -163,6 +163,11 @@
         "type": "string"
       }
     },
+    "harvestingDate": {
+      "description": "Date and time of the last harvesting attempt",
+      "type": "string",
+      "format": "date-time"
+    },
     "notes": {
       "description": "Notes for provider",
       "type": "string"

@@ -1,5 +1,10 @@
 package org.folio.rest.impl;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -12,10 +17,17 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
-import org.folio.rest.jaxrs.model.*;
+import org.folio.rest.jaxrs.model.AggregatorSetting;
+import org.folio.rest.jaxrs.model.SushiCredentials;
+import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
+import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.ModuleVersion;
@@ -24,15 +36,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 
 @RunWith(VertxUnitRunner.class)
 public class UsageDataProvidersIT {
@@ -198,17 +201,22 @@ public class UsageDataProvidersIT {
         .body("label", equalTo(udprovider.getLabel()));
 
     // GET
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .when()
-        .get(BASE_URI + "/" + udprovider.getId())
-        .then()
-        .contentType(ContentType.JSON)
-        .statusCode(200)
-        .body("id", equalTo(udprovider.getId()))
-        .body("label", equalTo(udprovider.getLabel()));
+    UsageDataProvider udproviderResult =
+        given()
+            .header("X-Okapi-Tenant", TENANT)
+            .header("content-type", APPLICATION_JSON)
+            .header("accept", APPLICATION_JSON)
+            .when()
+            .get(BASE_URI + "/" + udprovider.getId())
+            .then()
+            .contentType(ContentType.JSON)
+            .statusCode(200)
+            .extract()
+            .as(UsageDataProvider.class);
+    assertThat(udproviderResult)
+        .usingRecursiveComparison()
+        .ignoringFields("metadata")
+        .isEqualTo(udprovider);
 
     // PUT
     given()
@@ -223,17 +231,21 @@ public class UsageDataProvidersIT {
         .statusCode(204);
 
     // GET again
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .request()
-        .get(BASE_URI + "/" + udproviderChanged.getId())
-        .then()
-        .statusCode(200)
-        .body("id", equalTo(udproviderChanged.getId()))
-        .body("label", equalTo("CHANGED"))
-        .body("sushiCredentials.requestorMail", equalTo("CHANGED@ub.uni-leipzig.de"));
+    UsageDataProvider udproviderChangedResult =
+        given()
+            .header("X-Okapi-Tenant", TENANT)
+            .header("content-type", APPLICATION_JSON)
+            .header("accept", APPLICATION_JSON)
+            .request()
+            .get(BASE_URI + "/" + udproviderChanged.getId())
+            .then()
+            .statusCode(200)
+            .extract()
+            .as(UsageDataProvider.class);
+    assertThat(udproviderChangedResult)
+        .usingRecursiveComparison()
+        .ignoringFields("metadata")
+        .isEqualTo(udproviderChanged);
 
     // DELETE
     given()
