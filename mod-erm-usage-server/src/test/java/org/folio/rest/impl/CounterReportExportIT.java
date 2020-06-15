@@ -19,6 +19,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -101,7 +102,9 @@ public class CounterReportExportIT {
 
   @Before
   public void before(TestContext context) {
-    clearCounterReports().onComplete(context.asyncAssertSuccess());
+    Async async = context.async();
+    clearCounterReports().onComplete(rs -> async.complete());
+    async.await(5000);
     testThatDBIsEmpty();
   }
 
