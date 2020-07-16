@@ -1,6 +1,6 @@
 #%RAML 1.0
 title: Counter Reports
-version: v1
+version: v1.5
 baseUri: http://localhost/mod-erm-usage
 
 documentation:
@@ -76,10 +76,12 @@ resourceTypes:
           500:
             body:
               text/plain:
+  # deprecated since 2.9.0 and removed soon
+  # use /export instead
   /csv:
     /{id}:
       get:
-        description: Get the report identified by id as CSV
+        description: DEPRECATED Get the report identified by id as CSV
         responses:
           200:
             body:
@@ -90,7 +92,7 @@ resourceTypes:
               text/plain:
     /provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}:
       get:
-        description: Get report for several months as CSV for a provider id
+        description: DEPRECATED Get report for several months as CSV for a provider id
         responses:
           200:
             body:
@@ -99,6 +101,47 @@ resourceTypes:
             description: Server Error
             body:
               text/plain:
+  /export:
+      /{id}:
+        get:
+          queryParameters:
+            format:
+              type: string
+              required: false
+              default: "csv"
+          description: Get the report identified by id as specified format (default is CSV)
+          responses:
+            200:
+              body:
+                text/csv:
+                application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+            400:
+              body:
+                text/plain:
+            500:
+              description: Server Error
+              body:
+                text/plain:
+      /provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}:
+            get:
+              queryParameters:
+                format:
+                  type: string
+                  required: false
+                  default: "csv"
+              description: Get report for several months as specified format (default is CSV)
+              responses:
+                200:
+                  body:
+                    text/csv:
+                    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+                400:
+                  body:
+                    text/plain:
+                500:
+                  description: Server Error
+                  body:
+                    text/plain:
   /upload/provider/{id}:
     description: Upload a report from file for a provider identified by id
     post:

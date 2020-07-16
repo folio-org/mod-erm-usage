@@ -4,7 +4,7 @@
   "provides": [
     {
       "id": "usage-data-providers",
-      "version": "2.4",
+      "version": "2.5",
       "handlers": [
         {
           "methods": [
@@ -55,7 +55,7 @@
     },
     {
       "id": "aggregator-settings",
-      "version": "1.1",
+      "version": "1.2",
       "handlers": [
         {
           "methods": [
@@ -125,7 +125,7 @@
     },
     {
       "id": "counter-reports",
-      "version": "1.4",
+      "version": "1.5",
       "handlers": [
         {
           "methods": [
@@ -195,6 +195,24 @@
             "GET"
           ],
           "pathPattern": "/counter-reports/csv/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}",
+          "permissionsRequired": [
+            "counterreports.item.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/counter-reports/export/{id}",
+          "permissionsRequired": [
+            "counterreports.item.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/counter-reports/export/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}",
           "permissionsRequired": [
             "counterreports.item.get"
           ]

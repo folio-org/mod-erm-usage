@@ -1,6 +1,6 @@
 #%RAML 1.0
 title: Aggregator Settings
-version: v1
+version: v1.2
 baseUri: http://localhost/mod-erm-usage
 
 documentation:
@@ -55,11 +55,22 @@ resourceTypes:
     /exportcredentials:
       get:
         description: Get SushiCredentials associated with this aggregator
+        queryParameters:
+          format:
+            type: string
+            required: false
+            default: "csv"
+            description: Specify export format (default is CSV)
         responses:
           200:
             description: Ok
             body:
               text/csv:
+              application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+          400:
+            description: Bad Request
+            body:
+              text/plain:
           500:
             description: Error
             body:

@@ -22,13 +22,18 @@ public class CustomIndexesIT {
     "counter_reports_custom_errorcodes_idx",
     "usage_data_providers_custom_aggregatorid_idx"
   };
-  @ClassRule public static EmbeddedPostgresRule postgresRule = new EmbeddedPostgresRule(TENANTS);
+
+  private static Vertx vertx = Vertx.vertx();
+
+  @ClassRule
+  public static EmbeddedPostgresRule postgresRule = new EmbeddedPostgresRule(vertx, TENANTS);
+
   @Rule public Timeout timeout = Timeout.seconds(5);
 
   @Test
   public void testThatCustomIndexesArePresentForEachTenant(TestContext context) {
     Async async = context.async(INDEXES.length);
-    PostgresClient postgresClient = PostgresClient.getInstance(Vertx.vertx());
+    PostgresClient postgresClient = PostgresClient.getInstance(vertx);
     Stream.of(INDEXES)
         .forEach(
             idxName ->
