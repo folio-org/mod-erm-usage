@@ -1,0 +1,55 @@
+#%RAML 1.0
+title: Counter Reports
+version: v1
+baseUri: http://localhost/mod-erm-usage
+
+documentation:
+  - title: mod-erm-usage API
+    content: This documents the API calls that can be made to query and manage custom reports
+
+types:
+  customReport: !include ./schemas/customreport.json
+  customReports: !include ./schemas/customreports.json
+  errorCodes: !include ./schemas/errorcodes.json
+  errors: !include ./raml-util/schemas/errors.schema
+
+traits:
+  orderable: !include ./raml-util/traits/orderable.raml
+  pageable: !include ./raml-util/traits/pageable.raml
+  searchable: !include ./raml-util/traits/searchable.raml
+  language: !include ./raml-util/traits/language.raml
+  validate: !include ./raml-util/traits/validation.raml
+
+resourceTypes:
+  collection: !include ./raml-util/rtypes/collection.raml
+  collection-item: !include ./raml-util/rtypes/item-collection.raml
+
+/custom-reports:
+  displayName: Custom Usage Reports
+  type:
+    collection:
+      exampleCollection: !include ./examples/customreport_collection.sample
+      exampleItem: !include ./examples/customreport.sample
+      schemaCollection: customReports
+      schemaItem: customReport
+  get:
+    is: [
+      searchable: {description: "", example: "year=2018"},
+      orderable: {fieldsList: ""},
+      pageable
+    ]
+    description: Get all reports.
+  post:
+    is: [validate]
+    description: Post new report
+  /{id}:
+    type:
+      collection-item:
+        exampleItem: !include ./examples/customreport.sample
+        schema: customReport
+    get:
+      description: Get one report identified by id
+    delete:
+      description: Delete report identified by id
+    put:
+      description: Put report identified by id

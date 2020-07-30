@@ -119,6 +119,11 @@
       "tableName": "files",
       "fromModuleVersion": "mod-erm-usage-2.9.0-SNAPSHOT",
       "withMetadata": true
+    },
+    {
+      "tableName": "custom_reports",
+      "fromModuleVersion": "mod-erm-usage-2.9.0-SNAPSHOT",
+      "withMetadata": true
     }
   ],
   "views": [

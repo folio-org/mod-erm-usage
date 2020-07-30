@@ -111,7 +111,9 @@ public class ErmUsageFilesIT {
             .statusCode(200)
             .extract()
             .response();
-    String id = postResponse.getBody().print();
+    String response = postResponse.getBody().print();
+    JsonObject jsonResponse = new JsonObject(response);
+    String id = jsonResponse.getString("id");
 
     // GET
     given()

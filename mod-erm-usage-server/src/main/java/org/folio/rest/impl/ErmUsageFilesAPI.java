@@ -1,9 +1,12 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.util.Constants.TABLE_NAME_FILES;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.json.JsonObject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
@@ -17,8 +20,6 @@ import org.folio.rest.persist.PgUtil;
 import org.folio.rest.tools.utils.BinaryOutStream;
 
 public class ErmUsageFilesAPI implements ErmUsageFiles {
-
-  private static final String TABLE_NAME = "files";
 
   @Override
   @Validate
@@ -34,14 +35,18 @@ public class ErmUsageFilesAPI implements ErmUsageFiles {
     }
 
     String base64 = Base64.getEncoder().encodeToString(bytes);
-
     ErmUsageFile file = new ErmUsageFile().withData(base64);
 
+    float size = bytes.length / 1000F;
+
     PgUtil.postgresClient(vertxContext, okapiHeaders)
-        .save(TABLE_NAME, file, ar -> {
+        .save(TABLE_NAME_FILES, file, ar -> {
           if (ar.succeeded()) {
+            JsonObject result = new JsonObject();
+            result.put("id", ar.result());
+            result.put("size", size);
             asyncResultHandler.handle(Future.succeededFuture(
-                PostErmUsageFilesResponse.respond200WithTextPlain(ar.result())));
+                PostErmUsageFilesResponse.respond200WithTextJson(result.encodePrettily())));
           } else {
             asyncResultHandler.handle(Future.succeededFuture(PostErmUsageFilesResponse
                 .respond500WithTextPlain("Cannot insert file. " + ar.cause())));
@@ -55,7 +60,7 @@ public class ErmUsageFilesAPI implements ErmUsageFiles {
   public void getErmUsageFilesById(String id, Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
     PgUtil.postgresClient(vertxContext, okapiHeaders)
-        .getById(TABLE_NAME, id, ErmUsageFile.class,
+        .getById(TABLE_NAME_FILES, id, ErmUsageFile.class,
             ar -> {
               if (ar.succeeded()) {
                 if (ar.result() == null) {
@@ -84,7 +89,7 @@ public class ErmUsageFilesAPI implements ErmUsageFiles {
       Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
 
     PgUtil.postgresClient(vertxContext, okapiHeaders)
-        .delete(TABLE_NAME, id, ar -> {
+        .delete(TABLE_NAME_FILES, id, ar -> {
           if (ar.succeeded()) {
             asyncResultHandler
                 .handle(Future.succeededFuture(DeleteErmUsageFilesByIdResponse.respond204()));
