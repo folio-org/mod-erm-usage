@@ -1,11 +1,11 @@
 -- return year-month of latest report available for a usage data provider
 CREATE OR REPLACE FUNCTION latest_year_month(providerId TEXT) RETURNS TEXT AS $$
-	SELECT COALESCE(MAX(jsonb->>'yearMonth'), '') FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
+	SELECT MAX(jsonb->>'yearMonth') FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
 $$ LANGUAGE sql;
 
 -- return year-month of earliest report available for a usage data provider
 CREATE OR REPLACE FUNCTION earliest_year_month(providerId TEXT) RETURNS TEXT AS $$
-	SELECT COALESCE(MIN(jsonb->>'yearMonth'), '') FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
+	SELECT MIN(jsonb->>'yearMonth') FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
 $$ LANGUAGE sql;
 
 -- returns the counter/sushi error codes of the usage data provider's counter reports
@@ -44,8 +44,8 @@ BEGIN
   PERFORM pg_advisory_xact_lock(hashtext(providerId));
 	SELECT latest_year_month(providerId) INTO latest;
 	SELECT earliest_year_month(providerId) INTO earliest;
-	UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{latestReport}', to_jsonb(latest), TRUE) WHERE jsonb->>'id' = providerId;
-	UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{earliestReport}', to_jsonb(earliest), TRUE) WHERE jsonb->>'id' = providerId;
+	UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{latestReport}', COALESCE(to_jsonb(latest), 'null'::jsonb), TRUE) WHERE jsonb->>'id' = providerId;
+	UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{earliestReport}', COALESCE(to_jsonb(earliest), 'null'::jsonb), TRUE) WHERE jsonb->>'id' = providerId;
 	RETURN NULL;
 END;
 $BODY$ LANGUAGE plpgsql;
