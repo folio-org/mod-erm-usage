@@ -44,8 +44,11 @@ BEGIN
   PERFORM pg_advisory_xact_lock(hashtext(providerId));
 	SELECT latest_year_month(providerId) INTO latest;
 	SELECT earliest_year_month(providerId) INTO earliest;
-	UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{latestReport}', COALESCE(to_jsonb(latest), 'null'::jsonb), TRUE) WHERE jsonb->>'id' = providerId;
-	UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{earliestReport}', COALESCE(to_jsonb(earliest), 'null'::jsonb), TRUE) WHERE jsonb->>'id' = providerId;
+	UPDATE usage_data_providers SET
+	  jsonb = jsonb || (
+	    '{"latestReport": ' || COALESCE(to_jsonb(latest), 'null'::jsonb)::text ||
+	    ', "earliestReport": ' || COALESCE(to_jsonb(earliest), 'null'::jsonb)::text ||
+	    '}')::jsonb	WHERE jsonb->>'id' = providerId;
 	RETURN NULL;
 END;
 $BODY$ LANGUAGE plpgsql;
