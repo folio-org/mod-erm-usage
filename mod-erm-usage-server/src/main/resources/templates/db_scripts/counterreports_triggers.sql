@@ -1,54 +1,33 @@
 -- return year-month of latest report available for a usage data provider
-CREATE OR REPLACE FUNCTION latest_year_month(
-  providerId TEXT
-  ) RETURNS TEXT AS
-$$
-DECLARE res TEXT;
-BEGIN
-	SELECT COALESCE(MAX(jsonb->>'yearMonth', '')) INTO res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
-	RETURN res;
-END;
-$$
-LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION latest_year_month(providerId TEXT) RETURNS TEXT AS $$
+	SELECT COALESCE(MAX(jsonb->>'yearMonth'), '') FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
+$$ LANGUAGE sql;
 
 -- return year-month of earliest report available for a usage data provider
-CREATE OR REPLACE FUNCTION earliest_year_month(
-  providerId TEXT
-  ) RETURNS TEXT AS
-$$
-DECLARE res TEXT;
-BEGIN
-	SELECT COALESCE(MIN(jsonb->>'yearMonth', '')) into res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
-	RETURN res;
-END;
-$$
-LANGUAGE plpgsql;
+CREATE OR REPLACE FUNCTION earliest_year_month(providerId TEXT) RETURNS TEXT AS $$
+	SELECT COALESCE(MIN(jsonb->>'yearMonth'), '') FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
+$$ LANGUAGE sql;
 
 -- returns the counter/sushi error codes of the usage data provider's counter reports
-CREATE OR REPLACE FUNCTION udp_report_errors(
-  providerId TEXT
-  ) RETURNS jsonb AS
-$$
-DECLARE res jsonb;
-BEGIN
-  SELECT json_agg(error)::jsonb into res
+CREATE OR REPLACE FUNCTION udp_report_errors(providerId TEXT) RETURNS jsonb AS $$
+  SELECT json_agg(error)::jsonb
   FROM (
     SELECT
-      CASE  WHEN error_code IS NOT NULL THEN error_code
-            ELSE 'other'
-      END AS error
-    FROM(
-      SELECT	DISTINCT(SUBSTRING(jsonb->>'failedReason','Number=([0-9]{1,4})')) as error_code,
-              COUNT(jsonb->>'failedReason') as number_failed
+      CASE
+        WHEN error_code IS NOT NULL THEN error_code
+        ELSE 'other'
+      END
+    AS error
+    FROM (
+      SELECT
+        DISTINCT(SUBSTRING(jsonb->>'failedReason','Number=([0-9]{1,4})')) as error_code,
+        COUNT(jsonb->>'failedReason') as number_failed
       FROM  	counter_reports
       WHERE		jsonb->>'providerId'=$1 AND jsonb->>'failedReason' IS NOT NULL
       GROUP BY 	jsonb->>'providerId', error_code, jsonb->>'failedReason')
-    as sub)
-  as sub2;
-  RETURN res;
-END;
-$$
-LANGUAGE plpgsql;
+      AS sub
+  ) AS sub2;
+$$ LANGUAGE sql;
 
 -- trigger function to update latest report available of an usage data provider
 CREATE OR REPLACE FUNCTION update_latest_statistic_on_update() RETURNS TRIGGER AS
