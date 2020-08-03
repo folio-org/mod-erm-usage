@@ -5,10 +5,7 @@ CREATE OR REPLACE FUNCTION latest_year_month(
 $$
 DECLARE res TEXT;
 BEGIN
-	SELECT MAX(jsonb->>'yearMonth') INTO res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
-	IF res IS NULL THEN
-		SELECT '' INTO res;
-	END IF;
+	SELECT COALESCE(MAX(jsonb->>'yearMonth', '')) INTO res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
 	RETURN res;
 END;
 $$
@@ -21,10 +18,7 @@ CREATE OR REPLACE FUNCTION earliest_year_month(
 $$
 DECLARE res TEXT;
 BEGIN
-	SELECT MIN(jsonb->>'yearMonth') into res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
-	IF res IS NULL THEN
-		SELECT '' INTO res;
-	END IF;
+	SELECT COALESCE(MIN(jsonb->>'yearMonth', '')) into res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
 	RETURN res;
 END;
 $$
