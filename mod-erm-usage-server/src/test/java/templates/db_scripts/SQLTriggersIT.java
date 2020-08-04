@@ -5,6 +5,7 @@ import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
 import com.google.common.io.Resources;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -13,13 +14,19 @@ import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Repeat;
+import io.vertx.ext.unit.junit.RepeatRule;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.nio.charset.StandardCharsets;
+import java.time.YearMonth;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.Aggregator;
@@ -28,6 +35,7 @@ import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -41,6 +49,8 @@ import org.junit.runner.RunWith;
 
 @RunWith(VertxUnitRunner.class)
 public class SQLTriggersIT {
+
+  @Rule public RepeatRule repeatRule = new RepeatRule();
 
   private static final String TENANT = "testtenant";
   private static final String TABLE_AGGREGATOR = "aggregator_settings";
@@ -272,25 +282,6 @@ public class SQLTriggersIT {
   }
 
   @Test
-  public void deleteCounterReports(TestContext context) {
-    getPGClient()
-        .delete(
-            TABLE_NAME_UDP,
-            "e67924ee-aa00-454e-8fd0-c3f81339d20e",
-            context.asyncAssertSuccess(
-                ur ->
-                    getPGClient()
-                        .get(
-                            TABLE_NAME_COUNTER_REPORTS,
-                            new CounterReport(),
-                            false,
-                            context.asyncAssertSuccess(
-                                res ->
-                                    context.verify(
-                                        v -> assertThat(res.getResults().size()).isEqualTo(0))))));
-  }
-
-  @Test
   public void resolveAggregatorLabelBeforeInsert(TestContext context) {
     getPGClient()
         .getById(
@@ -337,6 +328,174 @@ public class SQLTriggersIT {
                                                                         .getAggregator()
                                                                         .getName())
                                                                 .isEqualTo(aggregatorName))))))));
+  }
+
+  @Repeat(10)
+  @Test
+  public void updateProviderReportDatesOnInsertConcurrent(TestContext context) {
+    Async async = context.async();
+    final YearMonth reportStart = YearMonth.of(2018, 1);
+    final int reportCount = 12;
+
+    UsageDataProvider udp = new UsageDataProvider().withId(UUID.randomUUID().toString());
+    Promise<String> createUDPPromise = Promise.promise();
+    getPGClient().upsert(TABLE_NAME_UDP, udp.getId(), udp, createUDPPromise);
+
+    List<CounterReport> reports =
+        IntStream.rangeClosed(1, reportCount)
+            .mapToObj(i -> reportStart.plusMonths(i - 1))
+            .map(ym -> new CounterReport().withProviderId(udp.getId()).withYearMonth(ym.toString()))
+            .collect(Collectors.toList());
+
+    createUDPPromise
+        .future()
+        .compose(
+            s ->
+                CompositeFuture.all(
+                    reports.stream()
+                        .unordered()
+                        .parallel()
+                        .map(
+                            cr -> {
+                              Promise<String> promise = Promise.promise();
+                              getPGClient().save(TABLE_NAME_COUNTER_REPORTS, cr, promise);
+                              return promise.future();
+                            })
+                        .collect(Collectors.toList())))
+        .compose(
+            cf -> {
+              Promise<UsageDataProvider> result = Promise.promise();
+              getPGClient().getById(TABLE_NAME_UDP, udp.getId(), UsageDataProvider.class, result);
+              return result.future();
+            })
+        .onSuccess(
+            result -> {
+              context.verify(
+                  v -> {
+                    assertThat(result.getLatestReport())
+                        .isEqualTo(reportStart.plusMonths(reportCount - 1).toString());
+                    assertThat(result.getEarliestReport()).isEqualTo(reportStart.toString());
+                    assertThat(result.getHasFailedReport()).isEqualTo(HasFailedReport.NO);
+                    assertThat(result.getReportErrorCodes()).isEmpty();
+                  });
+              async.complete();
+            })
+        .onFailure(context::fail);
+  }
+
+  @Repeat(10)
+  @Test
+  public void updateProviderErrorCodesOnInsertConcurrent(TestContext context) {
+    Async async = context.async();
+    final YearMonth reportStart = YearMonth.of(2018, 1);
+    final int errNumberStart = 1000;
+    final int reportCount = 12;
+
+    String udpId = "5edd37a4-6789-4f43-bb9d-850180470631";
+    UsageDataProvider udp = new UsageDataProvider().withId(udpId);
+
+    AtomicInteger errNumber = new AtomicInteger(errNumberStart);
+    List<CounterReport> reports =
+        IntStream.rangeClosed(1, reportCount)
+            .mapToObj(i -> reportStart.plusMonths(i - 1))
+            .map(
+                ym ->
+                    new CounterReport()
+                        .withId(null)
+                        .withProviderId(udpId)
+                        .withYearMonth(ym.toString())
+                        .withReportName("JR1")
+                        .withRelease("4")
+                        .withFailedAttempts(1)
+                        .withFailedReason(
+                            "Number=".concat(String.valueOf(errNumber.getAndIncrement()))))
+            .collect(Collectors.toList());
+
+    Promise<String> saveUDPPromise = Promise.promise();
+    getPGClient().save(TABLE_NAME_UDP, udpId, udp, saveUDPPromise);
+    saveUDPPromise
+        .future()
+        .compose(
+            s ->
+                CompositeFuture.all(
+                    reports.stream()
+                        .unordered()
+                        .parallel()
+                        .map(
+                            cr -> {
+                              Promise<String> promise = Promise.promise();
+                              getPGClient().save(TABLE_NAME_COUNTER_REPORTS, cr, promise);
+                              return promise.future();
+                            })
+                        .collect(Collectors.toList())))
+        .compose(
+            cf -> {
+              Promise<UsageDataProvider> result = Promise.promise();
+              getPGClient().getById(TABLE_NAME_UDP, udpId, UsageDataProvider.class, result);
+              return result.future();
+            })
+        .onSuccess(
+            result -> {
+              context.verify(
+                  v -> {
+                    assertThat(result).isNotNull();
+                    assertThat(result.getHasFailedReport().equals(HasFailedReport.YES));
+                    assertThat(result.getReportErrorCodes())
+                        .containsAll(
+                            IntStream.range(errNumberStart, errNumberStart + reportCount)
+                                .boxed()
+                                .map(String::valueOf)
+                                .collect(Collectors.toList()));
+                    assertThat(result.getEarliestReport()).isNull();
+                    assertThat(result.getLatestReport()).isNull();
+                  });
+              async.complete();
+            })
+        .onFailure(context::fail);
+  }
+
+  @Test
+  public void testThatLatestReportAndEarliestReportAreNull(TestContext context) {
+    Async async = context.async();
+    String udpId = "c74d2bef-330a-43ea-8463-1080e22838cf";
+    UsageDataProvider udp = new UsageDataProvider().withId(udpId);
+
+    CounterReport failedReport =
+        new CounterReport()
+            .withProviderId(udpId)
+            .withYearMonth("2018-01")
+            .withRelease("4")
+            .withReportName("JR1")
+            .withFailedAttempts(1);
+
+    Promise<String> saveUDPPromise = Promise.promise();
+    getPGClient().save(TABLE_NAME_UDP, udpId, udp, saveUDPPromise);
+
+    saveUDPPromise
+        .future()
+        .compose(
+            s -> {
+              Promise<String> promise = Promise.promise();
+              getPGClient().save(TABLE_NAME_COUNTER_REPORTS, failedReport, promise);
+              return promise.future();
+            })
+        .compose(
+            s -> {
+              Promise<UsageDataProvider> promise = Promise.promise();
+              getPGClient().getById(TABLE_NAME_UDP, udpId, UsageDataProvider.class, promise);
+              return promise.future();
+            })
+        .onSuccess(
+            result -> {
+              context.verify(
+                  v -> {
+                    assertThat(result).isNotNull();
+                    assertThat(result.getLatestReport()).isNull();
+                    assertThat(result.getEarliestReport()).isNull();
+                  });
+              async.complete();
+            })
+        .onFailure(context::fail);
   }
 
   @Test
@@ -500,7 +659,7 @@ public class SQLTriggersIT {
                         ar2 -> {
                           if (ar2.succeeded()) {
                             assertThat(ar2.result().getHasFailedReport())
-                                .isEqualTo(UsageDataProvider.HasFailedReport.NO);
+                                .isEqualTo(HasFailedReport.NO);
                             async.complete();
                           } else {
                             context.fail(ar2.cause());
@@ -528,7 +687,7 @@ public class SQLTriggersIT {
                         ar2 -> {
                           if (ar2.succeeded()) {
                             assertThat(ar2.result().getHasFailedReport())
-                                .isEqualTo(UsageDataProvider.HasFailedReport.YES);
+                                .isEqualTo(HasFailedReport.YES);
                             getPGClient()
                                 .delete(
                                     TABLE_NAME_COUNTER_REPORTS,
@@ -543,8 +702,7 @@ public class SQLTriggersIT {
                                                 ar4 -> {
                                                   if (ar4.succeeded()) {
                                                     assertThat(ar4.result().getHasFailedReport())
-                                                        .isEqualTo(
-                                                            UsageDataProvider.HasFailedReport.NO);
+                                                        .isEqualTo(HasFailedReport.NO);
                                                     async2.complete();
                                                   } else {
                                                     context.fail(ar4.cause());
