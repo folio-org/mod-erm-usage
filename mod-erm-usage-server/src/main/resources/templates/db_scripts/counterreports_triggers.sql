@@ -4,10 +4,8 @@ CREATE OR REPLACE FUNCTION latest_year_month(
   ) RETURNS TEXT AS
 $$
 DECLARE res TEXT;
-DECLARE sp TEXT;
 BEGIN
-  SELECT setting INTO sp FROM pg_settings WHERE name = 'search_path';
-	SELECT jsonb->>'yearMonth' INTO res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL ORDER BY jsonb->>'yearMonth' DESC LIMIT 1;
+	SELECT MAX(jsonb->>'yearMonth') INTO res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
 	IF res IS NULL THEN
 		SELECT '' INTO res;
 	END IF;
@@ -23,7 +21,7 @@ CREATE OR REPLACE FUNCTION earliest_year_month(
 $$
 DECLARE res TEXT;
 BEGIN
-	SELECT jsonb->>'yearMonth' into res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL ORDER BY jsonb->>'yearMonth' ASC LIMIT 1;
+	SELECT MIN(jsonb->>'yearMonth') into res FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
 	IF res IS NULL THEN
 		SELECT '' INTO res;
 	END IF;
