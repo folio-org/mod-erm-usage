@@ -38,6 +38,7 @@ import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.persist.interfaces.Results;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.ModuleVersion;
 import org.junit.AfterClass;
@@ -57,7 +58,7 @@ public class SQLTriggersIT {
   private static final String TOKEN = jwtToken(new JsonObject().put("user_id", TENANT));
   private static Vertx vertx;
   private static int port;
-  private static List<Parameter> parameters =
+  private static final List<Parameter> parameters =
       Arrays.asList(
           new Parameter().withKey("loadSample").withValue("true"),
           new Parameter().withKey("loadReference").withValue("true"));
@@ -130,75 +131,37 @@ public class SQLTriggersIT {
     return PostgresClient.getInstance(vertx, TENANT);
   }
 
-  // FIXME: run in a sequence to prevent exception in StatsTracker.java
-  private static Future<Void> validateSampleData() {
+  private static Future<Void> validateSampleData(TestContext context) {
+    Promise<Results<UsageDataProvider>> providerPromise = Promise.promise();
+    getPGClient().get(TABLE_NAME_UDP, new UsageDataProvider(), false, providerPromise);
 
-    Promise<Void> providerPromise = Promise.promise();
-    Promise<Void> reportPromise = Promise.promise();
-    Promise<Void> aggregatorPromise = Promise.promise();
+    Promise<Results<CounterReport>> reportPromise = Promise.promise();
+    getPGClient().get(TABLE_NAME_COUNTER_REPORTS, new CounterReport(), false, reportPromise);
 
-    getPGClient()
-        .get(
-            TABLE_NAME_UDP,
-            new UsageDataProvider(),
-            false,
-            ar -> {
-              if (ar.succeeded()) {
-                assertThat(ar.result().getResults().size()).isEqualTo(4);
-                providerPromise.complete();
-              } else {
-                providerPromise.fail(ar.cause());
-              }
-            });
+    Promise<Results<AggregatorSetting>> aggregatorPromise = Promise.promise();
+    getPGClient().get(TABLE_AGGREGATOR, new AggregatorSetting(), false, aggregatorPromise);
 
-    providerPromise
-        .future()
+    return CompositeFuture.all(
+            providerPromise.future(), reportPromise.future(), aggregatorPromise.future())
         .compose(
-            v -> {
-              getPGClient()
-                  .get(
-                      TABLE_NAME_COUNTER_REPORTS,
-                      new CounterReport(),
-                      false,
-                      ar -> {
-                        if (ar.succeeded()) {
-                          assertThat(ar.result().getResults().size()).isEqualTo(4);
-                          reportPromise.complete();
-                        } else {
-                          reportPromise.fail(ar.cause());
-                        }
-                      });
-              return reportPromise.future();
-            })
-        .setHandler(
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .get(
-                        TABLE_AGGREGATOR,
-                        new AggregatorSetting(),
-                        false,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            assertThat(ar2.result().getResults().size()).isEqualTo(1);
-                            aggregatorPromise.complete();
-                          } else {
-                            aggregatorPromise.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                aggregatorPromise.fail(ar.cause());
-              }
+            cf -> {
+              context.verify(
+                  v -> {
+                    assertThat(providerPromise.future().result().getResults().size()).isEqualTo(4);
+                    assertThat(reportPromise.future().result().getResults().size()).isEqualTo(4);
+                    assertThat(aggregatorPromise.future().result().getResults().size())
+                        .isEqualTo(1);
+                  });
+              return Future.succeededFuture();
             });
-    return aggregatorPromise.future();
   }
 
   @Before
   public void before(TestContext context) {
     deleteSampleData()
         .compose(r -> loadSampleData())
-        .compose(r -> validateSampleData())
-        .setHandler(context.asyncAssertSuccess());
+        .compose(r -> validateSampleData(context))
+        .onComplete(context.asyncAssertSuccess());
   }
 
   private Future<Integer> truncateTable(String tableName) {
@@ -212,11 +175,6 @@ public class SQLTriggersIT {
   }
 
   private Future<Integer> deleteSampleData() {
-    // return CompositeFuture.all(
-    //    truncateTable(TABLE_NAME_UDP), truncateTable(TABLE_AGGREGATOR),
-    // truncateTable(TABLE_NAME_COUNTER_REPORTS));
-
-    // FIXME: run in a sequence to prevent exception in StatsTracker.java
     return truncateTable(TABLE_NAME_UDP)
         .compose(i -> truncateTable(TABLE_AGGREGATOR))
         .compose(i -> truncateTable(TABLE_NAME_COUNTER_REPORTS));
@@ -242,7 +200,8 @@ public class SQLTriggersIT {
     return promise.future();
   }
 
-  private <T extends Object> T clone(T o) {
+  @SuppressWarnings("unchecked")
+  private <T> T clone(T o) {
     return Json.decodeValue(Json.encode(o), (Class<T>) o.getClass());
   }
 
