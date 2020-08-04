@@ -32,85 +32,44 @@ $$ LANGUAGE sql;
 -- trigger function to update latest report available of an usage data provider
 CREATE OR REPLACE FUNCTION update_latest_statistic_on_update() RETURNS TRIGGER AS
 $BODY$
+DECLARE providerId TEXT;
 DECLARE latest TEXT;
 DECLARE earliest TEXT;
-DECLARE providerId TEXT;
+DECLARE error_codes jsonb;
+DECLARE has_failed_report jsonb;
 BEGIN
   IF (TG_OP = 'DELETE') THEN
     providerId := OLD.jsonb->>'providerId';
   ELSE
     providerId := NEW.jsonb->>'providerId';
   END IF;
+
   PERFORM pg_advisory_xact_lock(hashtext(providerId));
 	SELECT latest_year_month(providerId) INTO latest;
 	SELECT earliest_year_month(providerId) INTO earliest;
+	SELECT udp_report_errors(providerId) INTO error_codes;
+  IF error_codes IS NOT NULL THEN
+    SELECT to_jsonb('yes'::TEXT) INTO has_failed_report;
+  ELSE
+    SELECT jsonb_build_array() INTO error_codes;
+    SELECT to_jsonb('no'::TEXT) INTO has_failed_report;
+  END IF;
+
 	UPDATE usage_data_providers SET
 	  jsonb = jsonb || (
 	    '{"latestReport": ' || COALESCE(to_jsonb(latest), 'null'::jsonb)::text ||
 	    ', "earliestReport": ' || COALESCE(to_jsonb(earliest), 'null'::jsonb)::text ||
+	    ', "reportErrorCodes": ' || error_codes ||
+	    ', "hasFailedReport": ' || has_failed_report ||
 	    '}')::jsonb	WHERE jsonb->>'id' = providerId;
+
 	RETURN NULL;
 END;
 $BODY$ LANGUAGE plpgsql;
 
----- trigger function to update if an usage data provider has a failed report and if so the counter/sushi error codes, on update/insert
-CREATE OR REPLACE FUNCTION update_udp_error_codes_on_update() RETURNS TRIGGER AS
-$BODY$
-DECLARE error_codes jsonb;
-DECLARE has_failed_report jsonb;
-BEGIN
-	SELECT udp_report_errors(NEW.jsonb->>'providerId') INTO error_codes;
-	IF error_codes IS NOT NULL THEN
-    SELECT to_jsonb('yes'::TEXT) INTO has_failed_report;
-  ELSE
-    SELECT jsonb_build_array() INTO error_codes;
-    SELECT to_jsonb('no'::TEXT) INTO has_failed_report;
-  END IF;
-  UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{reportErrorCodes}', error_codes, TRUE) WHERE jsonb->>'id'=NEW.jsonb->>'providerId';
-  UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{hasFailedReport}', has_failed_report, TRUE) WHERE jsonb->>'id'=NEW.jsonb->>'providerId';
-	RETURN NEW;
-END;
-$BODY$ LANGUAGE plpgsql;
-
----- trigger function to update if an usage data provider has a failed report and if so the counter/sushi error codes, on delete
-CREATE OR REPLACE FUNCTION update_udp_error_codes_on_delete() RETURNS TRIGGER AS
-$BODY$
-DECLARE error_codes jsonb;
-DECLARE has_failed_report jsonb;
-BEGIN
-	SELECT udp_report_errors(OLD.jsonb->>'providerId') INTO error_codes;
-	IF error_codes IS NOT NULL THEN
-    SELECT to_jsonb('yes'::TEXT) INTO has_failed_report;
-  ELSE
-    SELECT jsonb_build_array() INTO error_codes;
-    SELECT to_jsonb('no'::TEXT) INTO has_failed_report;
-  END IF;
-  UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{reportErrorCodes}', error_codes, TRUE) WHERE jsonb->>'id'=OLD.jsonb->>'providerId';
-  UPDATE usage_data_providers SET jsonb = jsonb_set(jsonb, '{hasFailedReport}', has_failed_report, TRUE) WHERE jsonb->>'id'=OLD.jsonb->>'providerId';
-	RETURN OLD;
-END;
-$BODY$ LANGUAGE plpgsql;
-
--- trigger to update latest report available of an usage data provider, on update/insert
-DROP TRIGGER IF EXISTS update_provider_report_date_on_update ON counter_reports;
-
-CREATE TRIGGER update_provider_report_date_on_update
+-- trigger to update latestReport, earliestReport, reportErrorCodes and hasFailedReport
+-- of the usage data provider, on update/insert/delete
+DROP TRIGGER IF EXISTS update_usage_data_providers_on_insert_or_update_or_delete ON counter_reports;
+CREATE TRIGGER update_usage_data_providers_on_insert_or_update_or_delete
 AFTER INSERT OR UPDATE OR DELETE ON counter_reports
-FOR EACH ROW
-EXECUTE PROCEDURE update_latest_statistic_on_update();
-
----- trigger to update reportErrorCodes and hasFailed if an usage data provider has a failed report, on update/insert
-DROP TRIGGER IF EXISTS update_provider_report_error_codes_on_update ON counter_reports;
-
-CREATE TRIGGER update_provider_report_error_codes_on_update
-AFTER INSERT OR UPDATE ON counter_reports
-FOR EACH ROW
-EXECUTE PROCEDURE update_udp_error_codes_on_update();
-
----- trigger to update reportErrorCodes and hasFailed if an usage data provider has a failed report, on delete
-DROP TRIGGER IF EXISTS update_provider_report_error_codes_on_delete ON counter_reports;
-
-CREATE TRIGGER update_provider_report_error_codes_on_delete
-AFTER DELETE ON counter_reports
-FOR EACH ROW
-EXECUTE PROCEDURE update_udp_error_codes_on_delete();
+FOR EACH ROW EXECUTE PROCEDURE update_latest_statistic_on_update();
