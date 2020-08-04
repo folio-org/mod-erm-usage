@@ -474,8 +474,11 @@ public class SQLTriggersIT {
                         UsageDataProvider.class,
                         ar2 -> {
                           if (ar2.succeeded()) {
-                            assertThat(ar2.result().getLatestReport()).isEqualTo("2018-04");
-                            assertThat(ar2.result().getEarliestReport()).isEqualTo("2017-01");
+                            context.verify(
+                                v -> {
+                                  assertThat(ar2.result().getLatestReport()).isEqualTo("2018-04");
+                                  assertThat(ar2.result().getEarliestReport()).isEqualTo("2017-01");
+                                });
                             async.complete();
                           } else {
                             context.fail(ar2.cause());
@@ -502,8 +505,11 @@ public class SQLTriggersIT {
                         UsageDataProvider.class,
                         ar2 -> {
                           if (ar2.succeeded()) {
-                            assertThat(ar2.result().getLatestReport()).isEqualTo("2019-03");
-                            assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-02");
+                            context.verify(
+                                v -> {
+                                  assertThat(ar2.result().getLatestReport()).isEqualTo("2019-03");
+                                  assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-02");
+                                });
                             async2.complete();
                           } else {
                             context.fail(ar2.cause());
@@ -531,8 +537,11 @@ public class SQLTriggersIT {
                         UsageDataProvider.class,
                         ar2 -> {
                           if (ar2.succeeded()) {
-                            assertThat(ar2.result().getLatestReport()).isEqualTo("2018-04");
-                            assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-02");
+                            context.verify(
+                                v -> {
+                                  assertThat(ar2.result().getLatestReport()).isEqualTo("2018-04");
+                                  assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-02");
+                                });
                             async3.complete();
                           } else {
                             context.fail(ar2.cause());
@@ -560,8 +569,11 @@ public class SQLTriggersIT {
                         UsageDataProvider.class,
                         ar2 -> {
                           if (ar2.succeeded()) {
-                            assertThat(ar2.result().getLatestReport()).isEqualTo("2018-03");
-                            assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-01");
+                            context.verify(
+                                v -> {
+                                  assertThat(ar2.result().getLatestReport()).isEqualTo("2018-03");
+                                  assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-01");
+                                });
                             async.complete();
                           } else {
                             context.fail(ar2.cause());
@@ -587,8 +599,11 @@ public class SQLTriggersIT {
                         UsageDataProvider.class,
                         ar2 -> {
                           if (ar2.succeeded()) {
-                            assertThat(ar2.result().getLatestReport()).isEqualTo("2018-03");
-                            assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-02");
+                            context.verify(
+                                v -> {
+                                  assertThat(ar2.result().getLatestReport()).isEqualTo("2018-03");
+                                  assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-02");
+                                });
                             async2.complete();
                           } else {
                             context.fail(ar2.cause());
@@ -617,8 +632,10 @@ public class SQLTriggersIT {
                         UsageDataProvider.class,
                         ar2 -> {
                           if (ar2.succeeded()) {
-                            assertThat(ar2.result().getHasFailedReport())
-                                .isEqualTo(HasFailedReport.NO);
+                            context.verify(
+                                v ->
+                                    assertThat(ar2.result().getHasFailedReport())
+                                        .isEqualTo(HasFailedReport.NO));
                             async.complete();
                           } else {
                             context.fail(ar2.cause());
@@ -645,8 +662,10 @@ public class SQLTriggersIT {
                         UsageDataProvider.class,
                         ar2 -> {
                           if (ar2.succeeded()) {
-                            assertThat(ar2.result().getHasFailedReport())
-                                .isEqualTo(HasFailedReport.YES);
+                            context.verify(
+                                v ->
+                                    assertThat(ar2.result().getHasFailedReport())
+                                        .isEqualTo(HasFailedReport.YES));
                             getPGClient()
                                 .delete(
                                     TABLE_NAME_COUNTER_REPORTS,
@@ -660,8 +679,12 @@ public class SQLTriggersIT {
                                                 UsageDataProvider.class,
                                                 ar4 -> {
                                                   if (ar4.succeeded()) {
-                                                    assertThat(ar4.result().getHasFailedReport())
-                                                        .isEqualTo(HasFailedReport.NO);
+                                                    context.verify(
+                                                        v ->
+                                                            assertThat(
+                                                                    ar4.result()
+                                                                        .getHasFailedReport())
+                                                                .isEqualTo(HasFailedReport.NO));
                                                     async2.complete();
                                                   } else {
                                                     context.fail(ar4.cause());
