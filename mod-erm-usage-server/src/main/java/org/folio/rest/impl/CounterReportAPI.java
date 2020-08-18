@@ -7,6 +7,7 @@ import com.google.common.io.ByteStreams;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -188,6 +189,51 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         vertxContext,
         PutCounterReportsByIdResponse.class,
         asyncResultHandler);
+  }
+
+  private Response createDownloadResponseByReportVersion(CounterReport report) {
+    if (report.getRelease().equals("4")) {
+      String xmlReport = Counter4Utils.toXML(Json.encode(report.getReport()));
+      return Optional.ofNullable(xmlReport)
+          .map(r -> GetCounterReportsDownloadByIdResponse.respond200WithApplicationXml(xmlReport))
+          .orElse(null);
+    } else if (report.getRelease().equals("5")) {
+      String jsonReport = Json.encode(report.getReport());
+      return Optional.ofNullable(jsonReport)
+          .map(r -> GetCounterReportsDownloadByIdResponse.respond200WithApplicationJson(jsonReport))
+          .orElse(null);
+    } else {
+      return GetCounterReportsDownloadByIdResponse.respond500WithTextPlain(
+          String.format("Unsupported report version '%s'", report.getRelease()));
+    }
+  }
+
+  @Override
+  public void getCounterReportsDownloadById(
+      String id,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+
+    Promise<Response> promise = Promise.promise();
+    getCounterReportsById(id, null, okapiHeaders, promise, vertxContext);
+
+    promise
+        .future()
+        .map(
+            resp -> {
+              Object entity = resp.getEntity();
+              if (entity instanceof CounterReport) {
+                CounterReport report = (CounterReport) entity;
+                return Optional.ofNullable(createDownloadResponseByReportVersion(report))
+                    .orElse(
+                        GetCounterReportsDownloadByIdResponse.respond500WithTextPlain(
+                            "Error while downloading report"));
+              } else {
+                return resp;
+              }
+            })
+        .onComplete(asyncResultHandler);
   }
 
   // index: counter_reports_custom_getcsv_idx

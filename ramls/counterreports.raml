@@ -59,6 +59,21 @@ resourceTypes:
       description: Delete report identified by id
     put:
       description: Put report identified by id
+    /download:
+        get:
+          description: Download report in its original format
+          responses:
+            200:
+              description: OK
+              body:
+                application/xml:
+                application/json:
+            404:
+              description: Not Found
+            500:
+              description: Server Error
+              body:
+                text/plain:
   /sorted:
     /{udpId}:
       get:
