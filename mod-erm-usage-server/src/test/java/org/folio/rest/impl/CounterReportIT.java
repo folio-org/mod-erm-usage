@@ -1,5 +1,10 @@
 package org.folio.rest.impl;
 
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
+import com.google.common.io.Resources;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.parsing.Parser;
@@ -7,42 +12,43 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
-import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.jaxrs.model.ErrorCodes;
-import org.folio.rest.jaxrs.model.TenantAttributes;
-import org.folio.rest.jaxrs.model.UsageDataProvider;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.folio.rest.util.ModuleVersion;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-
-import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.RestVerticle;
+import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.ErrorCodes;
+import org.folio.rest.jaxrs.model.Report;
+import org.folio.rest.jaxrs.model.UsageDataProvider;
+import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.Constants;
+import org.folio.rest.util.EmbeddedPostgresRule;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.olf.erm.usage.counter41.Counter4Utils;
 
 @RunWith(VertxUnitRunner.class)
 public class CounterReportIT {
 
   private static final String APPLICATION_JSON = "application/json";
   private static final String BASE_URI = "/counter-reports";
+  private static final String BASE_URI_DOWNLOAD = BASE_URI.concat("/{id}/download");
   private static final String TENANT = "diku";
-  private static Vertx vertx;
+  private static final Vertx vertx = Vertx.vertx();
   private static CounterReport report;
   private static CounterReport reportChanged;
   private static CounterReport reportFailedReason3000;
@@ -51,10 +57,10 @@ public class CounterReportIT {
 
   @Rule public Timeout timeout = Timeout.seconds(10);
 
-  @BeforeClass
-  public static void setUp(TestContext context) {
-    vertx = Vertx.vertx();
+  @ClassRule public static EmbeddedPostgresRule pgRule = new EmbeddedPostgresRule(vertx, TENANT);
 
+  @BeforeClass
+  public static void beforeClass(TestContext context) {
     try {
       String reportStr =
           new String(Files.readAllBytes(Paths.get("../ramls/examples/counterreport.sample")));
@@ -81,50 +87,114 @@ public class CounterReportIT {
       context.fail(ex);
     }
 
-    try {
-      PostgresClient.setIsEmbedded(true);
-      PostgresClient instance = PostgresClient.getInstance(vertx);
-      instance.startEmbeddedPostgres();
-    } catch (Exception e) {
-      e.printStackTrace();
-      context.fail(e);
-      return;
-    }
-    Async async = context.async();
     int port = NetworkUtils.nextFreePort();
-
     RestAssured.reset();
     RestAssured.baseURI = "http://localhost";
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
 
-    TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
-    vertx.deployVerticle(
-        RestVerticle.class.getName(),
-        options,
-        res -> {
-          try {
-            tenantClient.postTenant(
-                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
-                res2 -> async.complete());
-          } catch (Exception e) {
-            context.fail(e);
-          }
-        });
+    vertx.deployVerticle(RestVerticle.class.getName(), options, context.asyncAssertSuccess());
+  }
+
+  @Before
+  public void setUp(TestContext context) {
+    PostgresClient.getInstance(vertx, TENANT)
+        .delete(
+            Constants.TABLE_NAME_COUNTER_REPORTS, new Criterion(), context.asyncAssertSuccess());
   }
 
   @AfterClass
-  public static void teardown(TestContext context) {
+  public static void afterClass() {
     RestAssured.reset();
-    Async async = context.async();
-    vertx.close(
-        context.asyncAssertSuccess(
-            res -> {
-              PostgresClient.stopEmbeddedPostgres();
-              async.complete();
-            }));
+  }
+
+  @Test
+  public void testGetCounterReportsDownloadById404() {
+    given()
+        .header(XOkapiHeaders.TENANT, TENANT)
+        .pathParam("id", "0c6f1ca0-4ad8-479a-9d99-0dd686fea258")
+        .get(BASE_URI_DOWNLOAD)
+        .then()
+        .statusCode(404);
+  }
+
+  @Test
+  public void testGetCounterReportsDownloadById200Version4() {
+    given()
+        .body(report)
+        .header(XOkapiHeaders.TENANT, TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201);
+
+    given()
+        .header(XOkapiHeaders.TENANT, TENANT)
+        .pathParam("id", report.getId())
+        .get(BASE_URI_DOWNLOAD)
+        .then()
+        .statusCode(200)
+        .contentType(ContentType.XML)
+        .body(equalTo(Counter4Utils.toXML(Json.encode(report.getReport()))));
+  }
+
+  @Test
+  public void testGetCounterReportsDownloadById200Version5() throws IOException {
+    String report =
+        Resources.toString(Resources.getResource("TR/TR_1.json"), StandardCharsets.UTF_8);
+    String id =
+        given()
+            .body(report)
+            .header(XOkapiHeaders.TENANT, TENANT)
+            .header("content-type", APPLICATION_JSON)
+            .post(BASE_URI)
+            .then()
+            .statusCode(201)
+            .extract()
+            .as(CounterReport.class)
+            .getId();
+
+    Report resultReport =
+        given()
+            .header(XOkapiHeaders.TENANT, TENANT)
+            .pathParam("id", id)
+            .get(BASE_URI_DOWNLOAD)
+            .then()
+            .contentType(ContentType.JSON)
+            .statusCode(200)
+            .extract()
+            .as(Report.class);
+
+    assertThat(resultReport)
+        .usingRecursiveComparison()
+        .isEqualTo(Json.decodeValue(report, CounterReport.class).getReport());
+  }
+
+  @Test
+  public void testGetCounterReportsDownloadByIdInvalidVersion() {
+    given()
+        .body(Json.decodeValue(Json.encode(report), CounterReport.class).withRelease("1"))
+        .header(XOkapiHeaders.TENANT, TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201);
+
+    String body =
+        given()
+            .header(XOkapiHeaders.TENANT, TENANT)
+            .pathParam("id", report.getId())
+            .get(BASE_URI_DOWNLOAD)
+            .then()
+            .contentType(ContentType.TEXT)
+            .statusCode(500)
+            .extract()
+            .body()
+            .asString();
+
+    assertThat(body).contains("Unsupported", "version", "'1'");
   }
 
   @Test
@@ -339,7 +409,7 @@ public class CounterReportIT {
   }
 
   @Test
-  public void checkThatWeGetErrorCodes(TestContext context) {
+  public void checkThatWeGetErrorCodes() {
     // POST reports
     given()
         .body(Json.encode(reportFailedReason3000))

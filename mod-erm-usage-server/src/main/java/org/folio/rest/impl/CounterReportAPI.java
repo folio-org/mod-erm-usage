@@ -7,6 +7,7 @@ import com.google.common.io.ByteStreams;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -188,6 +189,51 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         vertxContext,
         PutCounterReportsByIdResponse.class,
         asyncResultHandler);
+  }
+
+  private Response createDownloadResponseByReportVersion(CounterReport report) {
+    if (report.getRelease().equals("4")) {
+      String xmlReport = Counter4Utils.toXML(Json.encode(report.getReport()));
+      return Optional.ofNullable(xmlReport)
+          .map(r -> GetCounterReportsDownloadByIdResponse.respond200WithApplicationXml(xmlReport))
+          .orElse(null);
+    } else if (report.getRelease().equals("5")) {
+      String jsonReport = Json.encode(report.getReport());
+      return Optional.ofNullable(jsonReport)
+          .map(r -> GetCounterReportsDownloadByIdResponse.respond200WithApplicationJson(jsonReport))
+          .orElse(null);
+    } else {
+      return GetCounterReportsDownloadByIdResponse.respond500WithTextPlain(
+          String.format("Unsupported report version '%s'", report.getRelease()));
+    }
+  }
+
+  @Override
+  public void getCounterReportsDownloadById(
+      String id,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+
+    Promise<Response> promise = Promise.promise();
+    getCounterReportsById(id, null, okapiHeaders, promise, vertxContext);
+
+    promise
+        .future()
+        .map(
+            resp -> {
+              Object entity = resp.getEntity();
+              if (entity instanceof CounterReport) {
+                CounterReport report = (CounterReport) entity;
+                return Optional.ofNullable(createDownloadResponseByReportVersion(report))
+                    .orElse(
+                        GetCounterReportsDownloadByIdResponse.respond500WithTextPlain(
+                            "Error while downloading report"));
+              } else {
+                return resp;
+              }
+            })
+        .onComplete(asyncResultHandler);
   }
 
   // index: counter_reports_custom_getcsv_idx
@@ -421,7 +467,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             });
   }
 
-  private Response createGetCounterReportExportByIdResponse(CounterReport cr, String format) {
+  private Response createExportResponseByFormat(CounterReport cr, String format) {
     try {
       return csvMapper(cr)
           .map(
@@ -449,9 +495,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     }
   }
 
-  private Response
-      createGetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse(
-          String csvString, String format) {
+  private Response createExportMultipleMonthsResponseByFormat(String csvString, String format) {
     if ("xlsx".equals(format)) {
       try {
         InputStream in = ExcelUtil.fromCSV(csvString);
@@ -484,7 +528,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               CounterReport.class,
               ar -> {
                 if (ar.succeeded()) {
-                  Response response = createGetCounterReportExportByIdResponse(ar.result(), format);
+                  Response response = createExportResponseByFormat(ar.result(), format);
                   asyncResultHandler.handle(succeededFuture(response));
                 } else {
                   ValidationHelper.handleError(ar.cause(), asyncResultHandler);
@@ -496,6 +540,25 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               GetCounterReportsExportByIdResponse.respond400WithTextPlain(
                   String.format(UNSUPPORTED_MSG, format))));
     }
+  }
+
+  private Response createExportMultipleMonthsResponseByReportVersion(
+      List<CounterReport> reportList, String format, String version) {
+    String csv;
+    try {
+      if (version.equals("4")) {
+        csv = counter4ReportsToCsv(reportList);
+      } else if (version.equals("5")) {
+        csv = counter5ReportsToCsv(reportList);
+      } else {
+        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+            .respond400WithTextPlain(String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version));
+      }
+    } catch (Exception e) {
+      return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+          .respond500WithTextPlain(e.getMessage());
+    }
+    return createExportMultipleMonthsResponseByFormat(csv, format);
   }
 
   @Override
@@ -520,27 +583,9 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               false,
               ar -> {
                 if (ar.succeeded()) {
-                  String csv;
-                  try {
-                    if (version.equals("4")) {
-                      csv = counter4ReportsToCsv(ar.result().getResults());
-                    } else if (version.equals("5")) {
-                      csv = counter5ReportsToCsv(ar.result().getResults());
-                    } else {
-                      asyncResultHandler.handle(
-                          succeededFuture(
-                              GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
-                                  .respond400WithTextPlain(
-                                      String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version))));
-                      return;
-                    }
-                  } catch (Exception e) {
-                    ValidationHelper.handleError(e, asyncResultHandler);
-                    return;
-                  }
                   Response response =
-                      createGetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse(
-                          csv, format);
+                      createExportMultipleMonthsResponseByReportVersion(
+                          ar.result().getResults(), format, version);
                   asyncResultHandler.handle(succeededFuture(response));
                 } else {
                   ValidationHelper.handleError(ar.cause(), asyncResultHandler);

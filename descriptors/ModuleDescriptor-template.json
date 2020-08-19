@@ -125,7 +125,7 @@
     },
     {
       "id": "counter-reports",
-      "version": "1.5",
+      "version": "1.6",
       "handlers": [
         {
           "methods": [
@@ -141,6 +141,15 @@
             "GET"
           ],
           "pathPattern": "/counter-reports/{id}",
+          "permissionsRequired": [
+            "counterreports.item.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/counter-reports/{id}/download",
           "permissionsRequired": [
             "counterreports.item.get"
           ]
