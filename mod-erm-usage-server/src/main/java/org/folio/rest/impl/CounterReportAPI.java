@@ -467,7 +467,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             });
   }
 
-  private Response createGetCounterReportExportByIdResponse(CounterReport cr, String format) {
+  private Response createExportResponseByFormat(CounterReport cr, String format) {
     try {
       return csvMapper(cr)
           .map(
@@ -495,9 +495,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     }
   }
 
-  private Response
-      createGetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse(
-          String csvString, String format) {
+  private Response createExportMultipleMonthsResponseByFormat(String csvString, String format) {
     if ("xlsx".equals(format)) {
       try {
         InputStream in = ExcelUtil.fromCSV(csvString);
@@ -530,7 +528,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               CounterReport.class,
               ar -> {
                 if (ar.succeeded()) {
-                  Response response = createGetCounterReportExportByIdResponse(ar.result(), format);
+                  Response response = createExportResponseByFormat(ar.result(), format);
                   asyncResultHandler.handle(succeededFuture(response));
                 } else {
                   ValidationHelper.handleError(ar.cause(), asyncResultHandler);
@@ -542,6 +540,25 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               GetCounterReportsExportByIdResponse.respond400WithTextPlain(
                   String.format(UNSUPPORTED_MSG, format))));
     }
+  }
+
+  private Response createExportMultipleMonthsResponseByReportVersion(
+      List<CounterReport> reportList, String format, String version) {
+    String csv;
+    try {
+      if (version.equals("4")) {
+        csv = counter4ReportsToCsv(reportList);
+      } else if (version.equals("5")) {
+        csv = counter5ReportsToCsv(reportList);
+      } else {
+        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+            .respond400WithTextPlain(String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version));
+      }
+    } catch (Exception e) {
+      return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+          .respond500WithTextPlain(e.getMessage());
+    }
+    return createExportMultipleMonthsResponseByFormat(csv, format);
   }
 
   @Override
@@ -566,27 +583,9 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               false,
               ar -> {
                 if (ar.succeeded()) {
-                  String csv;
-                  try {
-                    if (version.equals("4")) {
-                      csv = counter4ReportsToCsv(ar.result().getResults());
-                    } else if (version.equals("5")) {
-                      csv = counter5ReportsToCsv(ar.result().getResults());
-                    } else {
-                      asyncResultHandler.handle(
-                          succeededFuture(
-                              GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
-                                  .respond400WithTextPlain(
-                                      String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version))));
-                      return;
-                    }
-                  } catch (Exception e) {
-                    ValidationHelper.handleError(e, asyncResultHandler);
-                    return;
-                  }
                   Response response =
-                      createGetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse(
-                          csv, format);
+                      createExportMultipleMonthsResponseByReportVersion(
+                          ar.result().getResults(), format, version);
                   asyncResultHandler.handle(succeededFuture(response));
                 } else {
                   ValidationHelper.handleError(ar.cause(), asyncResultHandler);
