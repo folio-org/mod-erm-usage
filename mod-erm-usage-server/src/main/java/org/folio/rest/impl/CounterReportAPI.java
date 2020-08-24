@@ -424,17 +424,17 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   /** @deprecated As of 2.9.0 */
   @Deprecated
   @Override
-  public void getCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEnd(
+  public void getCounterReportsCsvProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEnd(
       String id,
       String name,
-      String version,
+      String aversion,
       String begin,
       String end,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    CQLWrapper cql = createGetMultipleReportsCQL(id, name, version, begin, end);
+    CQLWrapper cql = createGetMultipleReportsCQL(id, name, aversion, begin, end);
 
     PgUtil.postgresClient(vertxContext, okapiHeaders)
         .get(
@@ -446,12 +446,12 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               if (ar.succeeded()) {
                 String csv;
                 try {
-                  if (version.equals("4")) {
+                  if (aversion.equals("4")) {
                     csv = counter4ReportsToCsv(ar.result().getResults());
-                  } else if (version.equals("5")) {
+                  } else if (aversion.equals("5")) {
                     csv = counter5ReportsToCsv(ar.result().getResults());
                   } else {
-                    throw new CounterReportAPIException("Unknown counter version:" + version);
+                    throw new CounterReportAPIException("Unknown counter version:" + aversion);
                   }
                 } catch (Exception e) {
                   ValidationHelper.handleError(e, asyncResultHandler);
@@ -459,7 +459,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 }
                 asyncResultHandler.handle(
                     succeededFuture(
-                        GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+                        GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
                             .respond200WithTextCsv(csv)));
               } else {
                 ValidationHelper.handleError(ar.cause(), asyncResultHandler);
@@ -501,14 +501,14 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         InputStream in = ExcelUtil.fromCSV(csvString);
         BinaryOutStream bos = new BinaryOutStream();
         bos.setData(ByteStreams.toByteArray(in));
-        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
             .respond200WithApplicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet(bos);
       } catch (IOException e) {
-        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
             .respond500WithTextPlain(String.format(XLSX_ERR_MSG, e.getMessage()));
       }
     }
-    return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+    return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
         .respond200WithTextCsv(csvString);
   }
 
@@ -551,30 +551,31 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       } else if (version.equals("5")) {
         csv = counter5ReportsToCsv(reportList);
       } else {
-        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
             .respond400WithTextPlain(String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version));
       }
     } catch (Exception e) {
-      return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+      return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
           .respond500WithTextPlain(e.getMessage());
     }
     return createExportMultipleMonthsResponseByFormat(csv, format);
   }
 
   @Override
-  public void getCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEnd(
-      String id,
-      String name,
-      String version,
-      String begin,
-      String end,
-      String format,
-      Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler,
-      Context vertxContext) {
+  public void
+      getCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEnd(
+          String id,
+          String name,
+          String aversion,
+          String begin,
+          String end,
+          String format,
+          Map<String, String> okapiHeaders,
+          Handler<AsyncResult<Response>> asyncResultHandler,
+          Context vertxContext) {
 
     if (SUPPORTED_FORMATS.contains(format)) {
-      CQLWrapper cql = createGetMultipleReportsCQL(id, name, version, begin, end);
+      CQLWrapper cql = createGetMultipleReportsCQL(id, name, aversion, begin, end);
       PgUtil.postgresClient(vertxContext, okapiHeaders)
           .get(
               TABLE_NAME_COUNTER_REPORTS,
@@ -585,7 +586,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 if (ar.succeeded()) {
                   Response response =
                       createExportMultipleMonthsResponseByReportVersion(
-                          ar.result().getResults(), format, version);
+                          ar.result().getResults(), format, aversion);
                   asyncResultHandler.handle(succeededFuture(response));
                 } else {
                   ValidationHelper.handleError(ar.cause(), asyncResultHandler);
@@ -594,7 +595,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     } else {
       asyncResultHandler.handle(
           succeededFuture(
-              GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndVersionAndBeginAndEndResponse
+              GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
                   .respond400WithTextPlain(String.format(UNSUPPORTED_MSG, format))));
     }
   }

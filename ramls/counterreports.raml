@@ -105,7 +105,7 @@ resourceTypes:
             description: Server Error
             body:
               text/plain:
-    /provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}:
+    /provider/{id}/report/{name}/version/{aversion}/from/{begin}/to/{end}:
       get:
         description: DEPRECATED Get report for several months as CSV for a provider id
         responses:
@@ -137,7 +137,7 @@ resourceTypes:
               description: Server Error
               body:
                 text/plain:
-      /provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}:
+      /provider/{id}/report/{name}/version/{aversion}/from/{begin}/to/{end}:
             get:
               queryParameters:
                 format:
