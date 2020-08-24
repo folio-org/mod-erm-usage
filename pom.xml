@@ -24,10 +24,12 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <!--<maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>-->
+    <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
+    <maven.compiler.release>11</maven.compiler.release>
 
-    <raml-module-builder.version>30.2.5</raml-module-builder.version>
+    <raml-module-builder.version>31.0.1</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
     <vertx.version>3.9.1</vertx.version>
     <erm.usage.counter.version>1.8.0-SNAPSHOT</erm.usage.counter.version>
