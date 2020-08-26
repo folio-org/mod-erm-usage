@@ -307,7 +307,7 @@ public class CounterReportUploadIT {
     Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
     assertThat(reportFromXML)
         .usingRecursiveComparison()
-        .ignoringFields("created.fractionalSecond")
+        .ignoringFields("created.fractionalSecond", "created.orig_fracSeconds")
         .isEqualTo(reportFromDB);
   }
 
