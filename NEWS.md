@@ -1,3 +1,10 @@
+# 2.10.0
+* Add endpoint to manage custom-reports (MODEUS-58)
+* Add property to UDP schema for storing last harvesting datetime (MODEUS-73)
+* mod-erm-usage crashes when manually uploading certain COUNTER reports (MODEUS-76)
+* Latest statistics sometimes has incorrect value (MODEUS-77)
+* Add endpoint for downloading reports in their original format (MODEUS-78)
+
 # 2.9.0
 * Support xlsx download of udp credentials (MODEUS-63)
 * Create endpoint for exporting counter reports in different formats (MODEUS-61)
