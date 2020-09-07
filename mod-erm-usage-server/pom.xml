@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>mod-erm-usage-server</artifactId>
@@ -8,25 +10,24 @@
   <parent>
     <groupId>org.olf</groupId>
     <artifactId>mod-erm-usage</artifactId>
-    <version>2.11.0-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
   </parent>
 
   <dependencies>
     <dependency>
-      <groupId>org.folio</groupId>
-      <artifactId>domain-models-runtime</artifactId>
-      <version>${raml-module-builder.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>com.fasterxml.jackson.module</groupId>
-          <artifactId>jackson-module-jaxb-annotations</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>19.0</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.validation</groupId>
+      <artifactId>validation-api</artifactId>
+      <version>2.0.0.Final</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-csv</artifactId>
-      <version>2.9.8</version>
+      <version>2.11.2</version>
     </dependency>
     <dependency>
       <groupId>org.olf</groupId>
@@ -42,6 +43,17 @@
       <groupId>org.olf</groupId>
       <artifactId>mod-erm-usage-counter-common</artifactId>
       <version>${erm.usage.counter.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.folio</groupId>
+      <artifactId>domain-models-runtime</artifactId>
+      <version>${raml-module-builder.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.module</groupId>
+          <artifactId>jackson-module-jaxb-annotations</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -74,13 +86,13 @@
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
-      <version>3.3.0</version>
+      <version>4.3.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.github.tomakehurst</groupId>
-      <artifactId>wiremock</artifactId>
-      <version>2.18.0</version>
+      <artifactId>wiremock-standalone</artifactId>
+      <version>2.27.1</version>
       <exclusions>
         <exclusion>
           <groupId>net.sf.jopt-simple</groupId>
@@ -95,19 +107,13 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.1</version>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-          <encoding>UTF-8</encoding>
-        </configuration>
       </plugin>
 
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.5.0</version>
         <executions>
           <execution>
             <id>generate_interfaces</id>
@@ -151,9 +157,9 @@
       </plugin>
 
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
+        <groupId>com.nickwongdev</groupId>
         <artifactId>aspectj-maven-plugin</artifactId>
-        <version>1.10</version>
+        <version>1.12.6</version>
         <configuration>
           <verbose>true</verbose>
           <showWeaveInfo>false</showWeaveInfo>
@@ -183,19 +189,19 @@
           <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjrt</artifactId>
-            <version>1.8.9</version>
+            <version>1.9.5</version>
           </dependency>
           <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjtools</artifactId>
-            <version>1.8.9</version>
+            <version>1.9.5</version>
           </dependency>
         </dependencies>
       </plugin>
 
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>3.0.1</version>
         <executions>
           <execution>
             <id>copy-resources</id>
@@ -250,29 +256,8 @@
       </plugin>
 
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.0.0</version>
-        <executions>
-          <execution>
-            <id>add-raml-jaxrs-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>${project.build.directory}/generated-sources/raml-jaxrs</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
         <groupId>com.coderplus.maven.plugins</groupId>
         <artifactId>copy-rename-maven-plugin</artifactId>
-        <version>1.0</version>
         <executions>
           <execution>
             <id>rename-descriptor-outputs</id>
@@ -305,25 +290,48 @@
         </executions>
       </plugin>
 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-raml-jaxrs-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources/raml-jaxrs</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <!-- Replace the baseUri and the protocols in the RAMLs that have been
         copied to apidocs directory so that they can be used via the local html api
         console. -->
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.8</version>
+        <version>3.0.0</version>
         <executions>
           <execution>
             <phase>prepare-package</phase>
             <configuration>
               <target>
-                <replace token="baseUri: http://github.com/org/folio/mod-users" value="baseUri: http://localhost:{http.port}" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
+                <replace token="baseUri: http://github.com/org/folio/mod-users"
+                  value="baseUri: http://localhost:{http.port}"
+                  dir="${basedir}/target/classes/apidocs/raml">
+                  <include name="**/*.raml"/>
                 </replace>
-                <replace token="protocols: [ HTTPS ]" value="protocols: [ HTTP ]" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
+                <replace token="protocols: [ HTTPS ]" value="protocols: [ HTTP ]"
+                  dir="${basedir}/target/classes/apidocs/raml">
+                  <include name="**/*.raml"/>
                 </replace>
-                <replace token="../.." value="../raml-util" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
+                <replace token="../.." value="../raml-util"
+                  dir="${basedir}/target/classes/apidocs/raml">
+                  <include name="**/*.raml"/>
                 </replace>
               </target>
             </configuration>
@@ -352,14 +360,14 @@
               <value>${project.baseUri}src/main/resources/log4j.properties</value>
             </property>
           </properties>
-          <outputFile />
+          <outputFile/>
         </configuration>
       </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>2.3</version>
+        <version>3.2.4</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -368,14 +376,15 @@
             </goals>
             <configuration>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
                     <Main-Class>org.folio.rest.RestLauncher</Main-Class>
                     <Main-Verticle>org.folio.rest.RestVerticle</Main-Verticle>
                   </manifestEntries>
                 </transformer>
               </transformers>
-              <artifactSet />
+              <artifactSet/>
               <outputFile>${project.build.directory}/${project.artifactId}-fat.jar</outputFile>
             </configuration>
           </execution>
@@ -385,7 +394,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.19.1</version>
         <configuration>
           <excludedGroups>performance.PerformanceTest</excludedGroups>
         </configuration>
