@@ -91,31 +91,6 @@ resourceTypes:
           500:
             body:
               text/plain:
-  # deprecated since 2.9.0 and removed soon
-  # use /export instead
-  /csv:
-    /{id}:
-      get:
-        description: DEPRECATED Get the report identified by id as CSV
-        responses:
-          200:
-            body:
-              text/csv:
-          500:
-            description: Server Error
-            body:
-              text/plain:
-    /provider/{id}/report/{name}/version/{aversion}/from/{begin}/to/{end}:
-      get:
-        description: DEPRECATED Get report for several months as CSV for a provider id
-        responses:
-          200:
-            body:
-              text/csv:
-          500:
-            description: Server Error
-            body:
-              text/plain:
   /export:
       /{id}:
         get:
