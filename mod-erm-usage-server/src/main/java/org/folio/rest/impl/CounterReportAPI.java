@@ -316,43 +316,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     return Optional.empty();
   }
 
-  /** @deprecated As of 2.9.0 */
-  @Deprecated
-  @Override
-  public void getCounterReportsCsvById(
-      String id,
-      Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler,
-      Context vertxContext) {
-
-    PgUtil.postgresClient(vertxContext, okapiHeaders)
-        .getById(
-            TABLE_NAME_COUNTER_REPORTS,
-            id,
-            CounterReport.class,
-            ar -> {
-              if (ar.succeeded()) {
-
-                try {
-                  asyncResultHandler.handle(
-                      csvMapper(ar.result())
-                          .<AsyncResult<Response>>map(
-                              csv ->
-                                  succeededFuture(
-                                      GetCounterReportsCsvByIdResponse.respond200WithTextCsv(csv)))
-                          .orElse(
-                              succeededFuture(
-                                  GetCounterReportsCsvByIdResponse.respond500WithTextPlain(
-                                      "No report data or no mapper available"))));
-                } catch (Counter5UtilsException e) {
-                  ValidationHelper.handleError(e, asyncResultHandler);
-                }
-              } else {
-                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
-              }
-            });
-  }
-
   @Override
   public void postCounterReportsUploadProviderById(
       String id,
@@ -416,53 +379,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 asyncResultHandler.handle(
                     succeededFuture(
                         GetCounterReportsErrorsCodesResponse.respond500WithTextPlain(ar.cause())));
-              }
-            });
-  }
-
-  // index: counter_reports_custom_getcsv_idx
-  /** @deprecated As of 2.9.0 */
-  @Deprecated
-  @Override
-  public void getCounterReportsCsvProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEnd(
-      String id,
-      String name,
-      String aversion,
-      String begin,
-      String end,
-      Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler,
-      Context vertxContext) {
-
-    CQLWrapper cql = createGetMultipleReportsCQL(id, name, aversion, begin, end);
-
-    PgUtil.postgresClient(vertxContext, okapiHeaders)
-        .get(
-            TABLE_NAME_COUNTER_REPORTS,
-            CounterReport.class,
-            cql,
-            false,
-            ar -> {
-              if (ar.succeeded()) {
-                String csv;
-                try {
-                  if (aversion.equals("4")) {
-                    csv = counter4ReportsToCsv(ar.result().getResults());
-                  } else if (aversion.equals("5")) {
-                    csv = counter5ReportsToCsv(ar.result().getResults());
-                  } else {
-                    throw new CounterReportAPIException("Unknown counter version:" + aversion);
-                  }
-                } catch (Exception e) {
-                  ValidationHelper.handleError(e, asyncResultHandler);
-                  return;
-                }
-                asyncResultHandler.handle(
-                    succeededFuture(
-                        GetCounterReportsCsvProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
-                            .respond200WithTextCsv(csv)));
-              } else {
-                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
               }
             });
   }
@@ -669,13 +585,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       return Counter5Utils.fromJSON(Json.encode(report.getReport()));
     } catch (Counter5UtilsException e) {
       throw new CounterReportAPIRuntimeException(e);
-    }
-  }
-
-  private static class CounterReportAPIException extends Exception {
-
-    public CounterReportAPIException(String message) {
-      super(message);
     }
   }
 

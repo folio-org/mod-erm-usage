@@ -125,7 +125,7 @@
     },
     {
       "id": "counter-reports",
-      "version": "1.6",
+      "version": "2.0",
       "handlers": [
         {
           "methods": [
@@ -185,25 +185,7 @@
           "methods": [
             "GET"
           ],
-          "pathPattern": "/counter-reports/csv/{id}",
-          "permissionsRequired": [
-            "counterreports.item.get"
-          ]
-        },
-        {
-          "methods": [
-            "GET"
-          ],
           "pathPattern": "/counter-reports/sorted/{udpId}",
-          "permissionsRequired": [
-            "counterreports.item.get"
-          ]
-        },
-        {
-          "methods": [
-            "GET"
-          ],
-          "pathPattern": "/counter-reports/csv/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}",
           "permissionsRequired": [
             "counterreports.item.get"
           ]
