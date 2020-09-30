@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.Matchers.containsString;
 
 import com.google.common.io.Files;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.xml.bind.JAXB;
 import org.apache.commons.io.IOUtils;
@@ -516,6 +518,7 @@ public class CounterReportUploadIT {
 
     Object report = Counter5Utils.fromJSON(jsonString);
     String csvString = Counter5Utils.toCSV(report);
+    assertThat(csvString).isNotNull();
 
     String createdIds =
         given()
@@ -586,7 +589,7 @@ public class CounterReportUploadIT {
             expected.getReportItems().stream()
                 .filter(item -> item.getDatabase().equals(actualUsage.getDatabase()))
                 .findFirst()
-                .get();
+                .orElse(null);
         assertThat(actualUsage)
             .usingRecursiveComparison()
             .ignoringCollectionOrder()
@@ -608,7 +611,7 @@ public class CounterReportUploadIT {
         COUNTERTitleUsage actualUsage = actual.getReportItems().get(i);
         List<COUNTERItemIdentifiers> itemIDsWoNull =
             actual.getReportItems().get(i).getItemID().stream()
-                .filter(itemId -> itemId != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         actualUsage.setItemID(itemIDsWoNull);
 
@@ -616,7 +619,7 @@ public class CounterReportUploadIT {
             expected.getReportItems().stream()
                 .filter(item -> item.getTitle().equals(actualUsage.getTitle()))
                 .findFirst()
-                .get();
+                .orElse(null);
 
         assertThat(actualUsage)
             .usingRecursiveComparison()
@@ -625,11 +628,9 @@ public class CounterReportUploadIT {
       }
     } else {
       // casting to other types not implemented
-      assertThat(true)
-          .as(
-              String.format(
-                  "Comparing reports of type %s not implemented", first.getClass().toString()))
-          .isEqualTo(false);
+      fail(
+          String.format(
+              "Comparing reports of type %s not implemented", first.getClass().toString()));
     }
   }
 
