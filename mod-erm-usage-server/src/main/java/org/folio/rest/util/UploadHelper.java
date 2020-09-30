@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.time.YearMonth;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.IOUtils;
@@ -73,15 +74,20 @@ public class UploadHelper {
     }
 
     Report finalReport = report;
+    String reportName =
+        Optional.ofNullable(Counter4Utils.getNameForReportTitle(finalReport.getName()))
+            .orElseThrow(() -> new FileUploadException("Unsupported report"));
+
     result =
         reports.stream()
             .map(
                 r -> {
                   List<YearMonth> months = Counter4Utils.getYearMonthsFromReport(r);
+
                   if (!months.isEmpty()) {
                     return new CounterReport()
                         .withRelease(finalReport.getVersion())
-                        .withReportName(Counter4Utils.getNameForReportTitle(finalReport.getName()))
+                        .withReportName(reportName)
                         .withReport(
                             Json.decodeValue(
                                 Counter4Utils.toJSON(r), org.folio.rest.jaxrs.model.Report.class))
@@ -99,8 +105,7 @@ public class UploadHelper {
     // Counter 5
     Object cop5Report = createCOP5Report(content);
     SUSHIReportHeader header = Counter5Utils.getSushiReportHeaderFromReportObject(cop5Report);
-    List<YearMonth> yearMonthsFromReportCOP5 = Counter5Utils
-        .getYearMonthsFromReportHeader(header);
+    List<YearMonth> yearMonthsFromReportCOP5 = Counter5Utils.getYearMonthsFromReportHeader(header);
     List<Object> reports = Collections.singletonList(cop5Report);
     if (yearMonthsFromReportCOP5.size() != 1) {
       reports = Counter5Utils.split(cop5Report);
@@ -108,24 +113,24 @@ public class UploadHelper {
 
     Gson gson = new Gson();
     return reports.stream()
-        .map(r -> {
-          List<YearMonth> ym = Counter5Utils.getYearMonthFromReport(r);
-          if (!ym.isEmpty()) {
-            return new CounterReport()
-                .withRelease("5")
-                .withReportName(header.getReportID())
-                .withReport(Json.decodeValue(gson.toJson(r),
-                    org.folio.rest.jaxrs.model.Report.class))
-                .withYearMonth(ym.get(0).toString());
-          } else {
-            return null;
-          }
-        })
+        .map(
+            r -> {
+              List<YearMonth> ym = Counter5Utils.getYearMonthFromReport(r);
+              if (!ym.isEmpty()) {
+                return new CounterReport()
+                    .withRelease("5")
+                    .withReportName(header.getReportID())
+                    .withReport(
+                        Json.decodeValue(gson.toJson(r), org.folio.rest.jaxrs.model.Report.class))
+                    .withYearMonth(ym.get(0).toString());
+              } else {
+                return null;
+              }
+            })
         .collect(Collectors.toList());
   }
 
-  private static Object createCOP5Report(String content)
-      throws FileUploadException {
+  private static Object createCOP5Report(String content) throws FileUploadException {
     Object cop5Report = null;
     try {
       cop5Report = Counter5Utils.fromJSON(content);
@@ -169,7 +174,6 @@ public class UploadHelper {
     return release;
   }
 
-
   public static class FileUploadException extends Exception {
 
     private static final long serialVersionUID = -3795351043189447151L;
@@ -185,9 +189,7 @@ public class UploadHelper {
     public FileUploadException(Exception e) {
       super(e);
     }
-
   }
 
-  private UploadHelper() {
-  }
+  private UploadHelper() {}
 }

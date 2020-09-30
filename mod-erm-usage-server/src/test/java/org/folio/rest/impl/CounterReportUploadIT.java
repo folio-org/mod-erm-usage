@@ -68,6 +68,8 @@ public class CounterReportUploadIT {
   private static final String PROVIDER_ID2 = "4b659cb9-e4bb-493d-ae30-5f5690c54803";
   private static final File FILE_REPORT_OK =
       new File(Resources.getResource("fileupload/reportJSTOR.xml").getFile());
+  private static final File FILE_REPORT_UNSUPPORTED =
+      new File(Resources.getResource("fileupload/reportUnsupported.xml").getFile());
   private static final File FILE_REPORT_NSS_OK =
       new File(Resources.getResource("fileupload/reportNSS.xml").getFile());
   private static final File FILE_NO_REPORT =
@@ -225,6 +227,17 @@ public class CounterReportUploadIT {
     Report reportFromXML = JAXB.unmarshal(FILE_REPORT_OK, Report.class);
     Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
     assertThat(reportFromXML).usingRecursiveComparison().isEqualTo(reportFromDB);
+  }
+
+  @Test
+  public void testReportR4UnsupportedReport() {
+    given()
+        .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+        .body(FILE_REPORT_UNSUPPORTED)
+        .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+        .then()
+        .statusCode(500)
+        .body(containsString("Unsupported report"));
   }
 
   @Test
