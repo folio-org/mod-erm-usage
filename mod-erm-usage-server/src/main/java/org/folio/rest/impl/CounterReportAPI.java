@@ -2,6 +2,7 @@ package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
+import static org.folio.rest.util.VertxUtil.executeBlocking;
 
 import com.google.common.io.ByteStreams;
 import io.vertx.core.AsyncResult;
@@ -220,17 +221,20 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
 
     promise
         .future()
-        .map(
+        .compose(
             resp -> {
               Object entity = resp.getEntity();
               if (entity instanceof CounterReport) {
                 CounterReport report = (CounterReport) entity;
-                return Optional.ofNullable(createDownloadResponseByReportVersion(report))
-                    .orElse(
-                        GetCounterReportsDownloadByIdResponse.respond500WithTextPlain(
-                            "Error while downloading report"));
+                return executeBlocking(
+                    vertxContext,
+                    () ->
+                        Optional.ofNullable(createDownloadResponseByReportVersion(report))
+                            .orElse(
+                                GetCounterReportsDownloadByIdResponse.respond500WithTextPlain(
+                                    "Error while downloading report")));
               } else {
-                return resp;
+                return succeededFuture(resp);
               }
             })
         .onComplete(asyncResultHandler);
@@ -325,40 +329,54 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    List<CounterReport> counterReports;
-    try {
-      counterReports = UploadHelper.getCounterReportsFromInputStream(entity);
-    } catch (Exception e) {
-      asyncResultHandler.handle(
-          succeededFuture(
-              PostCounterReportsUploadProviderByIdResponse.respond500WithTextPlain(
-                  String.format("Error uploading file: %s", e.getMessage()))));
-      return;
-    }
-
-    PgHelper.getUDPfromDbById(vertxContext, okapiHeaders, id)
-        .compose(
-            udp -> {
-              counterReports.forEach(
-                  cr -> cr.withProviderId(udp.getId()).withDownloadTime(Date.from(Instant.now())));
-              return succeededFuture(counterReports);
+    executeBlocking(
+            vertxContext,
+            () -> {
+              try {
+                return UploadHelper.getCounterReportsFromInputStream(entity);
+              } catch (Exception e) {
+                throw new ReportUploadException(e);
+              }
             })
-        .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, okapiHeaders, crs, overwrite))
-        .onComplete(
-            ar -> {
-              if (ar.succeeded()) {
-                asyncResultHandler.handle(
-                    succeededFuture(
-                        PostCounterReportsUploadProviderByIdResponse.respond200WithTextPlain(
-                            String.format(
-                                "Saved report with ids: %s", String.join(",", ar.result())))));
-              } else {
+        .onSuccess(
+            counterReports ->
+                PgHelper.getUDPfromDbById(vertxContext, okapiHeaders, id)
+                    .compose(
+                        udp -> {
+                          counterReports.forEach(
+                              cr ->
+                                  cr.withProviderId(udp.getId())
+                                      .withDownloadTime(Date.from(Instant.now())));
+                          return succeededFuture(counterReports);
+                        })
+                    .compose(
+                        crs ->
+                            PgHelper.saveCounterReportsToDb(
+                                vertxContext, okapiHeaders, crs, overwrite))
+                    .onComplete(
+                        ar -> {
+                          if (ar.succeeded()) {
+                            asyncResultHandler.handle(
+                                succeededFuture(
+                                    PostCounterReportsUploadProviderByIdResponse
+                                        .respond200WithTextPlain(
+                                            String.format(
+                                                "Saved report with ids: %s",
+                                                String.join(",", ar.result())))));
+                          } else {
+                            asyncResultHandler.handle(
+                                succeededFuture(
+                                    PostCounterReportsUploadProviderByIdResponse
+                                        .respond500WithTextPlain(
+                                            String.format("Error saving report: %s", ar.cause()))));
+                          }
+                        }))
+        .onFailure(
+            t ->
                 asyncResultHandler.handle(
                     succeededFuture(
                         PostCounterReportsUploadProviderByIdResponse.respond500WithTextPlain(
-                            String.format("Error saving report: %s", ar.cause()))));
-              }
-            });
+                            String.format("Error uploading file: %s", t.getMessage())))));
   }
 
   @Override
@@ -444,8 +462,15 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               CounterReport.class,
               ar -> {
                 if (ar.succeeded()) {
-                  Response response = createExportResponseByFormat(ar.result(), format);
-                  asyncResultHandler.handle(succeededFuture(response));
+                  executeBlocking(
+                          vertxContext, () -> createExportResponseByFormat(ar.result(), format))
+                      .onSuccess(resp -> asyncResultHandler.handle(succeededFuture(resp)))
+                      .onFailure(
+                          t ->
+                              asyncResultHandler.handle(
+                                  succeededFuture(
+                                      GetCounterReportsExportByIdResponse.respond500WithTextPlain(
+                                          t.getMessage()))));
                 } else {
                   ValidationHelper.handleError(ar.cause(), asyncResultHandler);
                 }
@@ -500,10 +525,18 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
               false,
               ar -> {
                 if (ar.succeeded()) {
-                  Response response =
-                      createExportMultipleMonthsResponseByReportVersion(
-                          ar.result().getResults(), format, aversion);
-                  asyncResultHandler.handle(succeededFuture(response));
+                  executeBlocking(
+                          vertxContext,
+                          () ->
+                              createExportMultipleMonthsResponseByReportVersion(
+                                  ar.result().getResults(), format, aversion))
+                      .onSuccess(resp -> asyncResultHandler.handle(succeededFuture(resp)))
+                      .onFailure(
+                          t ->
+                              asyncResultHandler.handle(
+                                  succeededFuture(
+                                      GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
+                                          .respond500WithTextPlain(t.getMessage()))));
                 } else {
                   ValidationHelper.handleError(ar.cause(), asyncResultHandler);
                 }
@@ -591,6 +624,13 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   private static class CounterReportAPIRuntimeException extends RuntimeException {
 
     public CounterReportAPIRuntimeException(Throwable cause) {
+      super(cause);
+    }
+  }
+
+  private static class ReportUploadException extends RuntimeException {
+
+    public ReportUploadException(Throwable cause) {
       super(cause);
     }
   }
