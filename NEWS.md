@@ -1,3 +1,10 @@
+# 3.0.0
+* Unsupported reports causing sql errors on upload (MODEUS-89)
+* Report download seems to block the event loop (MODEUS-88)
+* Remove deprecated /counter-reports/csv endpoint (MODEUS-62)
+* Upgrade to RAML Module Builder 31.x (MODEUS-82)
+* Update module to JDK 11 ([MODEUS-81])
+
 # 2.10.0
 * Add endpoint to manage custom-reports (MODEUS-58)
 * Add property to UDP schema for storing last harvesting datetime (MODEUS-73)
