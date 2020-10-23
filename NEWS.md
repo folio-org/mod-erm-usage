@@ -1,3 +1,8 @@
+# 3.0.1 (2020-10-23)
+* Bugfix: Module logging error "ERROR StatusLogger Unrecognized format specifier" (MODEUS-92)
+* Upgrade to junit 4.13.1
+* Bugfix: Some database migration scripts between Goldenrod & Honeysuckle not executed (MODEUS-93)
+
 # 3.0.0
 * Unsupported reports causing sql errors on upload (MODEUS-89)
 * Report download seems to block the event loop (MODEUS-88)
