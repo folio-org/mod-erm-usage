@@ -13,7 +13,7 @@
     {
       "run": "after",
       "snippetPath": "counterreports_triggers.sql",
-      "fromModuleVersion": "mod-erm-usage-2.7.0"
+      "fromModuleVersion": "mod-erm-usage-3.0.0"
     },
     {
       "run": "after",
