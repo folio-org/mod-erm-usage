@@ -1,3 +1,6 @@
+# 3.0.2 (2020-11-04)
+* Upgrade to RMB 31.1.5 and Vert.x 3.9.4 (MODEUS-95)
+
 # 3.0.1 (2020-10-23)
 * Bugfix: Module logging error "ERROR StatusLogger Unrecognized format specifier" (MODEUS-92)
 * Upgrade to junit 4.13.1
