@@ -23,10 +23,13 @@ import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CustomReport;
 import org.folio.rest.jaxrs.model.CustomReports;
 import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.Constants;
 import org.folio.rest.util.ModuleVersion;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,7 +64,7 @@ public class CustomReportIT {
   @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
-  public static void setUp(TestContext context) {
+  public static void beforeClass(TestContext context) {
     vertx = Vertx.vertx();
 
     reportFirst =
@@ -122,7 +125,7 @@ public class CustomReportIT {
   }
 
   @AfterClass
-  public static void teardown(TestContext context) {
+  public static void afterClass(TestContext context) {
     RestAssured.reset();
     Async async = context.async();
     vertx.close(
@@ -131,6 +134,13 @@ public class CustomReportIT {
               PostgresClient.stopEmbeddedPostgres();
               async.complete();
             }));
+  }
+
+  @Before
+  public void before(TestContext context) {
+    // clear table
+    PostgresClient.getInstance(vertx, TENANT)
+        .delete(Constants.TABLE_NAME_CUSTOM_REPORTS, new Criterion(), context.asyncAssertSuccess());
   }
 
   @Test
@@ -221,5 +231,57 @@ public class CustomReportIT {
                 .as(CustomReports.class)
                 .getCustomReports())
         .isEmpty();
+  }
+
+  @Test
+  public void checkThatLinkUrlOrFileIdIsRequiredForPutAndPost() {
+    CustomReport report =
+        new CustomReport().withProviderId("b575e5c6-3858-44a4-838a-c7da97f0c975").withYear(2020);
+
+    // POST with fileId succeeds
+    given(defaultHeaders)
+        .body(report.withFileId("377429b4-d45c-49ec-81c1-18c53c37ffb7").withLinkUrl(null))
+        .post(BASE_URI)
+        .then()
+        .statusCode(201);
+
+    // POST with linkUrl succeeds
+    String id =
+        given(defaultHeaders)
+            .body(report.withFileId(null).withLinkUrl("http://localhost/link"))
+            .post(BASE_URI)
+            .then()
+            .statusCode(201)
+            .extract()
+            .as(CustomReport.class)
+            .getId();
+
+    // POST without fails
+    given(defaultHeaders)
+        .body(report.withFileId(null).withLinkUrl(null))
+        .post(BASE_URI)
+        .then()
+        .statusCode(422);
+
+    // PUT with fileId succeeds
+    given(defaultHeaders)
+        .body(report.withFileId("a49fbdbe-1553-46cb-ad1a-40cdd200a300").withLinkUrl(null))
+        .put(BASE_URI + "/" + id)
+        .then()
+        .statusCode(204);
+
+    // PUT with linkUrl succeeds
+    given(defaultHeaders)
+        .body(report.withFileId(null).withLinkUrl("http://localhost/link2"))
+        .put(BASE_URI + "/" + id)
+        .then()
+        .statusCode(204);
+
+    // PUT without fails
+    given(defaultHeaders)
+        .body(report.withFileId(null).withLinkUrl(null))
+        .put(BASE_URI + "/" + id)
+        .then()
+        .statusCode(422);
   }
 }

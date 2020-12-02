@@ -4,6 +4,7 @@ import static org.folio.rest.util.Constants.TABLE_NAME_CUSTOM_REPORTS;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import java.util.Map;
 import javax.ws.rs.core.Response;
@@ -12,6 +13,7 @@ import org.folio.rest.jaxrs.model.CustomReport;
 import org.folio.rest.jaxrs.model.CustomReportsGetOrder;
 import org.folio.rest.jaxrs.resource.CustomReports;
 import org.folio.rest.persist.PgUtil;
+import org.folio.rest.tools.utils.ValidationHelper;
 
 public class CustomReportAPI implements CustomReports {
 
@@ -48,13 +50,21 @@ public class CustomReportAPI implements CustomReports {
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-    PgUtil.post(
-        TABLE_NAME_CUSTOM_REPORTS,
-        entity,
-        okapiHeaders,
-        vertxContext,
-        PostCustomReportsResponse.class,
-        asyncResultHandler);
+    if (entity.getFileId() == null && entity.getLinkUrl() == null) {
+      asyncResultHandler.handle(
+          Future.succeededFuture(
+              PostCustomReportsResponse.respond422WithApplicationJson(
+                  ValidationHelper.createValidationErrorMessage(
+                      "", "", "Either linkUrl or fileId must be set"))));
+    } else {
+      PgUtil.post(
+          TABLE_NAME_CUSTOM_REPORTS,
+          entity,
+          okapiHeaders,
+          vertxContext,
+          PostCustomReportsResponse.class,
+          asyncResultHandler);
+    }
   }
 
   @Override
@@ -101,13 +111,21 @@ public class CustomReportAPI implements CustomReports {
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-    PgUtil.put(
-        TABLE_NAME_CUSTOM_REPORTS,
-        entity,
-        id,
-        okapiHeaders,
-        vertxContext,
-        PutCustomReportsByIdResponse.class,
-        asyncResultHandler);
+    if (entity.getFileId() == null && entity.getLinkUrl() == null) {
+      asyncResultHandler.handle(
+          Future.succeededFuture(
+              PostCustomReportsResponse.respond422WithApplicationJson(
+                  ValidationHelper.createValidationErrorMessage(
+                      "", "", "Either linkUrl or fileId must be set"))));
+    } else {
+      PgUtil.put(
+          TABLE_NAME_CUSTOM_REPORTS,
+          entity,
+          id,
+          okapiHeaders,
+          vertxContext,
+          PutCustomReportsByIdResponse.class,
+          asyncResultHandler);
+    }
   }
 }
