@@ -703,4 +703,132 @@ public class SQLTriggersIT {
               }
             });
   }
+
+  @Test
+  public void updateProviderReportTypeOnInsertOrUpdate(TestContext context) {
+    Async async = context.async();
+    getPGClient()
+      .upsert(
+        TABLE_NAME_COUNTER_REPORTS,
+        sampleReport.getId(),
+        clone(sampleReport).withReportName("DR"),
+        ar -> {
+          if (ar.succeeded()) {
+            getPGClient()
+              .getById(
+                TABLE_NAME_UDP,
+                sampleUDP.getId(),
+                UsageDataProvider.class,
+                ar2 -> {
+                  if (ar2.succeeded()) {
+                    context.verify(
+                      v ->
+                        assertThat(ar2.result().getReportTypes()).contains("DR")
+                      );
+                    async.complete();
+                  } else {
+                    context.fail(ar2.cause());
+                  }
+                });
+          } else {
+            context.fail(ar.cause());
+          }
+        });
+
+    async.await();
+    Async async2 = context.async();
+    getPGClient()
+      .upsert(
+        TABLE_NAME_COUNTER_REPORTS,
+        sampleReport.getId(),
+        clone(sampleReport).withReportName("TR"),
+        ar -> {
+          if (ar.succeeded()) {
+            getPGClient()
+              .getById(
+                TABLE_NAME_UDP,
+                sampleUDP.getId(),
+                UsageDataProvider.class,
+                ar2 -> {
+                  if (ar2.succeeded()) {
+                    context.verify(
+                      v ->
+                        assertThat(ar2.result().getReportTypes()).contains("TR")
+                      );
+                    async2.complete();
+                  } else {
+                    context.fail(ar2.cause());
+                  }
+                });
+          } else {
+            context.fail(ar.cause());
+          }
+        });
+  }
+
+  @Test
+  public void updateProviderReportTypeOnDelete(TestContext context) {
+    String id = UUID.randomUUID().toString();
+    Async async = context.async();
+    getPGClient()
+      .upsert(
+        TABLE_NAME_COUNTER_REPORTS,
+        id,
+        clone(sampleReport).withReportName("PR").withId(id),
+        ar -> {
+          if (ar.succeeded()) {
+            getPGClient()
+              .getById(
+                TABLE_NAME_UDP,
+                sampleUDP.getId(),
+                UsageDataProvider.class,
+                ar2 -> {
+                  if (ar2.succeeded()) {
+                    context.verify(
+                      v ->
+                        assertThat(ar2.result().getReportTypes()).contains("PR")
+                      );
+                    async.complete();
+                  } else {
+                    context.fail(ar2.cause());
+                  }
+                });
+          } else {
+            context.fail(ar.cause());
+          }
+        });
+    async.await();
+
+    Async async2 = context.async();
+    getPGClient()
+      .delete(
+        TABLE_NAME_COUNTER_REPORTS,
+        id,
+        ar -> {
+          if (ar.succeeded()) {
+            async2.complete();
+          } else {
+            context.fail(ar.cause());
+          }
+        });
+    async2.await();
+
+    Async async3 = context.async();
+    getPGClient()
+      .getById(
+        TABLE_NAME_UDP,
+        sampleUDP.getId(),
+        UsageDataProvider.class,
+        ar2 -> {
+          if (ar2.succeeded()) {
+            context.verify(
+              v ->
+                assertThat(ar2.result().getReportTypes()).doesNotContain("PR")
+              );
+            async3.complete();
+          } else {
+            context.fail(ar2.cause());
+          }
+        });
+  }
 }

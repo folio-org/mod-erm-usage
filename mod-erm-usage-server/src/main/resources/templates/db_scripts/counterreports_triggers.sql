@@ -29,6 +29,26 @@ CREATE OR REPLACE FUNCTION udp_report_errors(providerId TEXT) RETURNS jsonb AS $
   ) AS sub2;
 $$ LANGUAGE sql;
 
+-- returns the counter reports types of the usage data provider's counter reports
+CREATE OR REPLACE FUNCTION udp_report_types(providerId TEXT) RETURNS jsonb AS $$
+  SELECT json_agg(name)::jsonb
+  FROM (
+    SELECT
+      CASE
+        WHEN name IS NOT NULL THEN name
+        ELSE 'other'
+      END
+    AS name
+    FROM (
+      SELECT
+        DISTINCT(jsonb->>'reportName') as name
+      FROM  	counter_reports
+      WHERE   jsonb->>'providerId'=$1
+      GROUP BY 	jsonb->>'providerId', name)
+      AS sub
+  ) AS sub2;
+$$ LANGUAGE sql;
+
 -- trigger function to update latest report available of an usage data provider
 CREATE OR REPLACE FUNCTION update_latest_statistic_on_update() RETURNS TRIGGER AS
 $BODY$
@@ -37,6 +57,7 @@ DECLARE latest TEXT;
 DECLARE earliest TEXT;
 DECLARE error_codes jsonb;
 DECLARE has_failed_report jsonb;
+DECLARE report_types jsonb;
 BEGIN
   IF (TG_OP = 'DELETE') THEN
     providerId := OLD.jsonb->>'providerId';
@@ -48,11 +69,16 @@ BEGIN
 	SELECT latest_year_month(providerId) INTO latest;
 	SELECT earliest_year_month(providerId) INTO earliest;
 	SELECT udp_report_errors(providerId) INTO error_codes;
+	SELECT udp_report_types(providerId) INTO report_types;
   IF error_codes IS NOT NULL THEN
     SELECT to_jsonb('yes'::TEXT) INTO has_failed_report;
   ELSE
     SELECT jsonb_build_array() INTO error_codes;
     SELECT to_jsonb('no'::TEXT) INTO has_failed_report;
+  END IF;
+
+  IF report_types IS NULL THEN
+      SELECT jsonb_build_array() INTO report_types;
   END IF;
 
 	UPDATE usage_data_providers SET
@@ -61,6 +87,7 @@ BEGIN
 	    ', "earliestReport": ' || COALESCE(to_jsonb(earliest), 'null'::jsonb)::text ||
 	    ', "reportErrorCodes": ' || error_codes ||
 	    ', "hasFailedReport": ' || has_failed_report ||
+	    ', "reportTypes": ' || report_types ||
 	    '}')::jsonb	WHERE jsonb->>'id' = providerId;
 
 	RETURN NULL;
