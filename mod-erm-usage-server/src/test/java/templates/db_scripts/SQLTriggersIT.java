@@ -291,7 +291,7 @@ public class SQLTriggersIT {
 
   @Repeat(10)
   @Test
-  public void updateProviderReportDatesOnInsertConcurrent(TestContext context) {
+  public void updateProviderOnInsertConcurrent(TestContext context) {
     Async async = context.async();
     final YearMonth reportStart = YearMonth.of(2018, 1);
     final int reportCount = 12;
@@ -302,8 +302,12 @@ public class SQLTriggersIT {
 
     List<CounterReport> reports =
         IntStream.rangeClosed(1, reportCount)
-            .mapToObj(i -> reportStart.plusMonths(i - 1))
-            .map(ym -> new CounterReport().withProviderId(udp.getId()).withYearMonth(ym.toString()))
+            .mapToObj(
+                i ->
+                    new CounterReport()
+                        .withReportName("report" + (i % 4 + 1))
+                        .withProviderId(udp.getId())
+                        .withYearMonth(reportStart.plusMonths(i - 1).toString()))
             .collect(Collectors.toList());
 
     createUDPPromise
@@ -336,6 +340,8 @@ public class SQLTriggersIT {
                     assertThat(result.getEarliestReport()).isEqualTo(reportStart.toString());
                     assertThat(result.getHasFailedReport()).isEqualTo(HasFailedReport.NO);
                     assertThat(result.getReportErrorCodes()).isEmpty();
+                    assertThat(result.getReportTypes())
+                        .containsExactlyInAnyOrder("report1", "report2", "report3", "report4");
                   });
               async.complete();
             })
@@ -708,62 +714,62 @@ public class SQLTriggersIT {
   public void updateProviderReportTypeOnInsertOrUpdate(TestContext context) {
     Async async = context.async();
     getPGClient()
-      .upsert(
-        TABLE_NAME_COUNTER_REPORTS,
-        sampleReport.getId(),
-        clone(sampleReport).withReportName("DR"),
-        ar -> {
-          if (ar.succeeded()) {
-            getPGClient()
-              .getById(
-                TABLE_NAME_UDP,
-                sampleUDP.getId(),
-                UsageDataProvider.class,
-                ar2 -> {
-                  if (ar2.succeeded()) {
-                    context.verify(
-                      v ->
-                        assertThat(ar2.result().getReportTypes()).contains("DR")
-                      );
-                    async.complete();
-                  } else {
-                    context.fail(ar2.cause());
-                  }
-                });
-          } else {
-            context.fail(ar.cause());
-          }
-        });
+        .upsert(
+            TABLE_NAME_COUNTER_REPORTS,
+            sampleReport.getId(),
+            clone(sampleReport).withReportName("DR"),
+            ar -> {
+              if (ar.succeeded()) {
+                getPGClient()
+                    .getById(
+                        TABLE_NAME_UDP,
+                        sampleUDP.getId(),
+                        UsageDataProvider.class,
+                        ar2 -> {
+                          if (ar2.succeeded()) {
+                            context.verify(
+                                v ->
+                                    assertThat(ar2.result().getReportTypes())
+                                        .containsExactlyInAnyOrder("JR1", "DR"));
+                            async.complete();
+                          } else {
+                            context.fail(ar2.cause());
+                          }
+                        });
+              } else {
+                context.fail(ar.cause());
+              }
+            });
 
     async.await();
     Async async2 = context.async();
     getPGClient()
-      .upsert(
-        TABLE_NAME_COUNTER_REPORTS,
-        sampleReport.getId(),
-        clone(sampleReport).withReportName("TR"),
-        ar -> {
-          if (ar.succeeded()) {
-            getPGClient()
-              .getById(
-                TABLE_NAME_UDP,
-                sampleUDP.getId(),
-                UsageDataProvider.class,
-                ar2 -> {
-                  if (ar2.succeeded()) {
-                    context.verify(
-                      v ->
-                        assertThat(ar2.result().getReportTypes()).contains("TR")
-                      );
-                    async2.complete();
-                  } else {
-                    context.fail(ar2.cause());
-                  }
-                });
-          } else {
-            context.fail(ar.cause());
-          }
-        });
+        .upsert(
+            TABLE_NAME_COUNTER_REPORTS,
+            sampleReport.getId(),
+            clone(sampleReport).withReportName("TR"),
+            ar -> {
+              if (ar.succeeded()) {
+                getPGClient()
+                    .getById(
+                        TABLE_NAME_UDP,
+                        sampleUDP.getId(),
+                        UsageDataProvider.class,
+                        ar2 -> {
+                          if (ar2.succeeded()) {
+                            context.verify(
+                                v ->
+                                    assertThat(ar2.result().getReportTypes())
+                                        .containsExactlyInAnyOrder("JR1", "TR"));
+                            async2.complete();
+                          } else {
+                            context.fail(ar2.cause());
+                          }
+                        });
+              } else {
+                context.fail(ar.cause());
+              }
+            });
   }
 
   @Test
@@ -771,64 +777,62 @@ public class SQLTriggersIT {
     String id = UUID.randomUUID().toString();
     Async async = context.async();
     getPGClient()
-      .upsert(
-        TABLE_NAME_COUNTER_REPORTS,
-        id,
-        clone(sampleReport).withReportName("PR").withId(id),
-        ar -> {
-          if (ar.succeeded()) {
-            getPGClient()
-              .getById(
-                TABLE_NAME_UDP,
-                sampleUDP.getId(),
-                UsageDataProvider.class,
-                ar2 -> {
-                  if (ar2.succeeded()) {
-                    context.verify(
-                      v ->
-                        assertThat(ar2.result().getReportTypes()).contains("PR")
-                      );
-                    async.complete();
-                  } else {
-                    context.fail(ar2.cause());
-                  }
-                });
-          } else {
-            context.fail(ar.cause());
-          }
-        });
+        .upsert(
+            TABLE_NAME_COUNTER_REPORTS,
+            id,
+            clone(sampleReport).withReportName("PR").withId(id),
+            ar -> {
+              if (ar.succeeded()) {
+                getPGClient()
+                    .getById(
+                        TABLE_NAME_UDP,
+                        sampleUDP.getId(),
+                        UsageDataProvider.class,
+                        ar2 -> {
+                          if (ar2.succeeded()) {
+                            context.verify(
+                                v ->
+                                    assertThat(ar2.result().getReportTypes())
+                                        .containsExactlyInAnyOrder("JR1", "PR"));
+                            async.complete();
+                          } else {
+                            context.fail(ar2.cause());
+                          }
+                        });
+              } else {
+                context.fail(ar.cause());
+              }
+            });
     async.await();
 
     Async async2 = context.async();
     getPGClient()
-      .delete(
-        TABLE_NAME_COUNTER_REPORTS,
-        id,
-        ar -> {
-          if (ar.succeeded()) {
-            async2.complete();
-          } else {
-            context.fail(ar.cause());
-          }
-        });
+        .delete(
+            TABLE_NAME_COUNTER_REPORTS,
+            id,
+            ar -> {
+              if (ar.succeeded()) {
+                async2.complete();
+              } else {
+                context.fail(ar.cause());
+              }
+            });
     async2.await();
 
     Async async3 = context.async();
     getPGClient()
-      .getById(
-        TABLE_NAME_UDP,
-        sampleUDP.getId(),
-        UsageDataProvider.class,
-        ar2 -> {
-          if (ar2.succeeded()) {
-            context.verify(
-              v ->
-                assertThat(ar2.result().getReportTypes()).doesNotContain("PR")
-              );
-            async3.complete();
-          } else {
-            context.fail(ar2.cause());
-          }
-        });
+        .getById(
+            TABLE_NAME_UDP,
+            sampleUDP.getId(),
+            UsageDataProvider.class,
+            ar2 -> {
+              if (ar2.succeeded()) {
+                context.verify(
+                    v -> assertThat(ar2.result().getReportTypes()).containsExactly("JR1"));
+                async3.complete();
+              } else {
+                context.fail(ar2.cause());
+              }
+            });
   }
 }
