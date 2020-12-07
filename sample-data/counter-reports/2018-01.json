@@ -288,5 +288,7 @@
         ]
       }
     ]
-  }
+  },
+  "reportEditedManually": true,
+  "editReason": "reason for manually editing"
 }
