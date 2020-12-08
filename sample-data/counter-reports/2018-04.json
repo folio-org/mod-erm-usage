@@ -288,5 +288,7 @@
         ]
       }
     ]
-  }
+  },
+  "reportEditedManually": false,
+  "editReason": ""
 }

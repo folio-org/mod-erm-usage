@@ -287,6 +287,8 @@
         "institutionalIdentifier": [
         ]
       }
-    ]
+    ],
+    "reportEditedManually": false,
+    "editReason": ""
   }
 }

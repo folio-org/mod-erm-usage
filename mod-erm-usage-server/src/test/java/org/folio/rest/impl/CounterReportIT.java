@@ -220,7 +220,9 @@ public class CounterReportIT {
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
-        .body("id", equalTo(report.getId()));
+        .body("id", equalTo(report.getId()))
+        .body("reportEditedManually", equalTo(report.getReportEditedManually()))
+        .body("editReason", equalTo(report.getEditReason()));
 
     // PUT
     given()
@@ -285,7 +287,9 @@ public class CounterReportIT {
         .statusCode(200)
         .body("counterReports.size()", equalTo(1))
         .body("counterReports[0].id", equalTo(report.getId()))
-        .body("counterReports[0].release", equalTo(report.getRelease()));
+        .body("counterReports[0].release", equalTo(report.getRelease()))
+        .body("counterReports[0].reportEditedManually", equalTo(report.getReportEditedManually()))
+        .body("counterReports[0].editReason", equalTo(report.getEditReason()));
 
     String cqlReport2 = "?query=(report=\"someStringThatIsNotInTheReport*\")";
     given()
