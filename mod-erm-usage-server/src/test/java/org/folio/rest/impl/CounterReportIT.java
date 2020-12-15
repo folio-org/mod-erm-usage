@@ -26,6 +26,7 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.ErrorCodes;
 import org.folio.rest.jaxrs.model.Report;
+import org.folio.rest.jaxrs.model.ReportTypes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
@@ -487,4 +488,87 @@ public class CounterReportIT {
         .then()
         .statusCode(204);
   }
+
+  @Test
+  public void checkThatWeGetReportTypes() throws IOException {
+    // POST reports
+    String trReport =
+      Resources.toString(Resources.getResource("TR/TR_1.json"), StandardCharsets.UTF_8);
+      String idTR = given()
+        .body(trReport)
+        .header(XOkapiHeaders.TENANT, TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .post(BASE_URI)
+        .then()
+        .statusCode(201)
+        .extract()
+        .as(CounterReport.class)
+        .getId();
+
+    String firstJr1Report =
+      Resources.toString(Resources.getResource("JR1/jr1_1.json"), StandardCharsets.UTF_8);
+    String idFirstJR1 = given()
+      .body(firstJr1Report)
+      .header(XOkapiHeaders.TENANT, TENANT)
+      .header("content-type", APPLICATION_JSON)
+      .post(BASE_URI)
+      .then()
+      .statusCode(201)
+      .extract()
+      .as(CounterReport.class)
+      .getId();
+
+    String secondJr1Report =
+      Resources.toString(Resources.getResource("JR1/jr1_2.json"), StandardCharsets.UTF_8);
+    String idSecondJR1 = given()
+      .body(secondJr1Report)
+      .header(XOkapiHeaders.TENANT, TENANT)
+      .header("content-type", APPLICATION_JSON)
+      .post(BASE_URI)
+      .then()
+      .statusCode(201)
+      .extract()
+      .as(CounterReport.class)
+      .getId();
+
+    // GET report types
+    ReportTypes reportTypes =
+      given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .request()
+        .get("/counter-reports/reports/types")
+        .thenReturn()
+        .as(ReportTypes.class);
+
+    assertThat(reportTypes.getReportTypes().size()).isEqualTo(2);
+    assertThat(reportTypes.getReportTypes()).containsAll(Arrays.asList("TR", "JR1"));
+
+    // DELETE reports
+    given()
+      .header("X-Okapi-Tenant", TENANT)
+      .header("content-type", APPLICATION_JSON)
+      .header("accept", "text/plain")
+      .delete(BASE_URI + "/" + idTR)
+      .then()
+      .statusCode(204);
+
+    given()
+      .header("X-Okapi-Tenant", TENANT)
+      .header("content-type", APPLICATION_JSON)
+      .header("accept", "text/plain")
+      .delete(BASE_URI + "/" + idFirstJR1)
+      .then()
+      .statusCode(204);
+
+    given()
+      .header("X-Okapi-Tenant", TENANT)
+      .header("content-type", APPLICATION_JSON)
+      .header("accept", "text/plain")
+      .delete(BASE_URI + "/" + idSecondJR1)
+      .then()
+      .statusCode(204);
+  }
+
 }
