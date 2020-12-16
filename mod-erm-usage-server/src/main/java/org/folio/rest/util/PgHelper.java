@@ -277,25 +277,24 @@ public class PgHelper {
   }
 
   public static Future<ReportTypes> getReportTypes(
-    Context vertxContext, Map<String, String> okapiHeaders) {
-    String query =
-      "SELECT DISTINCT(jsonb->>'reportName') FROM counter_reports";
+      Context vertxContext, Map<String, String> okapiHeaders) {
+    String query = "SELECT DISTINCT(jsonb->>'reportName') FROM counter_reports";
     Promise<ReportTypes> result = Promise.promise();
     PgUtil.postgresClient(vertxContext, okapiHeaders)
-      .select(
-        query,
-        ar -> {
-          if (ar.succeeded()) {
-            List<String> collect =
-              StreamSupport.stream(ar.result().spliterator(), false)
-                .map(row -> Optional.ofNullable(row.getString(0)).orElse("other"))
-                .collect(Collectors.toList());
-            ReportTypes reportTypes = new ReportTypes().withReportTypes(collect);
-            result.complete(reportTypes);
-          } else {
-            result.fail(ar.cause());
-          }
-        });
+        .select(
+            query,
+            ar -> {
+              if (ar.succeeded()) {
+                List<String> collect =
+                    StreamSupport.stream(ar.result().spliterator(), false)
+                        .map(row -> Optional.ofNullable(row.getString(0)).orElse("other"))
+                        .collect(Collectors.toList());
+                ReportTypes reportTypes = new ReportTypes().withReportTypes(collect);
+                result.complete(reportTypes);
+              } else {
+                result.fail(ar.cause());
+              }
+            });
     return result.future();
   }
 }
