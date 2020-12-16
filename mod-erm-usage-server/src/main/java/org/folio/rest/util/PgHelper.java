@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -287,7 +288,8 @@ public class PgHelper {
               if (ar.succeeded()) {
                 List<String> collect =
                     StreamSupport.stream(ar.result().spliterator(), false)
-                        .map(row -> Optional.ofNullable(row.getString(0)).orElse("other"))
+                        .map(row -> row.getString(0))
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toList());
                 ReportTypes reportTypes = new ReportTypes().withReportTypes(collect);
                 result.complete(reportTypes);
