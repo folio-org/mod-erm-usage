@@ -16,11 +16,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.ErrorCodes;
+import org.folio.rest.jaxrs.model.ReportTypes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -270,6 +272,29 @@ public class PgHelper {
                 result.complete(errorCodes);
               } else {
                 result.fail(updateResultAsyncResult.cause());
+              }
+            });
+    return result.future();
+  }
+
+  public static Future<ReportTypes> getReportTypes(
+      Context vertxContext, Map<String, String> okapiHeaders) {
+    String query = "SELECT DISTINCT(jsonb->>'reportName') FROM counter_reports";
+    Promise<ReportTypes> result = Promise.promise();
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .select(
+            query,
+            ar -> {
+              if (ar.succeeded()) {
+                List<String> collect =
+                    StreamSupport.stream(ar.result().spliterator(), false)
+                        .map(row -> row.getString(0))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+                ReportTypes reportTypes = new ReportTypes().withReportTypes(collect);
+                result.complete(reportTypes);
+              } else {
+                result.fail(ar.cause());
               }
             });
     return result.future();

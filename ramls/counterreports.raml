@@ -12,6 +12,7 @@ types:
   counterReports: !include ./schemas/counterreports.json
   counterReportsSorted: !include ./schemas/counterreports_sorted.json
   errorCodes: !include ./schemas/errorcodes.json
+  reportTypes: !include ./schemas/reporttypes.json
   errors: !include ./raml-util/schemas/errors.schema
 
 traits:
@@ -162,6 +163,19 @@ resourceTypes:
             application/json:
               example: !include examples/errorcodes.sample
               schema: errorCodes
+        500:
+          body:
+            text/plain:
+  /reports/types:
+    get:
+      description: Get report types of available counter reports
+      responses:
+        200:
+          description: available report types
+          body:
+            application/json:
+              example: !include examples/reporttypes.sample
+              schema: reportTypes
         500:
           body:
             text/plain:

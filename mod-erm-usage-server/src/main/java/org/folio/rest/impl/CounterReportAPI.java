@@ -401,6 +401,28 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             });
   }
 
+  @Override
+  public void getCounterReportsReportsTypes(
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+    PgHelper.getReportTypes(vertxContext, okapiHeaders)
+        .onComplete(
+            ar -> {
+              if (ar.succeeded()) {
+                org.folio.rest.jaxrs.model.ReportTypes result = ar.result();
+                asyncResultHandler.handle(
+                    succeededFuture(
+                        GetCounterReportsReportsTypesResponse.respond200WithApplicationJson(
+                            result)));
+              } else {
+                asyncResultHandler.handle(
+                    succeededFuture(
+                        GetCounterReportsReportsTypesResponse.respond500WithTextPlain(ar.cause())));
+              }
+            });
+  }
+
   private Response createExportResponseByFormat(CounterReport cr, String format) {
     try {
       return csvMapper(cr)
