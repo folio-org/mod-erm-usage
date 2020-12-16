@@ -540,13 +540,10 @@ public class CounterReportIT {
             .header("X-Okapi-Tenant", TENANT)
             .header("content-type", APPLICATION_JSON)
             .header("accept", APPLICATION_JSON)
-            .request()
             .get("/counter-reports/reports/types")
             .thenReturn()
             .as(ReportTypes.class);
-
-    assertThat(reportTypes.getReportTypes().size()).isEqualTo(2);
-    assertThat(reportTypes.getReportTypes()).containsAll(Arrays.asList("TR", "JR1"));
+    assertThat(reportTypes.getReportTypes()).containsExactlyInAnyOrder("TR", "JR1");
 
     // DELETE reports
     given()
@@ -572,5 +569,16 @@ public class CounterReportIT {
         .delete(BASE_URI + "/" + idSecondJR1)
         .then()
         .statusCode(204);
+
+    // GET report types again
+    reportTypes =
+        given()
+            .header("X-Okapi-Tenant", TENANT)
+            .header("content-type", APPLICATION_JSON)
+            .header("accept", APPLICATION_JSON)
+            .get("/counter-reports/reports/types")
+            .thenReturn()
+            .as(ReportTypes.class);
+    assertThat(reportTypes.getReportTypes()).isEmpty();
   }
 }
