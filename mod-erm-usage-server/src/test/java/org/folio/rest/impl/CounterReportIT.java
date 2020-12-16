@@ -5,9 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import com.google.common.io.Resources;
+import com.google.common.net.HttpHeaders;
 import io.restassured.RestAssured;
+import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
 import io.restassured.parsing.Parser;
+import io.restassured.specification.RequestSpecification;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
@@ -48,6 +51,7 @@ public class CounterReportIT {
   private static final String APPLICATION_JSON = "application/json";
   private static final String BASE_URI = "/counter-reports";
   private static final String BASE_URI_DOWNLOAD = BASE_URI.concat("/{id}/download");
+  private static final String BASE_URI_REPORT_TYPES = BASE_URI.concat("/reports/types");
   private static final String TENANT = "diku";
   private static final Vertx vertx = Vertx.vertx();
   private static CounterReport report;
@@ -491,14 +495,18 @@ public class CounterReportIT {
 
   @Test
   public void checkThatWeGetReportTypes() throws IOException {
+    RequestSpecification defaultHeaders =
+        new RequestSpecBuilder()
+            .addHeader(XOkapiHeaders.TENANT, TENANT)
+            .addHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON)
+            .build();
+
     // POST reports
     String trReport =
         Resources.toString(Resources.getResource("TR/TR_1.json"), StandardCharsets.UTF_8);
     String idTR =
-        given()
+        given(defaultHeaders)
             .body(trReport)
-            .header(XOkapiHeaders.TENANT, TENANT)
-            .header("content-type", APPLICATION_JSON)
             .post(BASE_URI)
             .then()
             .statusCode(201)
@@ -509,10 +517,8 @@ public class CounterReportIT {
     String firstJr1Report =
         Resources.toString(Resources.getResource("JR1/jr1_1.json"), StandardCharsets.UTF_8);
     String idFirstJR1 =
-        given()
+        given(defaultHeaders)
             .body(firstJr1Report)
-            .header(XOkapiHeaders.TENANT, TENANT)
-            .header("content-type", APPLICATION_JSON)
             .post(BASE_URI)
             .then()
             .statusCode(201)
@@ -523,10 +529,8 @@ public class CounterReportIT {
     String secondJr1Report =
         Resources.toString(Resources.getResource("JR1/jr1_2.json"), StandardCharsets.UTF_8);
     String idSecondJR1 =
-        given()
+        given(defaultHeaders)
             .body(secondJr1Report)
-            .header(XOkapiHeaders.TENANT, TENANT)
-            .header("content-type", APPLICATION_JSON)
             .post(BASE_URI)
             .then()
             .statusCode(201)
@@ -536,49 +540,17 @@ public class CounterReportIT {
 
     // GET report types
     ReportTypes reportTypes =
-        given()
-            .header("X-Okapi-Tenant", TENANT)
-            .header("content-type", APPLICATION_JSON)
-            .header("accept", APPLICATION_JSON)
-            .get("/counter-reports/reports/types")
-            .thenReturn()
-            .as(ReportTypes.class);
+        given(defaultHeaders).get(BASE_URI_REPORT_TYPES).thenReturn().as(ReportTypes.class);
     assertThat(reportTypes.getReportTypes()).containsExactlyInAnyOrder("TR", "JR1");
 
     // DELETE reports
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + idTR)
-        .then()
-        .statusCode(204);
-
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + idFirstJR1)
-        .then()
-        .statusCode(204);
-
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + idSecondJR1)
-        .then()
-        .statusCode(204);
+    given(defaultHeaders).delete(BASE_URI + "/" + idTR).then().statusCode(204);
+    given(defaultHeaders).delete(BASE_URI + "/" + idFirstJR1).then().statusCode(204);
+    given(defaultHeaders).delete(BASE_URI + "/" + idSecondJR1).then().statusCode(204);
 
     // GET report types again
     reportTypes =
-        given()
-            .header("X-Okapi-Tenant", TENANT)
-            .header("content-type", APPLICATION_JSON)
-            .header("accept", APPLICATION_JSON)
-            .get("/counter-reports/reports/types")
-            .thenReturn()
-            .as(ReportTypes.class);
+        given(defaultHeaders).get(BASE_URI_REPORT_TYPES).thenReturn().as(ReportTypes.class);
     assertThat(reportTypes.getReportTypes()).isEmpty();
   }
 }
