@@ -7,6 +7,7 @@ import io.vertx.core.Handler;
 import java.util.Map;
 import javax.ws.rs.core.Response;
 import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.tools.utils.TenantLoading;
 
 public class TenantReferenceAPI extends TenantAPI {
@@ -47,7 +48,7 @@ public class TenantReferenceAPI extends TenantAPI {
                     }
                     handlers.handle(
                         Future.succeededFuture(
-                            PostTenantResponse.respond201WithApplicationJson("")));
+                            PostTenantResponse.respond201WithApplicationJson(new TenantJob(), PostTenantResponse.headersFor201())));
                   });
         },
         context);

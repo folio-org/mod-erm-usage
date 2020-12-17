@@ -118,7 +118,7 @@ public class SQLTriggersIT {
     }
 
     DeploymentOptions options =
-        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
+        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
     vertx.deployVerticle(RestVerticle.class.getName(), options, context.asyncAssertSuccess());
   }
 
@@ -186,12 +186,12 @@ public class SQLTriggersIT {
       tenantClient.postTenant(
           tenantAttributes,
           res -> {
-            if (res.statusCode() / 200 == 1) {
+            if (res.result().statusCode() / 200 == 1) {
               promise.complete();
             } else {
               promise.fail(
                   String.format(
-                      "Tenantloading returned %s %s", res.statusCode(), res.statusMessage()));
+                      "Tenantloading returned %s %s", res.result().statusCode(), res.result().statusMessage()));
             }
           });
     } catch (Exception e) {

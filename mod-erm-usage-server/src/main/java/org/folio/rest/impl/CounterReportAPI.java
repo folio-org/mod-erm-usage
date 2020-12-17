@@ -10,8 +10,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.Json;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -25,6 +23,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.rest.annotations.Validate;
@@ -57,7 +57,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   private static final String UNSUPPORTED_COUNTER_VERSION_MSG =
       "Requested counter version \"%s\" is not supported.";
   private static final String XLSX_ERR_MSG = "An error occured while creating xlsx data: %s";
-  private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
+  private final Logger logger = LogManager.getLogger(CounterReportAPI.class);
 
   private final Comparator<CounterReportsPerYear> compareByYear =
       Comparator.comparing(CounterReportsPerYear::getYear);

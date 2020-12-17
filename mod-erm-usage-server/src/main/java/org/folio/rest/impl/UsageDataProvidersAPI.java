@@ -6,11 +6,11 @@ import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.Response;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.rest.annotations.Validate;
@@ -23,7 +23,7 @@ import org.folio.rest.tools.utils.ValidationHelper;
 
 public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.UsageDataProviders {
 
-  private final Logger logger = LoggerFactory.getLogger(UsageDataProvidersAPI.class);
+  private final Logger logger = LogManager.getLogger(UsageDataProvidersAPI.class);
 
   private CQLWrapper getCQL(String query, int limit, int offset) throws FieldException {
     return new CQLWrapper(new CQL2PgJSON(TABLE_NAME_UDP + ".jsonb"), query, limit, offset);
