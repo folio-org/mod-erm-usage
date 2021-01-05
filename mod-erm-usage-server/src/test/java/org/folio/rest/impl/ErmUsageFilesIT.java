@@ -1,6 +1,7 @@
 package org.folio.rest.impl;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import io.restassured.RestAssured;
@@ -17,9 +18,9 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import java.util.Map;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -33,8 +34,7 @@ import org.junit.runner.RunWith;
 @RunWith(VertxUnitRunner.class)
 public class ErmUsageFilesIT {
 
-  @Rule
-  public Timeout timeout = Timeout.seconds(10);
+  @Rule public Timeout timeout = Timeout.seconds(10);
 
   private static final String TENANT = "diku";
   private static final String ERM_USAGE_FILES_ENDPOINT = "/erm-usage/files";
@@ -66,7 +66,6 @@ public class ErmUsageFilesIT {
     RestAssured.requestSpecification =
         new RequestSpecBuilder().addHeader(XOkapiHeaders.TENANT, TENANT).build();
 
-    TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
 
@@ -76,9 +75,15 @@ public class ErmUsageFilesIT {
         options,
         res -> {
           try {
-            tenantClient.postTenant(
-                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
-                res2 -> async.complete());
+            new TenantAPI()
+                .postTenantSync(
+                    new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
+                    Map.of(XOkapiHeaders.TENANT.toLowerCase(), TENANT),
+                    res2 -> {
+                      context.verify(v -> assertThat(res2.result().getStatus()).isEqualTo(204));
+                      async.complete();
+                    },
+                    vertx.getOrCreateContext());
           } catch (Exception e) {
             context.fail(e);
           }
@@ -141,5 +146,4 @@ public class ErmUsageFilesIT {
         .contentType(ContentType.TEXT)
         .statusCode(404);
   }
-
 }

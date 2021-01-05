@@ -18,7 +18,7 @@ public class TenantReferenceAPI extends TenantAPI {
       Map<String, String> headers,
       Handler<AsyncResult<Response>> handlers,
       Context context) {
-    super.postTenant(
+    super.postTenantSync(
         entity,
         headers,
         ar -> {
@@ -48,7 +48,8 @@ public class TenantReferenceAPI extends TenantAPI {
                     }
                     handlers.handle(
                         Future.succeededFuture(
-                            PostTenantResponse.respond201WithApplicationJson(new TenantJob(), PostTenantResponse.headersFor201())));
+                            PostTenantResponse.respond201WithApplicationJson(
+                                new TenantJob(), PostTenantResponse.headersFor201())));
                   });
         },
         context);

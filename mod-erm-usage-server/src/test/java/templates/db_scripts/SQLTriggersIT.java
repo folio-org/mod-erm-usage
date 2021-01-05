@@ -21,14 +21,15 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.nio.charset.StandardCharsets;
 import java.time.YearMonth;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
+import org.folio.rest.impl.TenantReferenceAPI;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -55,26 +56,18 @@ public class SQLTriggersIT {
 
   private static final String TENANT = "testtenant";
   private static final String TABLE_AGGREGATOR = "aggregator_settings";
-  private static final String TOKEN = jwtToken(new JsonObject().put("user_id", TENANT));
   private static Vertx vertx;
   private static int port;
   private static final List<Parameter> parameters =
       Arrays.asList(
           new Parameter().withKey("loadSample").withValue("true"),
           new Parameter().withKey("loadReference").withValue("true"));
-  private static TenantClient tenantClient;
   private static TenantAttributes tenantAttributes;
   private static AggregatorSetting sampleAggregator;
   private static UsageDataProvider sampleUDP;
   private static CounterReport sampleReport;
   private static CounterReport reportFailed;
-  @Rule public Timeout timeout = Timeout.seconds(5);
-
-  private static String jwtToken(JsonObject payload) {
-    return "header."
-        + Base64.getEncoder().encodeToString(payload.encode().getBytes())
-        + ".signature";
-  }
+  @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void init(TestContext context) {
@@ -87,7 +80,6 @@ public class SQLTriggersIT {
           new TenantAttributes()
               .withModuleTo(ModuleVersion.getModuleVersion())
               .withParameters(parameters);
-      tenantClient = new TenantClient("http://localhost:" + port, TENANT, TOKEN);
 
       String aggregatorJSON =
           Resources.toString(
@@ -183,17 +175,26 @@ public class SQLTriggersIT {
   private Future<Void> loadSampleData() {
     Promise<Void> promise = Promise.promise();
     try {
-      tenantClient.postTenant(
-          tenantAttributes,
-          res -> {
-            if (res.result().statusCode() / 200 == 1) {
-              promise.complete();
-            } else {
-              promise.fail(
-                  String.format(
-                      "Tenantloading returned %s %s", res.result().statusCode(), res.result().statusMessage()));
-            }
-          });
+      new TenantReferenceAPI()
+          .postTenant(
+              tenantAttributes,
+              Map.of(
+                  XOkapiHeaders.TENANT.toLowerCase(),
+                  TENANT,
+                  "X-Okapi-Url",
+                  "http://localhost:" + port),
+              res -> {
+                if (res.result().getStatus() == 201) {
+                  promise.complete();
+                } else {
+                  promise.fail(
+                      String.format(
+                          "Tenantloading returned %s %s",
+                          res.result().getStatus(),
+                          res.result().getStatusInfo().getReasonPhrase()));
+                }
+              },
+              vertx.getOrCreateContext());
     } catch (Exception e) {
       promise.fail(e);
     }

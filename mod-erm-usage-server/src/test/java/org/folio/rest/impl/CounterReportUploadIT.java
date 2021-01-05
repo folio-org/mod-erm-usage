@@ -26,13 +26,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.xml.bind.JAXB;
 import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.TenantAttributes;
@@ -110,7 +110,6 @@ public class CounterReportUploadIT {
     RestAssured.requestSpecification =
         new RequestSpecBuilder().addHeader(XOkapiHeaders.TENANT, TENANT).build();
 
-    TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
 
@@ -120,9 +119,15 @@ public class CounterReportUploadIT {
         options,
         res -> {
           try {
-            tenantClient.postTenant(
-                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
-                res2 -> async.complete());
+            new TenantAPI()
+                .postTenantSync(
+                    new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
+                    Map.of(XOkapiHeaders.TENANT.toLowerCase(), TENANT),
+                    res2 -> {
+                      context.verify(v -> assertThat(res2.result().getStatus()).isEqualTo(204));
+                      async.complete();
+                    },
+                    vertx.getOrCreateContext());
           } catch (Exception e) {
             context.fail(e);
           }
