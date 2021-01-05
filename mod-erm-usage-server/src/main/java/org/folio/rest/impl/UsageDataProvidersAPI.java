@@ -42,7 +42,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting usage data providers");
-    logger.debug("Headers present are: " + okapiHeaders.keySet().toString());
+    logger.debug("Headers present are: {}", () -> okapiHeaders.keySet().toString());
 
     CQLWrapper cql;
     try {

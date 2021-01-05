@@ -74,7 +74,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting aggregator settings");
-    logger.debug("Headers present are: " + okapiHeaders.toString());
+    logger.debug("Headers present are: {}", okapiHeaders::toString);
 
     CQLWrapper cql;
     try {

@@ -81,7 +81,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting counter reports");
-    logger.debug("Headers present are: " + okapiHeaders.toString());
+    logger.debug("Headers present are: {}", okapiHeaders::toString);
 
     CQLWrapper cql;
     try {
@@ -249,7 +249,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting sorted counter reports");
-    logger.debug("Headers present are: " + okapiHeaders.toString());
+    logger.debug("Headers present are: {}", okapiHeaders::toString);
 
     Criteria updCrit = new Criteria();
     updCrit.addField("'providerId'").setOperation("=").setVal(udpId).setJSONB(true);

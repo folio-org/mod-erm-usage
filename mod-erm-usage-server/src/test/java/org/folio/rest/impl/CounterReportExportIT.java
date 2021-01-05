@@ -127,7 +127,7 @@ public class CounterReportExportIT {
   private void testThatDBIsEmpty() {
     int size =
         get().then().statusCode(200).extract().as(CounterReports.class).getCounterReports().size();
-    assertThat(size).isEqualTo(0);
+    assertThat(size).isZero();
   }
 
   @Test
