@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.Matchers.containsString;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
@@ -25,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -33,8 +35,11 @@ import org.apache.commons.io.IOUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
+import org.folio.rest.jaxrs.model.Contents;
 import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.CounterReportDocument;
 import org.folio.rest.jaxrs.model.CounterReports;
+import org.folio.rest.jaxrs.model.ReportMetadata;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -83,7 +88,8 @@ public class CounterReportUploadIT {
   private static final File FILE_REPORT5_OK =
       new File(Resources.getResource("fileupload/hwire_trj1.json").getFile());
   private static Vertx vertx;
-  @Rule public Timeout timeout = Timeout.seconds(10);
+  @Rule
+  public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void setUp(TestContext context) {
@@ -204,12 +210,42 @@ public class CounterReportUploadIT {
     testThatDBSizeIsSize(0);
   }
 
+  private String createReportFromJson(File jsonFile)
+      throws IOException {
+    return createReport(jsonFile, "application/json", false, null);
+  }
+
+  private String createReport(File file, String mimeType, Boolean reportEditedManually,
+      String editReason)
+      throws IOException {
+    String fileAsString = Files.toString(file, StandardCharsets.UTF_8);
+    return createReport(fileAsString, mimeType, reportEditedManually, editReason);
+  }
+
+  private String createReport(String string, String mimeType, Boolean reportEditedManually,
+      String editReason)
+      throws IOException {
+    String fileAsBytes = Base64.getEncoder().encodeToString(string.getBytes());
+    Contents content = new Contents().withData("data:" + mimeType + " ;base64," + fileAsBytes);
+    ReportMetadata metadata = new ReportMetadata().withReportEditedManually(reportEditedManually);
+    if (editReason != null && reportEditedManually) {
+      metadata.setEditReason(editReason);
+    }
+    CounterReportDocument document = new CounterReportDocument()
+        .withReportMetadata(metadata)
+        .withContents(content);
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    return objectMapper.writeValueAsString(document);
+  }
+
   @Test
-  public void testReportR4Ok() {
+  public void testReportR4Ok() throws IOException {
+    String report = createReportFromJson(FILE_REPORT_OK);
     String savedReportId =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(FILE_REPORT_OK)
+            .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
             .statusCode(200)
@@ -232,10 +268,38 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportR4UnsupportedReport() {
+  public void testReportR4OkWithEditReason() throws IOException {
+    String report = createReport(FILE_REPORT_OK, "application/json", true, "Edit Reason");
+    String savedReportId =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report"))
+            .extract()
+            .asString()
+            .replace("Saved report with ids: ", "");
+
+    CounterReport savedReport =
+        given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
+    assertThat(savedReport.getProviderId()).isEqualTo(PROVIDER_ID);
+    assertThat(savedReport.getRelease()).isEqualTo("4");
+    assertThat(savedReport.getReportEditedManually()).isTrue();
+    assertThat(savedReport.getEditReason()).isEqualTo("Edit Reason");
+
+    Report reportFromXML = JAXB.unmarshal(FILE_REPORT_OK, Report.class);
+    Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
+    assertThat(reportFromXML).usingRecursiveComparison().isEqualTo(reportFromDB);
+  }
+
+  @Test
+  public void testReportR4UnsupportedReport() throws IOException {
+    String report = createReportFromJson(FILE_REPORT_UNSUPPORTED);
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT_UNSUPPORTED)
+        .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
@@ -243,11 +307,12 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportR4OkOverwriteTrue() {
+  public void testReportR4OkOverwriteTrue() throws IOException {
+    String report = createReportFromJson(FILE_REPORT_OK);
     String savedReportId =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(FILE_REPORT_OK)
+            .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
             .queryParam("overwrite", true)
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
@@ -259,7 +324,7 @@ public class CounterReportUploadIT {
     String overwriteReportId =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(FILE_REPORT_OK)
+            .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
             .queryParam("overwrite", true)
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
@@ -272,10 +337,11 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportR4OkOverwriteFalse() {
+  public void testReportR4OkOverwriteFalse() throws IOException {
+    String report = createReportFromJson(FILE_REPORT_OK);
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT_OK)
+        .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
         .queryParam("overwrite", false)
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
@@ -283,7 +349,7 @@ public class CounterReportUploadIT {
 
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT_OK)
+        .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
         .queryParam("overwrite", false)
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
@@ -293,11 +359,12 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportR4NssOk() {
+  public void testReportR4NssOk() throws IOException {
+    String report = createReportFromJson(FILE_REPORT_NSS_OK);
     String savedReportId =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(FILE_REPORT_NSS_OK)
+            .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
             .statusCode(200)
@@ -325,10 +392,11 @@ public class CounterReportUploadIT {
 
   @Test
   public void testReportR5Ok() throws Exception {
+    String reportDoc = createReportFromJson(FILE_REPORT5_OK);
     String savedReportId =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(FILE_REPORT5_OK)
+            .body(IOUtils.toInputStream(reportDoc, StandardCharsets.UTF_8))
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
             .statusCode(200)
@@ -353,10 +421,11 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportInvalidContent() {
+  public void testReportInvalidContent() throws IOException {
+    String report = createReportFromJson(FILE_NO_REPORT);
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_NO_REPORT)
+        .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
@@ -364,11 +433,12 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportMultipleMonthsC4() {
+  public void testReportMultipleMonthsC4() throws IOException {
+    String report = createReportFromJson(FILE_REPORT_MULTI_COP4);
     String createdIds =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(FILE_REPORT_MULTI_COP4)
+            .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
             .statusCode(200)
@@ -387,7 +457,7 @@ public class CounterReportUploadIT {
 
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT_MULTI_COP4)
+        .body(IOUtils.toInputStream(report, StandardCharsets.UTF_8))
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
@@ -413,10 +483,11 @@ public class CounterReportUploadIT {
     String csvString = Counter4Utils.toCSV(JAXB.unmarshal(FILE_REPORT_MULTI_COP4, Report.class));
     assertThat(csvString).isNotNull();
 
+    String reportDocument = createReport(csvString, "text/csv", false, null);
     String createdIds =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(IOUtils.toInputStream(csvString, StandardCharsets.UTF_8))
+            .body(IOUtils.toInputStream(reportDocument, StandardCharsets.UTF_8))
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
             .statusCode(200)
@@ -462,9 +533,10 @@ public class CounterReportUploadIT {
         .ignoringCollectionOrder()
         .isEqualTo(expectedReports.get(1));
 
+    String reportDocumentCOP4 = createReportFromJson(FILE_REPORT_MULTI_COP4);
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT_MULTI_COP4)
+        .body(IOUtils.toInputStream(reportDocumentCOP4, StandardCharsets.UTF_8))
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
@@ -474,11 +546,12 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testReportMultipleMonthsC5() {
+  public void testReportMultipleMonthsC5() throws IOException {
+    String reportDoc = createReportFromJson(FILE_REPORT_MULTI_COP5);
     String createdIds =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(FILE_REPORT_MULTI_COP5)
+            .body(IOUtils.toInputStream(reportDoc, StandardCharsets.UTF_8))
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
             .statusCode(200)
@@ -497,7 +570,7 @@ public class CounterReportUploadIT {
 
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT_MULTI_COP5)
+        .body(IOUtils.toInputStream(reportDoc, StandardCharsets.UTF_8))
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
@@ -517,10 +590,11 @@ public class CounterReportUploadIT {
     String csvString = Counter5Utils.toCSV(report);
     assertThat(csvString).isNotNull();
 
+    String reportDoc = createReport(csvString, "text/csv", false, null);
     String createdIds =
         given()
             .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-            .body(IOUtils.toInputStream(csvString, StandardCharsets.UTF_8))
+            .body(IOUtils.toInputStream(reportDoc, StandardCharsets.UTF_8))
             .post("/counter-reports/upload/provider/" + PROVIDER_ID)
             .then()
             .statusCode(200)
@@ -555,9 +629,10 @@ public class CounterReportUploadIT {
     compareCOP5Reports(actualReports, expectedReports, 1);
     compareCOP5Reports(actualReports, expectedReports, 2);
 
+    String reportDocFromJSON = createReportFromJson(FILE_REPORT_MULTI_COP5);
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT_MULTI_COP5)
+        .body(IOUtils.toInputStream(reportDocFromJSON, StandardCharsets.UTF_8))
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(500)
@@ -565,6 +640,48 @@ public class CounterReportUploadIT {
         .body(containsString("2019-09"))
         .body(containsString("2019-10"))
         .body(containsString("2019-11"));
+  }
+
+  @Test
+  public void testReportMultipleMonthsC5FromCsvWithEditReason()
+      throws IOException, Counter5UtilsException {
+    String jsonString =
+        Resources.toString(FILE_REPORT_MULTI_COP5.toURI().toURL(), StandardCharsets.UTF_8);
+    assertThat(jsonString).isNotNull();
+
+    Object report = Counter5Utils.fromJSON(jsonString);
+    String csvString = Counter5Utils.toCSV(report);
+    assertThat(csvString).isNotNull();
+
+    String reportDoc = createReport(csvString, "text/csv", true, "Edit Reason");
+    String createdIds =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
+            .body(IOUtils.toInputStream(reportDoc, StandardCharsets.UTF_8))
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report with ids"))
+            .extract()
+            .asString()
+            .replace("Saved report with ids: ", "");
+
+    String query =
+        String.format(
+            "/counter-reports?query=(reportName=TR AND providerId=%s) sortby yearMonth",
+            PROVIDER_ID);
+    CounterReports reports = given().get(query).then().extract().as(CounterReports.class);
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getYearMonth))
+        .containsExactly("2019-09", "2019-10", "2019-11");
+    assertThat(reports.getCounterReports().stream().map(CounterReport::getId))
+        .containsExactly(createdIds.split(","));
+
+    // check content here
+    assertThat(report).isNotNull();
+    reports.getCounterReports().forEach(counterReport -> {
+      assertThat(counterReport.getReportEditedManually()).isTrue();
+      assertThat(counterReport.getEditReason()).isEqualTo("Edit Reason");
+    });
   }
 
   private void compareCOP5Reports(
@@ -640,10 +757,11 @@ public class CounterReportUploadIT {
   }
 
   @Test
-  public void testProviderNotFound() {
+  public void testProviderNotFound() throws IOException {
+    String reportDoc = createReportFromJson(FILE_REPORT_OK);
     given()
         .header(HttpHeaders.CONTENT_TYPE, ContentType.BINARY)
-        .body(FILE_REPORT_OK)
+        .body(IOUtils.toInputStream(reportDoc, StandardCharsets.UTF_8))
         .post("/counter-reports/upload/provider/" + PROVIDER_ID2)
         .then()
         .statusCode(500)

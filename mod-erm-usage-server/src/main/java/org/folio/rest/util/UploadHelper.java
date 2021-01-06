@@ -3,14 +3,11 @@ package org.folio.rest.util;
 import com.google.gson.Gson;
 import io.vertx.core.json.Json;
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.YearMonth;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.commons.codec.Charsets;
-import org.apache.commons.io.IOUtils;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
@@ -28,14 +25,8 @@ public class UploadHelper {
 
   private static final String MSG_WRONG_FORMAT = "Wrong format supplied";
 
-  public static List<CounterReport> getCounterReportsFromInputStream(InputStream entity)
-      throws FileUploadException, ReportSplitException, Counter5UtilsException {
-    String content;
-    try {
-      content = IOUtils.toString(entity, Charsets.UTF_8);
-    } catch (Exception e) {
-      throw new FileUploadException(e);
-    }
+  public static List<CounterReport> getCounterReportsFromString(String content)
+      throws FileUploadException, Counter5UtilsException, ReportSplitException {
     String release = getCounterRelease(content);
 
     List<CounterReport> counterReports;
@@ -191,5 +182,6 @@ public class UploadHelper {
     }
   }
 
-  private UploadHelper() {}
+  private UploadHelper() {
+  }
 }

@@ -8,6 +8,7 @@ documentation:
     content: This documents the API calls that can be made to query and manage counter reports
 
 types:
+  counterReportDocument: !include ./schemas/counterreport_document.json
   counterReport: !include ./schemas/counterreport.json
   counterReports: !include ./schemas/counterreports.json
   counterReportsSorted: !include ./schemas/counterreports_sorted.json
@@ -145,6 +146,9 @@ resourceTypes:
         application/octet-stream:
       responses:
         200:
+          body:
+            text/plain:
+        400:
           body:
             text/plain:
         404:
