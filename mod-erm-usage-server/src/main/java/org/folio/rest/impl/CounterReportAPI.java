@@ -3,6 +3,7 @@ package org.folio.rest.impl;
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.RestVerticle.STREAM_ABORT;
 import static org.folio.rest.RestVerticle.STREAM_COMPLETE;
+import static org.folio.rest.RestVerticle.STREAM_ID;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.VertxUtil.executeBlocking;
 
@@ -26,6 +27,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,6 +71,8 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       "Requested counter version \"%s\" is not supported.";
   private static final String XLSX_ERR_MSG = "An error occured while creating xlsx data: %s";
   private byte[] requestBytesArray = new byte[0];
+  // message length for a stream
+  private static Map<String, byte[]> streams = new HashMap<>();
 
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
 
@@ -343,19 +347,25 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
+    String streamId = okapiHeaders.get(STREAM_ID);
 
     try (InputStream bis = new BufferedInputStream(entity)) {
       if (Objects.isNull(okapiHeaders.get(STREAM_COMPLETE))) {
         // This code will be executed for each chunk
-        processBytesArrayFromStream(bis);
+        processBytesArrayFromStream(bis, streamId);
       } else if (Objects.nonNull(okapiHeaders.get(STREAM_ABORT))) {
+        streams.remove(streamId);
         asyncResultHandler.handle(succeededFuture(
             PostCounterReportsUploadProviderByIdResponse
                 .respond400WithTextPlain("Stream aborted")));
       } else {
         // This code will be executed once after stream completed
-        if (Objects.nonNull(requestBytesArray)) {
-          createAndInsertReport(id, overwrite, okapiHeaders, vertxContext)
+        byte[] bytes = streams.get(streamId);
+        streams.remove(streamId);
+        if (Objects.nonNull(bytes)) {
+          CounterReportDocument reportDoc = createReportDocumentFromBytesArray(
+              bytes);
+          createAndInsertReport(reportDoc, id, overwrite, okapiHeaders, vertxContext)
               .onSuccess(reportIds ->
                   asyncResultHandler.handle(
                       succeededFuture(
@@ -648,22 +658,25 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     }
   }
 
-  private void processBytesArrayFromStream(InputStream is) throws IOException {
+  private void processBytesArrayFromStream(InputStream is, String streamId) throws IOException {
     if (Objects.nonNull(requestBytesArray)) {
-      requestBytesArray = ArrayUtils.addAll(requestBytesArray, IOUtils.toByteArray(is));
+      byte[] byteStream = streams.getOrDefault(streamId, new byte[0]);
+      byteStream = ArrayUtils.addAll(byteStream, IOUtils.toByteArray(is));
+      streams.put(streamId, byteStream);
     } else {
       requestBytesArray = null;
     }
   }
 
-  private Future<List<String>> createAndInsertReport(String udpId, boolean overwrite,
+  private CounterReportDocument createReportDocumentFromBytesArray(byte[] bytesArray) {
+    return new JsonObject(
+        new String(bytesArray, StandardCharsets.UTF_8)).mapTo(CounterReportDocument.class);
+  }
+
+  private Future<List<String>> createAndInsertReport(CounterReportDocument entity, String udpId, boolean overwrite,
       Map<String, String> okapiHeaders, Context vertxContext) {
 
     Promise<List<String>> result = Promise.promise();
-
-    CounterReportDocument entity = new JsonObject(
-        new String(requestBytesArray, StandardCharsets.UTF_8)).mapTo(CounterReportDocument.class);
-
     Boolean isEditedManually = entity.getReportMetadata().getReportEditedManually();
     String editReason = entity.getReportMetadata().getEditReason();
 
