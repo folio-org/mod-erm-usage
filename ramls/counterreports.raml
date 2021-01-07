@@ -1,6 +1,6 @@
 #%RAML 1.0
 title: Counter Reports
-version: v2.1
+version: v3.0
 baseUri: http://localhost/mod-erm-usage
 
 documentation:
@@ -8,6 +8,7 @@ documentation:
     content: This documents the API calls that can be made to query and manage counter reports
 
 types:
+  counterReportDocument: !include ./schemas/counterreport_document.json
   counterReport: !include ./schemas/counterreport.json
   counterReports: !include ./schemas/counterreports.json
   counterReportsSorted: !include ./schemas/counterreports_sorted.json
@@ -141,10 +142,15 @@ resourceTypes:
           description: Overwrite existing reports?
           type: boolean
           default: false
+      is: [validate]
       body:
-        application/octet-stream:
+        application/json:
+          schema: counterReportDocument
       responses:
         200:
+          body:
+            text/plain:
+        400:
           body:
             text/plain:
         404:

@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Report metadata",
+  "type": "object",
+  "properties": {
+    "reportEditedManually": {
+      "description": "Flag if report was edited manually",
+      "type": "boolean"
+    },
+    "editReason": {
+      "description": "Reason why report was edited",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "reportEditedManually"
+  ]
+}

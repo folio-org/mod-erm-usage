@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "Object with base64 encoded report file",
+  "type": "object",
+  "properties": {
+    "data": {
+      "description": "Base64 encoded report file",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "data"
+  ]
+}
