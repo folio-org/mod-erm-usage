@@ -181,7 +181,7 @@ public class SQLTriggersIT {
               Map.of(
                   XOkapiHeaders.TENANT.toLowerCase(),
                   TENANT,
-                  "X-Okapi-Url",
+                  XOkapiHeaders.URL,
                   "http://localhost:" + port),
               res -> {
                 if (res.result().getStatus() == 201) {
