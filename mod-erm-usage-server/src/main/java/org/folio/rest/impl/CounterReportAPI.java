@@ -1,9 +1,6 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
-import static org.folio.rest.RestVerticle.STREAM_ABORT;
-import static org.folio.rest.RestVerticle.STREAM_COMPLETE;
-import static org.folio.rest.RestVerticle.STREAM_ID;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.VertxUtil.executeBlocking;
 
@@ -14,31 +11,24 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
-import org.folio.rest.annotations.Stream;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReportDocument;
@@ -70,9 +60,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   private static final String UNSUPPORTED_COUNTER_VERSION_MSG =
       "Requested counter version \"%s\" is not supported.";
   private static final String XLSX_ERR_MSG = "An error occured while creating xlsx data: %s";
-  private byte[] requestBytesArray = new byte[0];
-  // message length for a stream
-  private static Map<String, byte[]> streams = new HashMap<>();
 
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
 
@@ -338,60 +325,53 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   }
 
   @Override
-  @Stream
   @Validate
   public void postCounterReportsUploadProviderById(
       String id,
       boolean overwrite,
-      InputStream entity,
+      CounterReportDocument entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-    String streamId = okapiHeaders.get(STREAM_ID);
 
-    try (InputStream bis = new BufferedInputStream(entity)) {
-      if (Objects.isNull(okapiHeaders.get(STREAM_COMPLETE))) {
-        // This code will be executed for each chunk
-        processBytesArrayFromStream(bis, streamId);
-      } else if (Objects.nonNull(okapiHeaders.get(STREAM_ABORT))) {
-        streams.remove(streamId);
-        asyncResultHandler.handle(succeededFuture(
+    Boolean isEditedManually = entity.getReportMetadata().getReportEditedManually();
+    String editReason = entity.getReportMetadata().getEditReason();
+    decodeBase64Report(entity.getContents().getData(), vertxContext)
+        .onSuccess(counterReports ->
+            PgHelper.getUDPfromDbById(vertxContext, okapiHeaders, id)
+                .compose(
+                    udp -> {
+                      counterReports.forEach(
+                          cr -> {
+                            cr.setEditReason(editReason);
+                            cr.setReportEditedManually(isEditedManually);
+                            cr.withProviderId(udp.getId())
+                                .withDownloadTime(Date.from(Instant.now()));
+                          });
+                      return succeededFuture(counterReports);
+                    })
+                .compose(
+                    crs ->
+                        PgHelper.saveCounterReportsToDb(
+                            vertxContext, okapiHeaders, crs, overwrite))
+                .onSuccess(reportIds ->
+                    asyncResultHandler.handle(
+                        succeededFuture(
+                            PostCounterReportsUploadProviderByIdResponse
+                                .respond200WithTextPlain(
+                                    String.format(
+                                        "Saved report with ids: %s",
+                                        String.join(",", reportIds))))))
+                .onFailure(throwable -> asyncResultHandler.handle(
+                    succeededFuture(
+                        PostCounterReportsUploadProviderByIdResponse
+                            .respond500WithTextPlain(
+                                String.format("Error saving report: %s", throwable)))))
+        )
+        .onFailure(throwable -> asyncResultHandler.handle(succeededFuture(
             PostCounterReportsUploadProviderByIdResponse
-                .respond400WithTextPlain("Stream aborted")));
-      } else {
-        // This code will be executed once after stream completed
-        byte[] bytes = streams.get(streamId);
-        streams.remove(streamId);
-        if (Objects.nonNull(bytes)) {
-          CounterReportDocument reportDoc = createReportDocumentFromBytesArray(
-              bytes);
-          createAndInsertReport(reportDoc, id, overwrite, okapiHeaders, vertxContext)
-              .onSuccess(reportIds ->
-                  asyncResultHandler.handle(
-                      succeededFuture(
-                          PostCounterReportsUploadProviderByIdResponse
-                              .respond200WithTextPlain(
-                                  String.format(
-                                      "Saved report with ids: %s",
-                                      String.join(",", reportIds)))))
-              )
-              .onFailure(throwable ->
-                  asyncResultHandler.handle(
-                      succeededFuture(
-                          PostCounterReportsUploadProviderByIdResponse
-                              .respond500WithTextPlain(
-                                  String.format("Error saving report: %s", throwable))))
-              );
-        } else {
-          asyncResultHandler.handle(succeededFuture(
-              PostCounterReportsUploadProviderByIdResponse
-                  .respond400WithTextPlain("Error saving report.")));
-        }
-      }
-    } catch (Exception e) {
-      asyncResultHandler.handle(succeededFuture(PostCounterReportsUploadProviderByIdResponse
-          .respond500WithTextPlain(String.format("Error saving report: %s", e))));
-    }
+                .respond400WithTextPlain(
+                    String.format("Error saving report: %s", throwable)))));
   }
 
   @Override
@@ -656,53 +636,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     } catch (Counter5UtilsException e) {
       throw new CounterReportAPIRuntimeException(e);
     }
-  }
-
-  private void processBytesArrayFromStream(InputStream is, String streamId) throws IOException {
-    if (Objects.nonNull(requestBytesArray)) {
-      byte[] byteStream = streams.getOrDefault(streamId, new byte[0]);
-      byteStream = ArrayUtils.addAll(byteStream, IOUtils.toByteArray(is));
-      streams.put(streamId, byteStream);
-    } else {
-      requestBytesArray = null;
-    }
-  }
-
-  private CounterReportDocument createReportDocumentFromBytesArray(byte[] bytesArray) {
-    return new JsonObject(
-        new String(bytesArray, StandardCharsets.UTF_8)).mapTo(CounterReportDocument.class);
-  }
-
-  private Future<List<String>> createAndInsertReport(CounterReportDocument entity, String udpId, boolean overwrite,
-      Map<String, String> okapiHeaders, Context vertxContext) {
-
-    Promise<List<String>> result = Promise.promise();
-    Boolean isEditedManually = entity.getReportMetadata().getReportEditedManually();
-    String editReason = entity.getReportMetadata().getEditReason();
-
-    decodeBase64Report(entity.getContents().getData(), vertxContext)
-        .onSuccess(counterReports ->
-            PgHelper.getUDPfromDbById(vertxContext, okapiHeaders, udpId)
-                .compose(
-                    udp -> {
-                      counterReports.forEach(
-                          cr -> {
-                            cr.setEditReason(editReason);
-                            cr.setReportEditedManually(isEditedManually);
-                            cr.withProviderId(udp.getId())
-                                .withDownloadTime(Date.from(Instant.now()));
-                          });
-                      return succeededFuture(counterReports);
-                    })
-                .compose(
-                    crs ->
-                        PgHelper.saveCounterReportsToDb(
-                            vertxContext, okapiHeaders, crs, overwrite))
-                .onSuccess(result::complete)
-                .onFailure(result::fail)
-        )
-        .onFailure(result::fail);
-    return result.future();
   }
 
   private Future<List<CounterReport>> decodeBase64Report(String encodedData, Context vertxContext) {

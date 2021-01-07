@@ -142,8 +142,10 @@ resourceTypes:
           description: Overwrite existing reports?
           type: boolean
           default: false
+      is: [validate]
       body:
-        application/octet-stream:
+        application/json:
+          schema: counterReportDocument
       responses:
         200:
           body:
