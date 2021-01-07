@@ -170,7 +170,7 @@ public class PgHelperIT {
             "JR1",
             "4",
             Arrays.asList("2019-01", "2019-02", "2020-01", "2020-02", "2020-03"))
-        .setHandler(
+        .onComplete(
             ar -> {
               if (ar.succeeded()) {
                 context.verify(v -> assertThat(ar.result()).hasSize(3));
@@ -192,7 +192,7 @@ public class PgHelperIT {
             "JR1",
             "4",
             Arrays.asList("2019-01", "2019-02", "2020-01", "2020-02", "2020-03"))
-        .setHandler(
+        .onComplete(
             ar -> {
               if (ar.succeeded()) {
                 context.verify(v -> assertThat(ar.result()).hasSize(2));
@@ -210,7 +210,7 @@ public class PgHelperIT {
     CQLWrapper cql = createGetCounterReportCQL(providerId2, "4", "JR1");
 
     PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), okapiHeaders, reports2, false)
-        .setHandler(
+        .onComplete(
             ar -> {
               if (ar.succeeded()) {
                 context.fail("Should fail");
@@ -244,7 +244,7 @@ public class PgHelperIT {
     Async async2 = context.async();
     reports2.forEach(li -> li.withFailedAttempts(5));
     PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), okapiHeaders, reports2, true)
-        .setHandler(
+        .onComplete(
             ar -> {
               if (ar.succeeded()) {
                 assertThat(ar.result()).hasSize(2);
@@ -285,7 +285,7 @@ public class PgHelperIT {
     CQLWrapper cql = createGetCounterReportCQL(providerId2, "4", "PR1");
 
     PgHelper.saveCounterReportsToDb(vertx.getOrCreateContext(), okapiHeaders, reports3, false)
-        .setHandler(
+        .onComplete(
             ar -> {
               if (ar.succeeded()) {
                 assertThat(ar.result()).hasSize(2);

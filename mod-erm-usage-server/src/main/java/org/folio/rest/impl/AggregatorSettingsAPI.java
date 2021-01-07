@@ -10,8 +10,6 @@ import com.google.common.io.ByteStreams;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -19,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.rest.annotations.Validate;
@@ -42,7 +42,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
   private static final List<String> SUPPORTED_FORMATS = Arrays.asList("csv", "xlsx");
   private static final String UNSUPPORTED_MSG = "Requested format \"%s\" is not supported.";
 
-  private final Logger logger = LoggerFactory.getLogger(AggregatorSettingsAPI.class);
+  private final Logger logger = LogManager.getLogger(AggregatorSettingsAPI.class);
 
   public static String getCredentialsCSV(List<UsageDataProvider> udps)
       throws JsonProcessingException {
@@ -74,7 +74,7 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting aggregator settings");
-    logger.debug("Headers present are: " + okapiHeaders.toString());
+    logger.debug("Headers present are: {}", okapiHeaders::toString);
 
     CQLWrapper cql;
     try {

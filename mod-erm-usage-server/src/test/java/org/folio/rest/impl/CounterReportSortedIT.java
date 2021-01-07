@@ -23,10 +23,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.CounterReportsSorted;
@@ -92,17 +92,22 @@ public class CounterReportSortedIT {
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
             .build();
 
-    TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
-        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
+        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
     vertx.deployVerticle(
         RestVerticle.class.getName(),
         options,
         res -> {
           try {
-            tenantClient.postTenant(
-                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
-                res2 -> async.complete());
+            new TenantAPI()
+                .postTenantSync(
+                    new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
+                    Map.of(XOkapiHeaders.TENANT.toLowerCase(), TENANT),
+                    res2 -> {
+                      context.verify(v -> assertThat(res2.result().getStatus()).isEqualTo(204));
+                      async.complete();
+                    },
+                    vertx.getOrCreateContext());
           } catch (Exception e) {
             context.fail(e);
           }
@@ -161,7 +166,7 @@ public class CounterReportSortedIT {
   private void testThatDBIsEmpty() {
     int size =
         get().then().statusCode(200).extract().as(CounterReports.class).getCounterReports().size();
-    assertThat(size).isEqualTo(0);
+    assertThat(size).isZero();
   }
 
   @Test

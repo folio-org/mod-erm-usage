@@ -91,7 +91,7 @@ public class AggregatorSettingsIT {
 
     TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
-        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
+        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
 
     vertx.deployVerticle(
         RestVerticle.class.getName(),
@@ -161,7 +161,7 @@ public class AggregatorSettingsIT {
     given().delete(aggregatorSettingSample.getId()).then().statusCode(204);
 
     ass = given().get().then().statusCode(200).extract().as(AggregatorSettings.class);
-    assertThat(ass.getTotalRecords()).isEqualTo(0);
+    assertThat(ass.getTotalRecords()).isZero();
     assertThat(ass.getAggregatorSettings()).isEmpty();
   }
 
@@ -210,7 +210,7 @@ public class AggregatorSettingsIT {
             .statusCode(200)
             .extract()
             .as(AggregatorSettings.class);
-    assertThat(as.getTotalRecords()).isEqualTo(0);
+    assertThat(as.getTotalRecords()).isZero();
     assertThat(as.getAggregatorSettings()).isEmpty();
 
     given().delete(location).then().statusCode(204);
@@ -223,7 +223,7 @@ public class AggregatorSettingsIT {
 
     given().body(withoutLabel).post().then().statusCode(422);
     AggregatorSettings as = given().get().then().extract().as(AggregatorSettings.class);
-    assertThat(as.getTotalRecords()).isEqualTo(0);
+    assertThat(as.getTotalRecords()).isZero();
   }
 
   @Test
