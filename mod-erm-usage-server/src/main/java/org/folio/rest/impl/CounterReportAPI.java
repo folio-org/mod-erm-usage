@@ -7,6 +7,7 @@ import static org.folio.rest.util.VertxUtil.executeBlocking;
 import com.google.common.io.ByteStreams;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.Json;
@@ -17,6 +18,7 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -29,6 +31,7 @@ import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.CounterReportDocument;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.CounterReportsGetOrder;
 import org.folio.rest.jaxrs.model.CounterReportsPerYear;
@@ -57,6 +60,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   private static final String UNSUPPORTED_COUNTER_VERSION_MSG =
       "Requested counter version \"%s\" is not supported.";
   private static final String XLSX_ERR_MSG = "An error occured while creating xlsx data: %s";
+
   private final Logger logger = LoggerFactory.getLogger(CounterReportAPI.class);
 
   private final Comparator<CounterReportsPerYear> compareByYear =
@@ -321,62 +325,58 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   }
 
   @Override
+  @Validate
   public void postCounterReportsUploadProviderById(
       String id,
       boolean overwrite,
-      InputStream entity,
+      CounterReportDocument entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    executeBlocking(
-            vertxContext,
-            () -> {
-              try {
-                return UploadHelper.getCounterReportsFromInputStream(entity);
-              } catch (Exception e) {
-                throw new ReportUploadException(e);
-              }
-            })
+    Boolean isEditedManually = entity.getReportMetadata().getReportEditedManually();
+    String editReason = entity.getReportMetadata().getEditReason();
+    decodeBase64Report(entity.getContents().getData(), vertxContext)
         .onSuccess(
             counterReports ->
                 PgHelper.getUDPfromDbById(vertxContext, okapiHeaders, id)
                     .compose(
                         udp -> {
                           counterReports.forEach(
-                              cr ->
-                                  cr.withProviderId(udp.getId())
-                                      .withDownloadTime(Date.from(Instant.now())));
+                              cr -> {
+                                cr.setEditReason(editReason);
+                                cr.setReportEditedManually(isEditedManually);
+                                cr.withProviderId(udp.getId())
+                                    .withDownloadTime(Date.from(Instant.now()));
+                              });
                           return succeededFuture(counterReports);
                         })
                     .compose(
                         crs ->
                             PgHelper.saveCounterReportsToDb(
                                 vertxContext, okapiHeaders, crs, overwrite))
-                    .onComplete(
-                        ar -> {
-                          if (ar.succeeded()) {
+                    .onSuccess(
+                        reportIds ->
                             asyncResultHandler.handle(
                                 succeededFuture(
                                     PostCounterReportsUploadProviderByIdResponse
                                         .respond200WithTextPlain(
                                             String.format(
                                                 "Saved report with ids: %s",
-                                                String.join(",", ar.result())))));
-                          } else {
+                                                String.join(",", reportIds))))))
+                    .onFailure(
+                        throwable ->
                             asyncResultHandler.handle(
                                 succeededFuture(
                                     PostCounterReportsUploadProviderByIdResponse
                                         .respond500WithTextPlain(
-                                            String.format("Error saving report: %s", ar.cause()))));
-                          }
-                        }))
+                                            String.format("Error saving report: %s", throwable))))))
         .onFailure(
-            t ->
+            throwable ->
                 asyncResultHandler.handle(
                     succeededFuture(
-                        PostCounterReportsUploadProviderByIdResponse.respond500WithTextPlain(
-                            String.format("Error uploading file: %s", t.getMessage())))));
+                        PostCounterReportsUploadProviderByIdResponse.respond400WithTextPlain(
+                            String.format("Error saving report: %s", throwable)))));
   }
 
   @Override
@@ -641,6 +641,27 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     } catch (Counter5UtilsException e) {
       throw new CounterReportAPIRuntimeException(e);
     }
+  }
+
+  private Future<List<CounterReport>> decodeBase64Report(String encodedData, Context vertxContext) {
+    Promise<List<CounterReport>> result = Promise.promise();
+    executeBlocking(
+            vertxContext,
+            () -> {
+              try {
+                String[] base64Splitted = encodedData.split(",");
+                if (base64Splitted.length < 2) {
+                  throw new ReportUploadException(new Throwable("Report is empty."));
+                }
+                byte[] reportAsBytes = Base64.getDecoder().decode(base64Splitted[1]);
+                return UploadHelper.getCounterReportsFromString(new String(reportAsBytes));
+              } catch (Exception e) {
+                throw new ReportUploadException(e);
+              }
+            })
+        .onSuccess(result::complete)
+        .onFailure(result::fail);
+    return result.future();
   }
 
   private static class CounterReportAPIRuntimeException extends RuntimeException {
