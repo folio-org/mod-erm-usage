@@ -222,21 +222,15 @@ public class CounterReportUploadIT {
     return createReport(fileAsString, mimeType, reportEditedManually, editReason);
   }
 
-  private String createReport(String string, String mimeType, Boolean reportEditedManually,
-      String editReason)
-      throws IOException {
+private CounterReportDocument createReport(
+      String string, String mimeType, Boolean reportEditedManually, String editReason) {
     String fileAsBytes = Base64.getEncoder().encodeToString(string.getBytes());
     Contents content = new Contents().withData("data:" + mimeType + " ;base64," + fileAsBytes);
     ReportMetadata metadata = new ReportMetadata().withReportEditedManually(reportEditedManually);
     if (editReason != null && reportEditedManually) {
       metadata.setEditReason(editReason);
     }
-    CounterReportDocument document = new CounterReportDocument()
-        .withReportMetadata(metadata)
-        .withContents(content);
-
-    ObjectMapper objectMapper = new ObjectMapper();
-    return objectMapper.writeValueAsString(document);
+    return new CounterReportDocument().withReportMetadata(metadata).withContents(content);
   }
 
   @Test
