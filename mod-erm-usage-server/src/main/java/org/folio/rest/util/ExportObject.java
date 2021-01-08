@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.text.SimpleDateFormat;
 import java.util.Objects;
 import java.util.TimeZone;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.SushiCredentials;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @JsonPropertyOrder({
   "providerName",
@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
   "updatedDate"
 })
 public class ExportObject {
-  private static final Logger LOG = LoggerFactory.getLogger(ExportObject.class);
+  private static final Logger LOG = LogManager.getLogger(ExportObject.class);
 
   private String providerName;
   private String harvestingStatus;

@@ -91,7 +91,7 @@ public class CounterReportExportIT {
             .build();
 
     DeploymentOptions options =
-        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
+        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
     vertx.deployVerticle(RestVerticle.class.getName(), options, context.asyncAssertSuccess());
   }
 
@@ -127,7 +127,7 @@ public class CounterReportExportIT {
   private void testThatDBIsEmpty() {
     int size =
         get().then().statusCode(200).extract().as(CounterReports.class).getCounterReports().size();
-    assertThat(size).isEqualTo(0);
+    assertThat(size).isZero();
   }
 
   @Test

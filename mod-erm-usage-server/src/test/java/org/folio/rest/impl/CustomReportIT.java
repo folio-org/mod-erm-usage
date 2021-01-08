@@ -16,10 +16,11 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.CustomReport;
 import org.folio.rest.jaxrs.model.CustomReports;
 import org.folio.rest.jaxrs.model.TenantAttributes;
@@ -107,17 +108,22 @@ public class CustomReportIT {
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
 
-    TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
-        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port)).setWorker(true);
+        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
     vertx.deployVerticle(
         RestVerticle.class.getName(),
         options,
         res -> {
           try {
-            tenantClient.postTenant(
-                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
-                res2 -> async.complete());
+            new TenantAPI()
+                .postTenantSync(
+                    new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
+                    Map.of(XOkapiHeaders.TENANT.toLowerCase(), TENANT),
+                    res2 -> {
+                      context.verify(v -> assertThat(res2.result().getStatus()).isEqualTo(204));
+                      async.complete();
+                    },
+                    vertx.getOrCreateContext());
           } catch (Exception e) {
             context.fail(e);
           }
