@@ -73,7 +73,7 @@ Sample data resides in the folder `sample-data`. The data need to be posted in t
 
 ### Issue tracker
 
-See project [MODERM](https://issues.folio.org/browse/MODERM)
+See project [MODEUS](https://issues.folio.org/browse/MODEUS)
 at the [FOLIO issue tracker](https://dev.folio.org/guidelines/issue-tracker).
 
 ### Other documentation
