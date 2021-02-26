@@ -39,6 +39,11 @@
       "run": "after",
       "snippetPath": "migration/2.10.0/migration.sql",
       "fromModuleVersion": "mod-erm-usage-2.10.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/4.0.0/migration.sql",
+      "fromModuleVersion": "mod-erm-usage-4.0.0"
     }
   ],
   "tables": [
