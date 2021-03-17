@@ -1,3 +1,10 @@
+# 4.0.0 (2021-03-17)
+* Upgrade to RMB 32 (MODEUS-101)
+* Add endpoint to get all available report types (MODEUS-103)
+* Counter reports can be marked as edited manually (MODEUS-99, MODEUS-104)
+* Add available report types to udp (MODEUS-100)
+* Custom reports can be specified by link (MODEUS-98)
+
 # 3.0.2 (2020-11-04)
 * Upgrade to RMB 31.1.5 and Vert.x 3.9.4 (MODEUS-95)
 
