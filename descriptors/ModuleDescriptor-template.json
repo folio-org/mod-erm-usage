@@ -125,7 +125,7 @@
     },
     {
       "id": "counter-reports",
-      "version": "3.0",
+      "version": "3.1",
       "handlers": [
         {
           "methods": [
@@ -234,6 +234,15 @@
           "permissionsRequired": [
             "counterreports.collection.get"
           ]
+        },
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/counter-reports/reports/delete",
+          "permissionsRequired": [
+            "counterreports.item.delete"
+          ]
         }
       ]
     },
@@ -325,14 +334,19 @@
       "id": "_tenant",
       "version": "2.0",
       "interfaceType": "system",
-      "handlers" : [
+      "handlers": [
         {
-          "methods" : [ "POST" ],
-          "pathPattern" : "/_/tenant"
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/_/tenant"
         },
         {
-          "methods" : [ "GET", "DELETE" ],
-          "pathPattern" : "/_/tenant/{id}"
+          "methods": [
+            "GET",
+            "DELETE"
+          ],
+          "pathPattern": "/_/tenant/{id}"
         }
       ]
     }
