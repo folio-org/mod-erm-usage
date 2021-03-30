@@ -60,8 +60,8 @@ public class CounterReportIT {
 
   private static final String APPLICATION_JSON = "application/json";
   private static final String BASE_URI = "/counter-reports";
-  private static final String BASE_URI_DOWNLOAD = BASE_URI.concat("/{id}/download");
-  private static final String BASE_URI_REPORT_TYPES = BASE_URI.concat("/reports/types");
+  private static final String BASE_URI_DOWNLOAD = "/{id}/download";
+  private static final String BASE_URI_REPORT_TYPES = "/reports/types";
   private static final String TENANT = "diku";
   private static final Vertx vertx = Vertx.vertx();
   private static CounterReport report;
@@ -72,6 +72,10 @@ public class CounterReportIT {
 
   private static RequestSpecification reportsDeleteReqSpec;
   private static RequestSpecification counterReportsReqSpec;
+  private static RequestSpecification defaultHeaderSpec;
+  private static final Map<String, String> defaultHeaders =
+      Map.of(
+          XOkapiHeaders.TENANT, TENANT, HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString());
 
   @Rule public Timeout timeout = Timeout.seconds(10);
 
@@ -115,29 +119,16 @@ public class CounterReportIT {
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
     vertx.deployVerticle(RestVerticle.class.getName(), options, context.asyncAssertSuccess());
 
+    defaultHeaderSpec = new RequestSpecBuilder().addHeaders(defaultHeaders).build();
+
     reportsDeleteReqSpec =
         new RequestSpecBuilder()
-            .addHeaders(
-                Map.of(
-                    XOkapiHeaders.TENANT,
-                    TENANT,
-                    HttpHeaders.CONTENT_TYPE,
-                    MediaType.JSON_UTF_8.toString()))
+            .addHeaders(defaultHeaders)
             .setBasePath(BASE_URI + "/reports/delete")
             .build();
 
     counterReportsReqSpec =
-        new RequestSpecBuilder()
-            .addHeaders(
-                Map.of(
-                    XOkapiHeaders.TENANT,
-                    TENANT,
-                    HttpHeaders.CONTENT_TYPE,
-                    MediaType.JSON_UTF_8.toString(),
-                    HttpHeaders.ACCEPT,
-                    MediaType.JSON_UTF_8.toString()))
-            .setBasePath(BASE_URI)
-            .build();
+        new RequestSpecBuilder().addHeaders(defaultHeaders).setBasePath(BASE_URI).build();
   }
 
   @Before
@@ -154,8 +145,7 @@ public class CounterReportIT {
 
   @Test
   public void testGetCounterReportsDownloadById404() {
-    given()
-        .header(XOkapiHeaders.TENANT, TENANT)
+    given(counterReportsReqSpec)
         .pathParam("id", "0c6f1ca0-4ad8-479a-9d99-0dd686fea258")
         .get(BASE_URI_DOWNLOAD)
         .then()
@@ -164,16 +154,9 @@ public class CounterReportIT {
 
   @Test
   public void testGetCounterReportsDownloadById200Version4() {
-    given()
-        .body(report)
-        .header(XOkapiHeaders.TENANT, TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .post(BASE_URI)
-        .then()
-        .statusCode(201);
+    given(counterReportsReqSpec).body(report).post().then().statusCode(201);
 
-    given()
-        .header(XOkapiHeaders.TENANT, TENANT)
+    given(counterReportsReqSpec)
         .pathParam("id", report.getId())
         .get(BASE_URI_DOWNLOAD)
         .then()
@@ -187,11 +170,9 @@ public class CounterReportIT {
     String report =
         Resources.toString(Resources.getResource("TR/TR_1.json"), StandardCharsets.UTF_8);
     String id =
-        given()
+        given(counterReportsReqSpec)
             .body(report)
-            .header(XOkapiHeaders.TENANT, TENANT)
-            .header("content-type", APPLICATION_JSON)
-            .post(BASE_URI)
+            .post()
             .then()
             .statusCode(201)
             .extract()
@@ -199,8 +180,7 @@ public class CounterReportIT {
             .getId();
 
     Report resultReport =
-        given()
-            .header(XOkapiHeaders.TENANT, TENANT)
+        given(counterReportsReqSpec)
             .pathParam("id", id)
             .get(BASE_URI_DOWNLOAD)
             .then()
@@ -216,17 +196,14 @@ public class CounterReportIT {
 
   @Test
   public void testGetCounterReportsDownloadByIdInvalidVersion() {
-    given()
+    given(counterReportsReqSpec)
         .body(Json.decodeValue(Json.encode(report), CounterReport.class).withRelease("1"))
-        .header(XOkapiHeaders.TENANT, TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .post(BASE_URI)
+        .post()
         .then()
         .statusCode(201);
 
     String body =
-        given()
-            .header(XOkapiHeaders.TENANT, TENANT)
+        given(counterReportsReqSpec)
             .pathParam("id", report.getId())
             .get(BASE_URI_DOWNLOAD)
             .then()
@@ -298,23 +275,17 @@ public class CounterReportIT {
   @Test
   public void checkThatWeCanAddGetPutAndDeleteCounterReports() {
     // POST
-    given()
+    given(counterReportsReqSpec)
         .body(Json.encode(report))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(BASE_URI)
+        .post()
         .then()
         .statusCode(201)
         .body("release", equalTo(report.getRelease()))
         .body("id", equalTo(report.getId()));
 
     // GET
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + "/" + report.getId())
+    given(counterReportsReqSpec)
+        .get("/" + report.getId())
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
@@ -323,63 +294,39 @@ public class CounterReportIT {
         .body("editReason", equalTo(report.getEditReason()));
 
     // PUT
-    given()
+    given(counterReportsReqSpec)
         .body(Json.encode(reportChanged))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .put(BASE_URI + "/" + report.getId())
+        .put("/" + report.getId())
         .then()
         .statusCode(204);
 
     // GET again
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + "/" + report.getId())
+    given(counterReportsReqSpec)
+        .get("/" + report.getId())
         .then()
         .statusCode(200)
         .body("id", equalTo(reportChanged.getId()))
         .body("release", equalTo(reportChanged.getRelease()));
 
     // DELETE
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + report.getId())
-        .then()
-        .statusCode(204);
+    given(counterReportsReqSpec).delete("/" + report.getId()).then().statusCode(204);
 
     // GET again
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + "/" + report.getId())
-        .then()
-        .statusCode(404);
+    given(counterReportsReqSpec).get("/" + report.getId()).then().statusCode(404);
   }
 
   @Test
   public void checkThatWeCanSearchByCQL() {
-    given()
+    given(counterReportsReqSpec)
         .body(Json.encode(report))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(BASE_URI)
+        .post()
         .then()
         .statusCode(201)
         .body("id", equalTo(report.getId()));
 
-    String cqlReport = "?query=(report=\"semantico*\")";
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + cqlReport)
+    given(counterReportsReqSpec)
+        .queryParam("query", "(report=\"semantico*\")")
+        .get()
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
@@ -389,23 +336,17 @@ public class CounterReportIT {
         .body("counterReports[0].reportEditedManually", equalTo(report.getReportEditedManually()))
         .body("counterReports[0].editReason", equalTo(report.getEditReason()));
 
-    String cqlReport2 = "?query=(report=\"someStringThatIsNotInTheReport*\")";
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + cqlReport2)
+    given(counterReportsReqSpec)
+        .queryParam("query", "(report=\"someStringThatIsNotInTheReport*\")")
+        .get()
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
         .body("counterReports.size()", equalTo(0));
 
-    String cqlReportName = "?query=(reportName==\"JR1\")";
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + cqlReportName)
+    given(counterReportsReqSpec)
+        .queryParam("query", "(reportName==\"JR1\")")
+        .get()
         .then()
         .contentType(ContentType.JSON)
         .statusCode(200)
@@ -414,27 +355,14 @@ public class CounterReportIT {
         .body("counterReports[0].release", equalTo(report.getRelease()));
 
     // DELETE
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + report.getId())
-        .then()
-        .statusCode(204);
+    given(counterReportsReqSpec).delete("/" + report.getId()).then().statusCode(204);
   }
 
   @Test
   public void checkThatInvalidCounterReportIsNotPosted() {
     CounterReport invalidReport =
         Json.decodeValue(Json.encode(report), CounterReport.class).withYearMonth(null);
-    given()
-        .body(Json.encode(invalidReport))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(BASE_URI)
-        .then()
-        .statusCode(422);
+    given(counterReportsReqSpec).body(Json.encode(invalidReport)).post().then().statusCode(422);
   }
 
   @Test
@@ -450,22 +378,16 @@ public class CounterReportIT {
     }
 
     // POST usage data provider
-    given()
+    given(defaultHeaderSpec)
         .body(Json.encode(udprovider))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
         .post("/usage-data-providers")
         .then()
         .statusCode(201);
 
     // POST report
-    given()
+    given(counterReportsReqSpec)
         .body(Json.encode(reportFailedReason3000))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(BASE_URI)
+        .post()
         .then()
         .statusCode(201)
         .body("release", equalTo(reportFailedReason3000.getRelease()))
@@ -473,14 +395,10 @@ public class CounterReportIT {
 
     // Check if hasFailedReport and errorCode of UDP is set
     UsageDataProvider udp =
-        given()
+        given(defaultHeaderSpec)
             .body(Json.encode(udprovider))
-            .header("X-Okapi-Tenant", TENANT)
-            .header("content-type", APPLICATION_JSON)
-            .header("accept", APPLICATION_JSON)
             .request()
             .get("/usage-data-providers/" + udprovider.getId())
-            .thenReturn()
             .as(UsageDataProvider.class);
     assertThat(udp.getLabel()).isEqualTo(udprovider.getLabel());
     assertThat(udp.getId()).isNotEmpty();
@@ -492,19 +410,13 @@ public class CounterReportIT {
     assertThat(reportFailedReason3000.getFailedReason()).contains(udpErrorCodes.get(0));
 
     // DELETE report
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + reportFailedReason3000.getId())
+    given(counterReportsReqSpec)
+        .delete("/" + reportFailedReason3000.getId())
         .then()
         .statusCode(204);
 
     // DELETE udp
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
+    given(defaultHeaderSpec)
         .delete("/usage-data-providers/" + udprovider.getId())
         .then()
         .statusCode(204);
@@ -513,34 +425,25 @@ public class CounterReportIT {
   @Test
   public void checkThatWeGetErrorCodes() {
     // POST reports
-    given()
+    given(counterReportsReqSpec)
         .body(Json.encode(reportFailedReason3000))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(BASE_URI)
+        .post()
         .then()
         .statusCode(201)
         .body("release", equalTo(reportFailedReason3000.getRelease()))
         .body("id", equalTo(reportFailedReason3000.getId()));
 
-    given()
+    given(counterReportsReqSpec)
         .body(Json.encode(reportFailedReason3031))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(BASE_URI)
+        .post()
         .then()
         .statusCode(201)
         .body("release", equalTo(reportFailedReason3031.getRelease()))
         .body("id", equalTo(reportFailedReason3031.getId()));
 
-    given()
+    given(counterReportsReqSpec)
         .body(Json.encode(reportFailedReasonUnkownHost))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(BASE_URI)
+        .post()
         .then()
         .statusCode(201)
         .body("release", equalTo(reportFailedReasonUnkownHost.getRelease()))
@@ -548,59 +451,37 @@ public class CounterReportIT {
 
     // GET error codes
     ErrorCodes errorCodes =
-        given()
-            .header("X-Okapi-Tenant", TENANT)
-            .header("content-type", APPLICATION_JSON)
-            .header("accept", APPLICATION_JSON)
-            .request()
-            .get("/counter-reports/errors/codes")
-            .thenReturn()
-            .as(ErrorCodes.class);
+        given(counterReportsReqSpec).get("/errors/codes").thenReturn().as(ErrorCodes.class);
 
     assertThat(errorCodes.getErrorCodes().size()).isEqualTo(3);
     assertThat(errorCodes.getErrorCodes()).containsAll(Arrays.asList("3000", "3031", "other"));
 
     // DELETE reports
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + reportFailedReason3000.getId())
+    given(counterReportsReqSpec)
+        .delete("/" + reportFailedReason3000.getId())
         .then()
         .statusCode(204);
 
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + reportFailedReason3031.getId())
+    given(counterReportsReqSpec)
+        .delete("/" + reportFailedReason3031.getId())
         .then()
         .statusCode(204);
 
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + reportFailedReasonUnkownHost.getId())
+    given(counterReportsReqSpec)
+        .delete("/" + reportFailedReasonUnkownHost.getId())
         .then()
         .statusCode(204);
   }
 
   @Test
   public void checkThatWeGetReportTypes() throws IOException {
-    RequestSpecification defaultHeaders =
-        new RequestSpecBuilder()
-            .addHeader(XOkapiHeaders.TENANT, TENANT)
-            .addHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON)
-            .build();
-
     // POST reports
     String trReport =
         Resources.toString(Resources.getResource("TR/TR_1.json"), StandardCharsets.UTF_8);
     String idTR =
-        given(defaultHeaders)
+        given(counterReportsReqSpec)
             .body(trReport)
-            .post(BASE_URI)
+            .post()
             .then()
             .statusCode(201)
             .extract()
@@ -610,9 +491,9 @@ public class CounterReportIT {
     String firstJr1Report =
         Resources.toString(Resources.getResource("JR1/jr1_1.json"), StandardCharsets.UTF_8);
     String idFirstJR1 =
-        given(defaultHeaders)
+        given(counterReportsReqSpec)
             .body(firstJr1Report)
-            .post(BASE_URI)
+            .post()
             .then()
             .statusCode(201)
             .extract()
@@ -622,9 +503,9 @@ public class CounterReportIT {
     String secondJr1Report =
         Resources.toString(Resources.getResource("JR1/jr1_2.json"), StandardCharsets.UTF_8);
     String idSecondJR1 =
-        given(defaultHeaders)
+        given(counterReportsReqSpec)
             .body(secondJr1Report)
-            .post(BASE_URI)
+            .post()
             .then()
             .statusCode(201)
             .extract()
@@ -633,17 +514,17 @@ public class CounterReportIT {
 
     // GET report types
     ReportTypes reportTypes =
-        given(defaultHeaders).get(BASE_URI_REPORT_TYPES).thenReturn().as(ReportTypes.class);
+        given(counterReportsReqSpec).get(BASE_URI_REPORT_TYPES).thenReturn().as(ReportTypes.class);
     assertThat(reportTypes.getReportTypes()).containsExactlyInAnyOrder("TR", "JR1");
 
     // DELETE reports
-    given(defaultHeaders).delete(BASE_URI + "/" + idTR).then().statusCode(204);
-    given(defaultHeaders).delete(BASE_URI + "/" + idFirstJR1).then().statusCode(204);
-    given(defaultHeaders).delete(BASE_URI + "/" + idSecondJR1).then().statusCode(204);
+    given(counterReportsReqSpec).delete("/" + idTR).then().statusCode(204);
+    given(counterReportsReqSpec).delete("/" + idFirstJR1).then().statusCode(204);
+    given(counterReportsReqSpec).delete("/" + idSecondJR1).then().statusCode(204);
 
     // GET report types again
     reportTypes =
-        given(defaultHeaders).get(BASE_URI_REPORT_TYPES).thenReturn().as(ReportTypes.class);
+        given(counterReportsReqSpec).get(BASE_URI_REPORT_TYPES).thenReturn().as(ReportTypes.class);
     assertThat(reportTypes.getReportTypes()).isEmpty();
   }
 }
