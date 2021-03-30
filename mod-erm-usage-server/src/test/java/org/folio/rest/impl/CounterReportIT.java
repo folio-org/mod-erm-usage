@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
+import com.google.common.net.MediaType;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.http.ContentType;
@@ -14,6 +15,7 @@ import io.restassured.specification.RequestSpecification;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
@@ -22,11 +24,19 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Date;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.ErrorCodes;
 import org.folio.rest.jaxrs.model.Report;
 import org.folio.rest.jaxrs.model.ReportTypes;
@@ -59,6 +69,9 @@ public class CounterReportIT {
   private static CounterReport reportFailedReason3000;
   private static CounterReport reportFailedReason3031;
   private static CounterReport reportFailedReasonUnkownHost;
+
+  private static RequestSpecification reportsDeleteReqSpec;
+  private static RequestSpecification counterReportsReqSpec;
 
   @Rule public Timeout timeout = Timeout.seconds(10);
 
@@ -101,6 +114,30 @@ public class CounterReportIT {
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
     vertx.deployVerticle(RestVerticle.class.getName(), options, context.asyncAssertSuccess());
+
+    reportsDeleteReqSpec =
+        new RequestSpecBuilder()
+            .addHeaders(
+                Map.of(
+                    XOkapiHeaders.TENANT,
+                    TENANT,
+                    HttpHeaders.CONTENT_TYPE,
+                    MediaType.JSON_UTF_8.toString()))
+            .setBasePath(BASE_URI + "/reports/delete")
+            .build();
+
+    counterReportsReqSpec =
+        new RequestSpecBuilder()
+            .addHeaders(
+                Map.of(
+                    XOkapiHeaders.TENANT,
+                    TENANT,
+                    HttpHeaders.CONTENT_TYPE,
+                    MediaType.JSON_UTF_8.toString(),
+                    HttpHeaders.ACCEPT,
+                    MediaType.JSON_UTF_8.toString()))
+            .setBasePath(BASE_URI)
+            .build();
   }
 
   @Before
@@ -200,6 +237,62 @@ public class CounterReportIT {
             .asString();
 
     assertThat(body).contains("Unsupported", "version", "'1'");
+  }
+
+  @Test
+  public void testDeleteMultipleReportsInvalidBody() {
+    given(reportsDeleteReqSpec).post().then().statusCode(400);
+    given(reportsDeleteReqSpec).body("{}").post().then().statusCode(400);
+    given(reportsDeleteReqSpec).body("[1, 2]").post().then().statusCode(400);
+    given(reportsDeleteReqSpec).body("[\"1\", 2]").post().then().statusCode(400);
+  }
+
+  @Test
+  public void testDeleteMultipleReportsInvalidUUID() {
+    given(reportsDeleteReqSpec).body("[\"abc123\"]").post().then().statusCode(400);
+  }
+
+  @Test
+  public void testDeleteMultipleReports500() {
+    given(reportsDeleteReqSpec)
+        .header(XOkapiHeaders.TENANT, "")
+        .body("[\"0ace645c-f99c-4aaa-a70b-c7b443ea0cef\"]")
+        .post()
+        .then()
+        .statusCode(500);
+  }
+
+  @Test
+  public void testDeleteMultipleReports() {
+    // Create 5 reports
+    List<CounterReport> reports =
+        IntStream.rangeClosed(1, 5)
+            .mapToObj(
+                i ->
+                    new CounterReport()
+                        .withId(UUID.randomUUID().toString())
+                        .withDownloadTime(Date.from(Instant.now()))
+                        .withRelease("4")
+                        .withYearMonth("2012-0" + i)
+                        .withReportName("JR1"))
+            .collect(Collectors.toList());
+    // POST created reports
+    reports.forEach(cr -> given(counterReportsReqSpec).body(cr).post().then().statusCode(201));
+
+    // DELETE first 3 reports
+    JsonArray idJsonArray =
+        reports.subList(0, 3).stream()
+            .map(CounterReport::getId)
+            .collect(Collector.of(JsonArray::new, JsonArray::add, JsonArray::addAll));
+    given(reportsDeleteReqSpec).body(idJsonArray.encode()).post().then().statusCode(204);
+
+    // test that only 2 reports remain
+    CounterReports result =
+        given(counterReportsReqSpec).get().then().extract().body().as(CounterReports.class);
+    assertThat(result.getCounterReports())
+        .hasSize(2)
+        .extracting("id")
+        .containsExactlyInAnyOrder(reports.get(3).getId(), reports.get(4).getId());
   }
 
   @Test
