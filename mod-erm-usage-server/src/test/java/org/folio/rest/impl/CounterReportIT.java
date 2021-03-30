@@ -33,6 +33,7 @@ import java.util.UUID;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -58,28 +59,26 @@ import org.olf.erm.usage.counter41.Counter4Utils;
 @RunWith(VertxUnitRunner.class)
 public class CounterReportIT {
 
-  private static final String APPLICATION_JSON = "application/json";
-  private static final String BASE_URI = "/counter-reports";
-  private static final String BASE_URI_DOWNLOAD = "/{id}/download";
-  private static final String BASE_URI_REPORT_TYPES = "/reports/types";
+  private static final String PATH_BASE = "/counter-reports";
+  private static final String PATH_DOWNLOAD = "/{id}/download";
+  private static final String PATH_REPORT_TYPES = "/reports/types";
+  private static final String PATH_ERROR_CODES = "/errors/codes";
   private static final String TENANT = "diku";
   private static final Vertx vertx = Vertx.vertx();
+  private static final Map<String, String> defaultHeaders =
+      Map.of(
+          XOkapiHeaders.TENANT, TENANT, HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString());
+  @ClassRule public static EmbeddedPostgresRule pgRule = new EmbeddedPostgresRule(vertx, TENANT);
+
   private static CounterReport report;
   private static CounterReport reportChanged;
   private static CounterReport reportFailedReason3000;
   private static CounterReport reportFailedReason3031;
   private static CounterReport reportFailedReasonUnkownHost;
-
   private static RequestSpecification reportsDeleteReqSpec;
   private static RequestSpecification counterReportsReqSpec;
   private static RequestSpecification defaultHeaderSpec;
-  private static final Map<String, String> defaultHeaders =
-      Map.of(
-          XOkapiHeaders.TENANT, TENANT, HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString());
-
   @Rule public Timeout timeout = Timeout.seconds(10);
-
-  @ClassRule public static EmbeddedPostgresRule pgRule = new EmbeddedPostgresRule(vertx, TENANT);
 
   @BeforeClass
   public static void beforeClass(TestContext context) {
@@ -124,11 +123,16 @@ public class CounterReportIT {
     reportsDeleteReqSpec =
         new RequestSpecBuilder()
             .addHeaders(defaultHeaders)
-            .setBasePath(BASE_URI + "/reports/delete")
+            .setBasePath(PATH_BASE + "/reports/delete")
             .build();
 
     counterReportsReqSpec =
-        new RequestSpecBuilder().addHeaders(defaultHeaders).setBasePath(BASE_URI).build();
+        new RequestSpecBuilder().addHeaders(defaultHeaders).setBasePath(PATH_BASE).build();
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    RestAssured.reset();
   }
 
   @Before
@@ -138,16 +142,11 @@ public class CounterReportIT {
             Constants.TABLE_NAME_COUNTER_REPORTS, new Criterion(), context.asyncAssertSuccess());
   }
 
-  @AfterClass
-  public static void afterClass() {
-    RestAssured.reset();
-  }
-
   @Test
   public void testGetCounterReportsDownloadById404() {
     given(counterReportsReqSpec)
         .pathParam("id", "0c6f1ca0-4ad8-479a-9d99-0dd686fea258")
-        .get(BASE_URI_DOWNLOAD)
+        .get(PATH_DOWNLOAD)
         .then()
         .statusCode(404);
   }
@@ -158,7 +157,7 @@ public class CounterReportIT {
 
     given(counterReportsReqSpec)
         .pathParam("id", report.getId())
-        .get(BASE_URI_DOWNLOAD)
+        .get(PATH_DOWNLOAD)
         .then()
         .statusCode(200)
         .contentType(ContentType.XML)
@@ -182,7 +181,7 @@ public class CounterReportIT {
     Report resultReport =
         given(counterReportsReqSpec)
             .pathParam("id", id)
-            .get(BASE_URI_DOWNLOAD)
+            .get(PATH_DOWNLOAD)
             .then()
             .contentType(ContentType.JSON)
             .statusCode(200)
@@ -205,7 +204,7 @@ public class CounterReportIT {
     String body =
         given(counterReportsReqSpec)
             .pathParam("id", report.getId())
-            .get(BASE_URI_DOWNLOAD)
+            .get(PATH_DOWNLOAD)
             .then()
             .contentType(ContentType.TEXT)
             .statusCode(500)
@@ -406,7 +405,7 @@ public class CounterReportIT {
         .isEqualTo(UsageDataProvider.HasFailedReport.YES.value());
 
     List<String> udpErrorCodes = udp.getReportErrorCodes();
-    assertThat(udpErrorCodes.size()).isEqualTo(1);
+    assertThat(udpErrorCodes).hasSize(1);
     assertThat(reportFailedReason3000.getFailedReason()).contains(udpErrorCodes.get(0));
 
     // DELETE report
@@ -451,26 +450,15 @@ public class CounterReportIT {
 
     // GET error codes
     ErrorCodes errorCodes =
-        given(counterReportsReqSpec).get("/errors/codes").thenReturn().as(ErrorCodes.class);
+        given(counterReportsReqSpec).get(PATH_ERROR_CODES).thenReturn().as(ErrorCodes.class);
 
-    assertThat(errorCodes.getErrorCodes().size()).isEqualTo(3);
-    assertThat(errorCodes.getErrorCodes()).containsAll(Arrays.asList("3000", "3031", "other"));
+    assertThat(errorCodes.getErrorCodes())
+        .hasSize(3)
+        .containsAll(Arrays.asList("3000", "3031", "other"));
 
     // DELETE reports
-    given(counterReportsReqSpec)
-        .delete("/" + reportFailedReason3000.getId())
-        .then()
-        .statusCode(204);
-
-    given(counterReportsReqSpec)
-        .delete("/" + reportFailedReason3031.getId())
-        .then()
-        .statusCode(204);
-
-    given(counterReportsReqSpec)
-        .delete("/" + reportFailedReasonUnkownHost.getId())
-        .then()
-        .statusCode(204);
+    Stream.of(reportFailedReason3000, reportFailedReason3031, reportFailedReasonUnkownHost)
+        .forEach(r -> given(counterReportsReqSpec).delete("/" + r.getId()).then().statusCode(204));
   }
 
   @Test
@@ -514,17 +502,16 @@ public class CounterReportIT {
 
     // GET report types
     ReportTypes reportTypes =
-        given(counterReportsReqSpec).get(BASE_URI_REPORT_TYPES).thenReturn().as(ReportTypes.class);
+        given(counterReportsReqSpec).get(PATH_REPORT_TYPES).thenReturn().as(ReportTypes.class);
     assertThat(reportTypes.getReportTypes()).containsExactlyInAnyOrder("TR", "JR1");
 
     // DELETE reports
-    given(counterReportsReqSpec).delete("/" + idTR).then().statusCode(204);
-    given(counterReportsReqSpec).delete("/" + idFirstJR1).then().statusCode(204);
-    given(counterReportsReqSpec).delete("/" + idSecondJR1).then().statusCode(204);
+    Stream.of(idTR, idFirstJR1, idSecondJR1)
+        .forEach(id -> given(counterReportsReqSpec).delete("/" + id).then().statusCode(204));
 
     // GET report types again
     reportTypes =
-        given(counterReportsReqSpec).get(BASE_URI_REPORT_TYPES).thenReturn().as(ReportTypes.class);
+        given(counterReportsReqSpec).get(PATH_REPORT_TYPES).thenReturn().as(ReportTypes.class);
     assertThat(reportTypes.getReportTypes()).isEmpty();
   }
 }
