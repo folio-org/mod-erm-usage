@@ -11,6 +11,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.json.Json;
+import io.vertx.sqlclient.Tuple;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
@@ -418,6 +420,41 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 asyncResultHandler.handle(
                     succeededFuture(
                         GetCounterReportsReportsTypesResponse.respond500WithTextPlain(ar.cause())));
+              }
+            });
+  }
+
+  @Override
+  public void postCounterReportsReportsDelete(
+      List<String> entity,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+
+    UUID[] uuids;
+    try {
+      uuids =
+          entity.stream().map(UUID::fromString).collect(Collectors.toList()).toArray(UUID[]::new);
+    } catch (Exception e) {
+      asyncResultHandler.handle(
+          succeededFuture(
+              PostCounterReportsReportsDeleteResponse.respond400WithTextPlain(e.toString())));
+      return;
+    }
+
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .execute(
+            "DELETE FROM " + TABLE_NAME_COUNTER_REPORTS + " WHERE id = ANY ($1)",
+            Tuple.of(uuids),
+            h -> {
+              if (h.succeeded()) {
+                asyncResultHandler.handle(
+                    succeededFuture(PostCounterReportsReportsDeleteResponse.respond204()));
+              } else {
+                asyncResultHandler.handle(
+                    succeededFuture(
+                        PostCounterReportsReportsDeleteResponse.respond500WithTextPlain(
+                            h.cause().toString())));
               }
             });
   }
