@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>mod-erm-usage-server</artifactId>
@@ -114,28 +116,6 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>generate_interfaces</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>java</goal>
-            </goals>
-            <configuration>
-              <mainClass>org.folio.rest.tools.GenerateRunner</mainClass>
-              <!-- <executable>java</executable> -->
-              <cleanupDaemonThreads>false</cleanupDaemonThreads>
-              <systemProperties>
-                <systemProperty>
-                  <key>project.basedir</key>
-                  <value>${basedir}</value>
-                </systemProperty>
-                <systemProperty>
-                  <key>raml_files</key>
-                  <value>${ramlfiles_path}</value>
-                </systemProperty>
-              </systemProperties>
-            </configuration>
-          </execution>
-          <execution>
             <id>git submodule update</id>
             <phase>initialize</phase>
             <configuration>
@@ -149,6 +129,19 @@
             </configuration>
             <goals>
               <goal>exec</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.folio</groupId>
+        <artifactId>domain-models-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate_interfaces</id>
+            <goals>
+              <goal>java</goal>
             </goals>
           </execution>
         </executions>
@@ -318,14 +311,18 @@
             <phase>prepare-package</phase>
             <configuration>
               <target>
-                <replace token="baseUri: http://github.com/org/folio/mod-users" value="baseUri: http://localhost:{http.port}" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
+                <replace token="baseUri: http://github.com/org/folio/mod-users"
+                  value="baseUri: http://localhost:{http.port}"
+                  dir="${basedir}/target/classes/apidocs/raml">
+                  <include name="**/*.raml"/>
                 </replace>
-                <replace token="protocols: [ HTTPS ]" value="protocols: [ HTTP ]" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
+                <replace token="protocols: [ HTTPS ]" value="protocols: [ HTTP ]"
+                  dir="${basedir}/target/classes/apidocs/raml">
+                  <include name="**/*.raml"/>
                 </replace>
-                <replace token="../.." value="../raml-util" dir="${basedir}/target/classes/apidocs/raml">
-                  <include name="**/*.raml" />
+                <replace token="../.." value="../raml-util"
+                  dir="${basedir}/target/classes/apidocs/raml">
+                  <include name="**/*.raml"/>
                 </replace>
               </target>
             </configuration>
@@ -354,7 +351,7 @@
               <value>${project.baseUri}src/main/resources/log4j.properties</value>
             </property>
           </properties>
-          <outputFile />
+          <outputFile/>
         </configuration>
       </plugin>
 
@@ -370,7 +367,8 @@
             </goals>
             <configuration>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
                     <Main-Class>org.folio.rest.RestLauncher</Main-Class>
                     <Main-Verticle>org.folio.rest.RestVerticle</Main-Verticle>
@@ -378,7 +376,7 @@
                   </manifestEntries>
                 </transformer>
               </transformers>
-              <artifactSet />
+              <artifactSet/>
               <outputFile>${project.build.directory}/${project.artifactId}-fat.jar</outputFile>
               <filters>
                 <!-- this required to fix module logging -->
