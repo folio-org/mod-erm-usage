@@ -1,5 +1,6 @@
 package org.folio.rest.impl;
 
+import static com.google.common.net.HttpHeaders.ACCEPT;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.BINARY;
@@ -7,6 +8,8 @@ import static io.restassured.http.ContentType.TEXT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
+import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.parsing.Parser;
@@ -17,7 +20,14 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.reactivex.core.buffer.Buffer;
+import io.vertx.reactivex.ext.web.client.HttpResponse;
+import io.vertx.reactivex.ext.web.client.WebClient;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.RandomUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.jaxrs.model.TenantAttributes;
@@ -37,11 +47,14 @@ public class ErmUsageFilesIT {
   private static final String ERM_USAGE_FILES_ENDPOINT = "/erm-usage/files";
   private static final String TEST_CONTENT = "This is the test content!!!!";
   private static Vertx vertx;
+  private static WebClient webClient;
   @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void setUp(TestContext context) {
     vertx = Vertx.vertx();
+    io.vertx.reactivex.core.Vertx vertxRx = io.vertx.reactivex.core.Vertx.newInstance(vertx);
+    webClient = WebClient.create(vertxRx);
 
     try {
       PostgresClient.setIsEmbedded(true);
@@ -98,6 +111,60 @@ public class ErmUsageFilesIT {
               PostgresClient.stopEmbeddedPostgres();
               async.complete();
             }));
+  }
+
+  private Single<HttpResponse<Buffer>> upload(byte[] bytes) {
+    return webClient
+        .post(RestAssured.port, "localhost", ERM_USAGE_FILES_ENDPOINT)
+        .putHeader(XOkapiHeaders.TENANT, TENANT)
+        .putHeader(CONTENT_TYPE, BINARY.toString())
+        .rxSendBuffer(Buffer.buffer(bytes));
+  }
+
+  private Single<HttpResponse<Buffer>> get(String id) {
+    return webClient
+        .get(RestAssured.port, "localhost", ERM_USAGE_FILES_ENDPOINT + "/" + id)
+        .putHeader(XOkapiHeaders.TENANT, TENANT)
+        .putHeader(ACCEPT, BINARY.toString())
+        .rxSend();
+  }
+
+  @Test
+  public void testConcurrentUpload(TestContext context) {
+    Async async = context.async();
+
+    List<Integer> byteSizes = List.of(25000, 50000, 75000, 125000, 250000);
+    List<byte[]> bytesList =
+        byteSizes.stream().map(RandomUtils::nextBytes).collect(Collectors.toList());
+    List<Single<HttpResponse<Buffer>>> uploadSingles =
+        bytesList.stream().map(this::upload).collect(Collectors.toList());
+
+    Single.merge(uploadSingles)
+        .subscribeOn(Schedulers.io())
+        .toList()
+        .flattenAsFlowable(
+            respList -> {
+              Stream<Float> sizes =
+                  respList.stream()
+                      .map(resp -> resp.bodyAsJsonObject().getString("size"))
+                      .map(Float::valueOf);
+              // test for correct size attribute of POST responses
+              assertThat(sizes)
+                  .containsExactlyInAnyOrder(
+                      byteSizes.stream().map(i -> i / 1000f).toArray(Float[]::new));
+              return respList;
+            })
+        .map(resp -> resp.bodyAsJsonObject().getString("id"))
+        .flatMapSingle(this::get)
+        .toList()
+        .subscribe(
+            list -> {
+              Stream<byte[]> bytes = list.stream().map(resp -> resp.body().getBytes());
+              // test for correct body of GET responses
+              assertThat(bytes).containsExactlyInAnyOrder(bytesList.toArray(byte[][]::new));
+              async.complete();
+            },
+            context::fail);
   }
 
   @Test
