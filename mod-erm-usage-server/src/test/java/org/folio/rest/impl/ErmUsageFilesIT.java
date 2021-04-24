@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomUtils;
 import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.PostgresClient;
@@ -56,15 +57,7 @@ public class ErmUsageFilesIT {
     io.vertx.reactivex.core.Vertx vertxRx = io.vertx.reactivex.core.Vertx.newInstance(vertx);
     webClient = WebClient.create(vertxRx);
 
-    try {
-      PostgresClient.setIsEmbedded(true);
-      PostgresClient instance = PostgresClient.getInstance(vertx);
-      instance.startEmbeddedPostgres();
-    } catch (Exception e) {
-      e.printStackTrace();
-      context.fail(e);
-      return;
-    }
+    PostgresClient.setPostgresTester(new PostgresTesterContainer());
 
     int port = NetworkUtils.nextFreePort();
 
@@ -108,7 +101,7 @@ public class ErmUsageFilesIT {
     vertx.close(
         context.asyncAssertSuccess(
             res -> {
-              PostgresClient.stopEmbeddedPostgres();
+              PostgresClient.stopPostgresTester();
               async.complete();
             }));
   }

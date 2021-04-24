@@ -20,6 +20,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
@@ -82,15 +83,7 @@ public class UsageDataProvidersIT {
       context.fail(ex);
     }
 
-    try {
-      PostgresClient.setIsEmbedded(true);
-      PostgresClient instance = PostgresClient.getInstance(vertx);
-      instance.startEmbeddedPostgres();
-    } catch (Exception e) {
-      e.printStackTrace();
-      context.fail(e);
-      return;
-    }
+    PostgresClient.setPostgresTester(new PostgresTesterContainer());
     Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 
@@ -124,7 +117,7 @@ public class UsageDataProvidersIT {
     vertx.close(
         context.asyncAssertSuccess(
             res -> {
-              PostgresClient.stopEmbeddedPostgres();
+              PostgresClient.stopPostgresTester();
               async.complete();
             }));
   }

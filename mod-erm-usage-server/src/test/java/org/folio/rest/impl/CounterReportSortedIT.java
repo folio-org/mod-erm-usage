@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
@@ -67,15 +68,7 @@ public class CounterReportSortedIT {
       context.fail(ex);
     }
 
-    try {
-      PostgresClient.setIsEmbedded(true);
-      PostgresClient instance = PostgresClient.getInstance(vertx);
-      instance.startEmbeddedPostgres();
-    } catch (Exception e) {
-      e.printStackTrace();
-      context.fail(e);
-      return;
-    }
+    PostgresClient.setPostgresTester(new PostgresTesterContainer());
 
     Async async = context.async();
     int port = NetworkUtils.nextFreePort();
@@ -121,7 +114,7 @@ public class CounterReportSortedIT {
     vertx.close(
         context.asyncAssertSuccess(
             res -> {
-              PostgresClient.stopEmbeddedPostgres();
+              PostgresClient.stopPostgresTester();
               async.complete();
             }));
   }
