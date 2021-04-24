@@ -34,12 +34,11 @@ import org.junit.runner.RunWith;
 @RunWith(VertxUnitRunner.class)
 public class ErmUsageFilesIT {
 
-  @Rule public Timeout timeout = Timeout.seconds(10);
-
   private static final String TENANT = "diku";
   private static final String ERM_USAGE_FILES_ENDPOINT = "/erm-usage/files";
   private static final String TEST_CONTENT = "This is the test content!!!!";
   private static Vertx vertx;
+  @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void setUp(TestContext context) {
