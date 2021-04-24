@@ -1,16 +1,15 @@
 package org.folio.rest.impl;
 
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.BINARY;
+import static io.restassured.http.ContentType.TEXT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.filter.log.RequestLoggingFilter;
-import io.restassured.filter.log.ResponseLoggingFilter;
-import io.restassured.http.ContentType;
 import io.restassured.parsing.Parser;
-import io.restassured.response.Response;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -61,7 +60,6 @@ public class ErmUsageFilesIT {
     RestAssured.basePath = "";
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
-    RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
     RestAssured.requestSpecification =
         new RequestSpecBuilder().addHeader(XOkapiHeaders.TENANT, TENANT).build();
 
@@ -105,44 +103,34 @@ public class ErmUsageFilesIT {
   @Test
   public void checkThatWeCanAddGetAndDeleteFiles() {
     // POST File
-    Response postResponse =
+    String id =
         given()
             .body(TEST_CONTENT.getBytes())
-            .header("X-Okapi-Tenant", TENANT)
-            .header("content-type", ContentType.BINARY)
+            .header(CONTENT_TYPE, BINARY)
             .post(ERM_USAGE_FILES_ENDPOINT)
             .then()
             .statusCode(200)
             .extract()
-            .response();
-    String response = postResponse.getBody().print();
-    JsonObject jsonResponse = new JsonObject(response);
-    String id = jsonResponse.getString("id");
+            .path("id");
 
     // GET
     given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", ContentType.BINARY)
+        .header(CONTENT_TYPE, BINARY)
         .get(ERM_USAGE_FILES_ENDPOINT + "/" + id)
         .then()
-        .contentType(ContentType.BINARY.toString())
+        .contentType(BINARY)
         .statusCode(200)
         .body(equalTo(TEST_CONTENT));
 
     // DELETE
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .delete(ERM_USAGE_FILES_ENDPOINT + "/" + id)
-        .then()
-        .statusCode(204);
+    given().delete(ERM_USAGE_FILES_ENDPOINT + "/" + id).then().statusCode(204);
 
     // GET
     given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", ContentType.BINARY)
+        .header(CONTENT_TYPE, BINARY)
         .get(ERM_USAGE_FILES_ENDPOINT + "/" + id)
         .then()
-        .contentType(ContentType.TEXT)
+        .contentType(TEXT)
         .statusCode(404);
   }
 }

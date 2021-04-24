@@ -12,7 +12,8 @@ import java.io.InputStream;
 import java.util.Base64;
 import java.util.Map;
 import javax.ws.rs.core.Response;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.folio.rest.annotations.Stream;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.resource.ErmUsageFiles;
 import org.folio.rest.model.ErmUsageFile;
@@ -21,6 +22,9 @@ import org.folio.rest.tools.utils.BinaryOutStream;
 
 public class ErmUsageFilesAPI implements ErmUsageFiles {
 
+  private byte[] stream = new byte[0];
+
+  @Stream
   @Override
   @Validate
   public void postErmUsageFiles(
@@ -29,39 +33,45 @@ public class ErmUsageFilesAPI implements ErmUsageFiles {
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    byte[] bytes = new byte[0];
-    try {
-      bytes = IOUtils.toByteArray(entity);
-    } catch (IOException e) {
-      asyncResultHandler.handle(
-          Future.succeededFuture(
-              PostErmUsageFilesResponse.respond404WithTextPlain("Cannot read file.")));
+    if (okapiHeaders.containsKey("streamed_abort")) {
+      PostErmUsageFilesResponse.respond500WithTextPlain("Stream aborted");
+      return;
     }
 
-    String base64 = Base64.getEncoder().encodeToString(bytes);
-    ErmUsageFile file = new ErmUsageFile().withData(base64);
+    byte[] readBytes;
+    try {
+      readBytes = entity.readAllBytes();
+    } catch (IOException e) {
+      PostErmUsageFilesResponse.respond500WithTextPlain("Error reading stream");
+      return;
+    }
 
-    float size = bytes.length / 1000F;
-
-    PgUtil.postgresClient(vertxContext, okapiHeaders)
-        .save(
-            TABLE_NAME_FILES,
-            file,
-            ar -> {
-              if (ar.succeeded()) {
-                JsonObject result = new JsonObject();
-                result.put("id", ar.result());
-                result.put("size", size);
-                asyncResultHandler.handle(
-                    Future.succeededFuture(
-                        PostErmUsageFilesResponse.respond200WithTextJson(result.encodePrettily())));
-              } else {
-                asyncResultHandler.handle(
-                    Future.succeededFuture(
-                        PostErmUsageFilesResponse.respond500WithTextPlain(
-                            "Cannot insert file. " + ar.cause())));
-              }
-            });
+    if (okapiHeaders.containsKey("complete")) {
+      String base64 = Base64.getEncoder().encodeToString(stream);
+      ErmUsageFile file = new ErmUsageFile().withData(base64);
+      PgUtil.postgresClient(vertxContext, okapiHeaders)
+          .save(
+              TABLE_NAME_FILES,
+              file,
+              ar -> {
+                if (ar.succeeded()) {
+                  JsonObject result = new JsonObject();
+                  result.put("id", ar.result());
+                  result.put("size", stream.length / 1000F);
+                  asyncResultHandler.handle(
+                      Future.succeededFuture(
+                          PostErmUsageFilesResponse.respond200WithTextJson(
+                              result.encodePrettily())));
+                } else {
+                  asyncResultHandler.handle(
+                      Future.succeededFuture(
+                          PostErmUsageFilesResponse.respond500WithTextPlain(
+                              "Cannot insert file. " + ar.cause())));
+                }
+              });
+    } else {
+      stream = ArrayUtils.addAll(stream, readBytes);
+    }
   }
 
   @Override
