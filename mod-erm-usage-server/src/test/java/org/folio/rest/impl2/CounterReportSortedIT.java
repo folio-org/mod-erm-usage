@@ -1,4 +1,4 @@
-package org.folio.rest.impl;
+package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
+import org.folio.rest.impl.TenantAPI;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.CounterReportsSorted;

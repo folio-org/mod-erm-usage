@@ -1,4 +1,4 @@
-package org.folio.rest.impl;
+package org.folio.rest.impl2;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static io.restassured.RestAssured.given;

@@ -1,4 +1,4 @@
-package org.folio.rest.impl;
+package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
