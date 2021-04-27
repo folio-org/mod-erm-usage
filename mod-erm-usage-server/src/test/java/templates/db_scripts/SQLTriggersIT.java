@@ -70,6 +70,8 @@ public class SQLTriggersIT {
   private static CounterReport reportFailed;
   @Rule public Timeout timeout = Timeout.seconds(10);
 
+  static boolean start = true;
+
   @BeforeClass
   public static void init(TestContext context) {
     vertx = Vertx.vertx();
@@ -162,11 +164,15 @@ public class SQLTriggersIT {
         .delete(
             tableName,
             new Criterion(),
-            ar -> promise.complete((ar.succeeded()) ? ar.result().rowCount() : null));
+            ar -> promise.complete((ar.succeeded()) ? ar.result().rowCount() : 0));
     return promise.future();
   }
 
   private Future<Integer> deleteSampleData() {
+    if (start) {
+      start = false;
+      return Future.succeededFuture();
+    }
     return truncateTable(TABLE_NAME_UDP)
         .compose(i -> truncateTable(TABLE_AGGREGATOR))
         .compose(i -> truncateTable(TABLE_NAME_COUNTER_REPORTS));
