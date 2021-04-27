@@ -35,6 +35,13 @@
       <plugin>
         <groupId>org.folio</groupId>
         <artifactId>domain-models-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.olf</groupId>
+            <artifactId>mod-erm-usage-server</artifactId>
+            <version>${project.parent.version}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <id>generate_interfaces</id>
