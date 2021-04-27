@@ -190,7 +190,7 @@ public class SQLTriggersIT {
                   XOkapiHeaders.URL,
                   "http://localhost:" + port),
               res -> {
-                if (res.result().getStatus() == 201) {
+                if (res.result().getStatus() == 204) {
                   promise.complete();
                 } else {
                   promise.fail(

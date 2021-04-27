@@ -4,13 +4,35 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import java.util.Map;
 import javax.ws.rs.core.Response;
 import org.folio.rest.jaxrs.model.TenantAttributes;
-import org.folio.rest.jaxrs.model.TenantJob;
 import org.folio.rest.tools.utils.TenantLoading;
 
 public class TenantReferenceAPI extends TenantAPI {
+
+  @Override
+  Future<Integer> loadData(
+      TenantAttributes attributes,
+      String tenantId,
+      Map<String, String> headers,
+      Context vertxContext) {
+
+    return super.loadData(attributes, tenantId, headers, vertxContext)
+        .compose(
+            i -> {
+              Promise<Integer> promise = Promise.promise();
+              TenantLoading tl = new TenantLoading();
+              tl.withKey("loadSample")
+                  .withLead("sample-data")
+                  .add("aggregator-settings")
+                  .add("usage-data-providers")
+                  .add("counter-reports")
+                  .perform(attributes, headers, vertxContext.owner(), promise);
+              return promise.future();
+            });
+  }
 
   @Override
   public void postTenant(
@@ -18,40 +40,6 @@ public class TenantReferenceAPI extends TenantAPI {
       Map<String, String> headers,
       Handler<AsyncResult<Response>> handlers,
       Context context) {
-    super.postTenantSync(
-        entity,
-        headers,
-        ar -> {
-          if (ar.failed()) {
-            handlers.handle(ar);
-            return;
-          }
-
-          // load data here
-          TenantLoading tl = new TenantLoading();
-          tl.withKey("loadSample")
-              .withLead("sample-data")
-              .add("aggregator-settings")
-              .add("usage-data-providers")
-              .add("counter-reports")
-              .perform(
-                  entity,
-                  headers,
-                  context.owner(),
-                  ar2 -> {
-                    if (ar2.failed()) {
-                      handlers.handle(
-                          Future.succeededFuture(
-                              PostTenantResponse.respond500WithTextPlain(
-                                  ar2.cause().getLocalizedMessage())));
-                      return;
-                    }
-                    handlers.handle(
-                        Future.succeededFuture(
-                            PostTenantResponse.respond201WithApplicationJson(
-                                new TenantJob(), PostTenantResponse.headersFor201())));
-                  });
-        },
-        context);
+    super.postTenantSync(entity, headers, handlers, context);
   }
 }
