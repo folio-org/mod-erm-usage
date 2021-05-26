@@ -60,8 +60,7 @@ public class CounterReportExportIT {
   private static String expected;
 
   @ClassRule
-  public static PostgresContainerRule embeddedPostgresRule =
-      new PostgresContainerRule(vertx, TENANT);
+  public static PostgresContainerRule pgContainerRule = new PostgresContainerRule(vertx, TENANT);
 
   @Rule public Timeout timeout = Timeout.seconds(10);
 
