@@ -1,4 +1,4 @@
-package org.folio.rest.impl;
+package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +46,7 @@ import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
-import org.folio.rest.util.EmbeddedPostgresRule;
+import org.folio.rest.util.PostgresContainerRule;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -68,7 +68,7 @@ public class CounterReportIT {
   private static final Map<String, String> defaultHeaders =
       Map.of(
           XOkapiHeaders.TENANT, TENANT, HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString());
-  @ClassRule public static EmbeddedPostgresRule pgRule = new EmbeddedPostgresRule(vertx, TENANT);
+  @ClassRule public static PostgresContainerRule pgRule = new PostgresContainerRule(vertx, TENANT);
 
   private static CounterReport report;
   private static CounterReport reportChanged;

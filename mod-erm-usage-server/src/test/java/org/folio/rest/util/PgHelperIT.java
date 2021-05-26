@@ -40,7 +40,7 @@ public class PgHelperIT {
       Collections.singletonMap(XOkapiHeaders.TENANT.toLowerCase(), tenant);
 
   private static Vertx vertx = Vertx.vertx();
-  @ClassRule public static EmbeddedPostgresRule pgRule = new EmbeddedPostgresRule(vertx, tenant);
+  @ClassRule public static PostgresContainerRule pgRule = new PostgresContainerRule(vertx, tenant);
 
   private static List<CounterReport> reports1;
   private static List<CounterReport> reports2;

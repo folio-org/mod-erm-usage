@@ -1,4 +1,4 @@
-package org.folio.rest.impl;
+package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.util.UUID;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
@@ -65,15 +66,7 @@ public class AggregatorSettingsIT {
     }
 
     vertx = Vertx.vertx();
-    try {
-      PostgresClient.setIsEmbedded(true);
-      PostgresClient instance = PostgresClient.getInstance(vertx);
-      instance.startEmbeddedPostgres();
-    } catch (Exception e) {
-      e.printStackTrace();
-      context.fail(e);
-      return;
-    }
+    PostgresClient.setPostgresTester(new PostgresTesterContainer());
     Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 
@@ -117,7 +110,7 @@ public class AggregatorSettingsIT {
     vertx.close(
         context.asyncAssertSuccess(
             res -> {
-              PostgresClient.stopEmbeddedPostgres();
+              PostgresClient.stopPostgresTester();
               async.complete();
             }));
   }

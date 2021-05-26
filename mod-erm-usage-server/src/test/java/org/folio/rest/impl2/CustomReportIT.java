@@ -1,4 +1,4 @@
-package org.folio.rest.impl;
+package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,7 +20,9 @@ import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
+import org.folio.rest.impl.TenantAPI;
 import org.folio.rest.jaxrs.model.CustomReport;
 import org.folio.rest.jaxrs.model.CustomReports;
 import org.folio.rest.jaxrs.model.TenantAttributes;
@@ -91,15 +93,7 @@ public class CustomReportIT {
     reportChanged =
         reportFirst.withFileName("newFileName.txt").withLinkUrl("http://localhost/changed");
 
-    try {
-      PostgresClient.setIsEmbedded(true);
-      PostgresClient instance = PostgresClient.getInstance(vertx);
-      instance.startEmbeddedPostgres();
-    } catch (Exception e) {
-      e.printStackTrace();
-      context.fail(e);
-      return;
-    }
+    PostgresClient.setPostgresTester(new PostgresTesterContainer());
     Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 
@@ -137,7 +131,7 @@ public class CustomReportIT {
     vertx.close(
         context.asyncAssertSuccess(
             res -> {
-              PostgresClient.stopEmbeddedPostgres();
+              PostgresClient.stopPostgresTester();
               async.complete();
             }));
   }

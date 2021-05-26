@@ -7,7 +7,7 @@ import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.util.stream.Stream;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.util.EmbeddedPostgresRule;
+import org.folio.rest.util.PostgresContainerRule;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,7 +26,7 @@ public class CustomIndexesIT {
   private static Vertx vertx = Vertx.vertx();
 
   @ClassRule
-  public static EmbeddedPostgresRule postgresRule = new EmbeddedPostgresRule(vertx, TENANTS);
+  public static PostgresContainerRule postgresRule = new PostgresContainerRule(vertx, TENANTS);
 
   @Rule public Timeout timeout = Timeout.seconds(5);
 

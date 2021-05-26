@@ -1,4 +1,4 @@
-package org.folio.rest.impl;
+package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
@@ -39,7 +39,7 @@ import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
-import org.folio.rest.util.EmbeddedPostgresRule;
+import org.folio.rest.util.PostgresContainerRule;
 import org.joda.time.LocalDate;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -60,7 +60,7 @@ public class CounterReportExportIT {
   private static String expected;
 
   @ClassRule
-  public static EmbeddedPostgresRule embeddedPostgresRule = new EmbeddedPostgresRule(vertx, TENANT);
+  public static PostgresContainerRule pgContainerRule = new PostgresContainerRule(vertx, TENANT);
 
   @Rule public Timeout timeout = Timeout.seconds(10);
 

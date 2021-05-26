@@ -1,4 +1,4 @@
-package org.folio.rest.impl;
+package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,7 +29,7 @@ import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
-import org.folio.rest.util.EmbeddedPostgresRule;
+import org.folio.rest.util.PostgresContainerRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -52,7 +52,7 @@ public class AggregatorSettingsExportIT {
           + "Provider2,active,4,\"JR1, JR4\",CustomerId2,RequestorId2,ApiKey2,\"RequestorName2,WithComma\",RequestorMail2,,\n"
           + "Provider3,active,4,\"JR1, JR4\",CustomerId3,RequestorId3,ApiKey3,RequestorName3,RequestorMail3,,\n";
 
-  @ClassRule public static EmbeddedPostgresRule pgRule = new EmbeddedPostgresRule(vertx, TENANT);
+  @ClassRule public static PostgresContainerRule pgRule = new PostgresContainerRule(vertx, TENANT);
 
   @BeforeClass
   public static void beforeClass(TestContext context) {
@@ -111,7 +111,8 @@ public class AggregatorSettingsExportIT {
                     Resources.getResource("exportcredentials/providers.json"),
                     StandardCharsets.UTF_8),
                 UsageDataProviders.class)
-            .getUsageDataProviders().stream()
+            .getUsageDataProviders()
+            .stream()
             .map(Json::encode)
             .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
 

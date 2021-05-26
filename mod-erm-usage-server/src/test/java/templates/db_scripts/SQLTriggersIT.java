@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.impl.TenantReferenceAPI;
 import org.folio.rest.jaxrs.model.Aggregator;
@@ -69,12 +70,13 @@ public class SQLTriggersIT {
   private static CounterReport reportFailed;
   @Rule public Timeout timeout = Timeout.seconds(10);
 
+  static boolean start = true;
+
   @BeforeClass
   public static void init(TestContext context) {
     vertx = Vertx.vertx();
     try {
-      PostgresClient.setIsEmbedded(true);
-      PostgresClient.getInstance(vertx).startEmbeddedPostgres();
+      PostgresClient.setPostgresTester(new PostgresTesterContainer());
       port = NetworkUtils.nextFreePort();
       tenantAttributes =
           new TenantAttributes()
@@ -116,7 +118,7 @@ public class SQLTriggersIT {
 
   @AfterClass
   public static void tearDown(TestContext context) {
-    vertx.close(context.asyncAssertSuccess(res -> PostgresClient.stopEmbeddedPostgres()));
+    vertx.close(context.asyncAssertSuccess(res -> PostgresClient.stopPostgresTester()));
   }
 
   private static PostgresClient getPGClient() {
@@ -162,11 +164,15 @@ public class SQLTriggersIT {
         .delete(
             tableName,
             new Criterion(),
-            ar -> promise.complete((ar.succeeded()) ? ar.result().rowCount() : null));
+            ar -> promise.complete((ar.succeeded()) ? ar.result().rowCount() : 0));
     return promise.future();
   }
 
   private Future<Integer> deleteSampleData() {
+    if (start) {
+      start = false;
+      return Future.succeededFuture();
+    }
     return truncateTable(TABLE_NAME_UDP)
         .compose(i -> truncateTable(TABLE_AGGREGATOR))
         .compose(i -> truncateTable(TABLE_NAME_COUNTER_REPORTS));
@@ -184,7 +190,7 @@ public class SQLTriggersIT {
                   XOkapiHeaders.URL,
                   "http://localhost:" + port),
               res -> {
-                if (res.result().getStatus() == 201) {
+                if (res.result().getStatus() == 204) {
                   promise.complete();
                 } else {
                   promise.fail(

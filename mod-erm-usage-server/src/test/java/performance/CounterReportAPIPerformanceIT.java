@@ -41,7 +41,7 @@ import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.Report;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
-import org.folio.rest.util.EmbeddedPostgresRule;
+import org.folio.rest.util.PostgresContainerRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -65,8 +65,8 @@ public class CounterReportAPIPerformanceIT {
   private static Vertx vertx = Vertx.vertx();
 
   @ClassRule
-  public static EmbeddedPostgresRule postgresRule =
-      new EmbeddedPostgresRule(vertx.getDelegate(), TENANT);
+  public static PostgresContainerRule postgresRule =
+      new PostgresContainerRule(vertx.getDelegate(), TENANT);
 
   private static WebClient wc = WebClient.create(vertx);
   private static Report[] reports = new Report[12];
