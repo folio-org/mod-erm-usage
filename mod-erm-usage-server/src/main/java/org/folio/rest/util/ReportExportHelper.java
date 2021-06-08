@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams;
 import io.vertx.core.json.Json;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -23,8 +24,10 @@ import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 
 public class ReportExportHelper {
 
+  private static final List<String> SUPPORTED_FORMATS = Arrays.asList("csv", "xlsx");
   private static final String UNSUPPORTED_COUNTER_VERSION_MSG =
       "Requested counter version \"%s\" is not supported.";
+  private static final String UNSUPPORTED_FORMAT_MSG = "Requested format \"%s\" is not supported.";
   private static final String XLSX_ERR_MSG = "An error occured while creating xlsx data: %s";
 
   private ReportExportHelper() {}
@@ -107,6 +110,11 @@ public class ReportExportHelper {
 
   public static Response createExportMultipleMonthsResponseByReportVersion(
       List<CounterReport> reportList, String format, String version) {
+    if (!SUPPORTED_FORMATS.contains(format)) {
+      return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
+          .respond400WithTextPlain(String.format(UNSUPPORTED_FORMAT_MSG, format));
+    }
+
     String csv;
     try {
       if (version.equals("4")) {
@@ -125,6 +133,10 @@ public class ReportExportHelper {
   }
 
   public static Response createExportResponseByFormat(CounterReport cr, String format) {
+    if (!SUPPORTED_FORMATS.contains(format)) {
+      return GetCounterReportsExportByIdResponse.respond400WithTextPlain(
+          String.format(UNSUPPORTED_FORMAT_MSG, format));
+    }
     try {
       return csvMapper(cr)
           .map(

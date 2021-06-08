@@ -15,7 +15,6 @@ import io.vertx.core.Promise;
 import io.vertx.sqlclient.Tuple;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.Date;
@@ -47,9 +46,6 @@ import org.folio.rest.util.PgHelper;
 import org.folio.rest.util.UploadHelper;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
-
-  private static final List<String> SUPPORTED_FORMATS = Arrays.asList("csv", "xlsx");
-  private static final String UNSUPPORTED_MSG = "Requested format \"%s\" is not supported.";
 
   private final Logger logger = LogManager.getLogger(CounterReportAPI.class);
 
@@ -428,33 +424,26 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    if (SUPPORTED_FORMATS.contains(format)) {
-      PgUtil.postgresClient(vertxContext, okapiHeaders)
-          .getById(
-              TABLE_NAME_COUNTER_REPORTS,
-              id,
-              CounterReport.class,
-              ar -> {
-                if (ar.succeeded()) {
-                  executeBlocking(
-                          vertxContext, () -> createExportResponseByFormat(ar.result(), format))
-                      .onSuccess(resp -> asyncResultHandler.handle(succeededFuture(resp)))
-                      .onFailure(
-                          t ->
-                              asyncResultHandler.handle(
-                                  succeededFuture(
-                                      GetCounterReportsExportByIdResponse.respond500WithTextPlain(
-                                          t.getMessage()))));
-                } else {
-                  ValidationHelper.handleError(ar.cause(), asyncResultHandler);
-                }
-              });
-    } else {
-      asyncResultHandler.handle(
-          succeededFuture(
-              GetCounterReportsExportByIdResponse.respond400WithTextPlain(
-                  String.format(UNSUPPORTED_MSG, format))));
-    }
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .getById(
+            TABLE_NAME_COUNTER_REPORTS,
+            id,
+            CounterReport.class,
+            ar -> {
+              if (ar.succeeded()) {
+                executeBlocking(
+                        vertxContext, () -> createExportResponseByFormat(ar.result(), format))
+                    .onSuccess(resp -> asyncResultHandler.handle(succeededFuture(resp)))
+                    .onFailure(
+                        t ->
+                            asyncResultHandler.handle(
+                                succeededFuture(
+                                    GetCounterReportsExportByIdResponse.respond500WithTextPlain(
+                                        t.getMessage()))));
+              } else {
+                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
+              }
+            });
   }
 
   @Override
@@ -470,38 +459,31 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
           Handler<AsyncResult<Response>> asyncResultHandler,
           Context vertxContext) {
 
-    if (SUPPORTED_FORMATS.contains(format)) {
-      CQLWrapper cql = createGetMultipleReportsCQL(id, name, aversion, begin, end);
-      PgUtil.postgresClient(vertxContext, okapiHeaders)
-          .get(
-              TABLE_NAME_COUNTER_REPORTS,
-              CounterReport.class,
-              cql,
-              false,
-              ar -> {
-                if (ar.succeeded()) {
-                  executeBlocking(
-                          vertxContext,
-                          () ->
-                              createExportMultipleMonthsResponseByReportVersion(
-                                  ar.result().getResults(), format, aversion))
-                      .onSuccess(resp -> asyncResultHandler.handle(succeededFuture(resp)))
-                      .onFailure(
-                          t ->
-                              asyncResultHandler.handle(
-                                  succeededFuture(
-                                      GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
-                                          .respond500WithTextPlain(t.getMessage()))));
-                } else {
-                  ValidationHelper.handleError(ar.cause(), asyncResultHandler);
-                }
-              });
-    } else {
-      asyncResultHandler.handle(
-          succeededFuture(
-              GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
-                  .respond400WithTextPlain(String.format(UNSUPPORTED_MSG, format))));
-    }
+    CQLWrapper cql = createGetMultipleReportsCQL(id, name, aversion, begin, end);
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .get(
+            TABLE_NAME_COUNTER_REPORTS,
+            CounterReport.class,
+            cql,
+            false,
+            ar -> {
+              if (ar.succeeded()) {
+                executeBlocking(
+                        vertxContext,
+                        () ->
+                            createExportMultipleMonthsResponseByReportVersion(
+                                ar.result().getResults(), format, aversion))
+                    .onSuccess(resp -> asyncResultHandler.handle(succeededFuture(resp)))
+                    .onFailure(
+                        t ->
+                            asyncResultHandler.handle(
+                                succeededFuture(
+                                    GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
+                                        .respond500WithTextPlain(t.getMessage()))));
+              } else {
+                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
+              }
+            });
   }
 
   private CQLWrapper createGetMultipleReportsCQL(
