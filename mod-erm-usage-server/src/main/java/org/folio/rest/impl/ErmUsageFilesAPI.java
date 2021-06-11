@@ -1,24 +1,25 @@
 package org.folio.rest.impl;
 
-import static org.folio.rest.util.Constants.TABLE_NAME_FILES;
-
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
+import org.apache.commons.lang3.ArrayUtils;
+import org.folio.rest.annotations.Stream;
+import org.folio.rest.annotations.Validate;
+import org.folio.rest.jaxrs.model.ErmUsageFile;
+import org.folio.rest.jaxrs.resource.ErmUsageFiles;
+import org.folio.rest.persist.PgUtil;
+import org.folio.rest.tools.utils.BinaryOutStream;
+
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
 import java.util.Map;
-import javax.ws.rs.core.Response;
-import org.apache.commons.lang3.ArrayUtils;
-import org.folio.rest.annotations.Stream;
-import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.resource.ErmUsageFiles;
-import org.folio.rest.model.ErmUsageFile;
-import org.folio.rest.persist.PgUtil;
-import org.folio.rest.tools.utils.BinaryOutStream;
+
+import static org.folio.rest.util.Constants.TABLE_NAME_FILES;
 
 public class ErmUsageFilesAPI implements ErmUsageFiles {
 
