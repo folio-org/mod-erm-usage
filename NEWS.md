@@ -1,3 +1,7 @@
+# 4.1.0 (2021-06-11)
+* Upgrade RMB to v33 (MODEUS-112)
+* Multiple reports can be deleted with one request (MODEUS-111)
+
 # 4.0.0 (2021-03-17)
 * Upgrade to RMB 32 (MODEUS-101)
 * Add endpoint to get all available report types (MODEUS-103)
