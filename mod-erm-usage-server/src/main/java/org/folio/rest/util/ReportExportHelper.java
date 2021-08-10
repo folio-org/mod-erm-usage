@@ -14,6 +14,9 @@ import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.resource.CounterReports.GetCounterReportsDownloadByIdResponse;
 import org.folio.rest.jaxrs.resource.CounterReports.GetCounterReportsExportByIdResponse;
 import org.folio.rest.jaxrs.resource.CounterReports.GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse;
+import org.folio.rest.persist.Criteria.Criteria;
+import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.BinaryOutStream;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter.common.ExcelUtil;
@@ -31,6 +34,50 @@ public class ReportExportHelper {
   private static final String XLSX_ERR_MSG = "An error occured while creating xlsx data: %s";
 
   private ReportExportHelper() {}
+
+  public static CQLWrapper createGetMultipleReportsCQL(
+      String providerId,
+      String reportName,
+      String reportVersion,
+      String beginMonth,
+      String endMonth) {
+    Criteria providerCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_PROVIDER_ID)
+            .setOperation(Constants.OPERATOR_EQUALS)
+            .setVal(providerId);
+    Criteria reportNameCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_REPORT_NAME)
+            .setOperation(Constants.OPERATOR_EQUALS)
+            .setVal(reportName);
+    Criteria releaseCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_RELEASE)
+            .setOperation(Constants.OPERATOR_EQUALS)
+            .setVal(reportVersion);
+    Criteria reportCrit =
+        new Criteria().addField("jsonb").setJSONB(false).setOperation("?").setVal("report");
+    Criteria yearMonthBeginCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_YEAR_MONTH)
+            .setOperation(">=")
+            .setVal(beginMonth);
+    Criteria yearMonthEndCrit =
+        new Criteria()
+            .addField(Constants.FIELD_NAME_YEAR_MONTH)
+            .setOperation("<=")
+            .setVal(endMonth);
+    Criterion criterion =
+        new Criterion()
+            .addCriterion(providerCrit)
+            .addCriterion(reportNameCrit)
+            .addCriterion(releaseCrit)
+            .addCriterion(reportCrit)
+            .addCriterion(yearMonthBeginCrit)
+            .addCriterion(yearMonthEndCrit);
+    return new CQLWrapper(criterion);
+  }
 
   public static Response createDownloadResponseByReportVersion(CounterReport report) {
     if (report.getRelease().equals("4")) {

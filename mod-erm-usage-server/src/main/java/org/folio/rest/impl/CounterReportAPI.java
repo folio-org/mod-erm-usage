@@ -5,6 +5,7 @@ import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.ReportExportHelper.createDownloadResponseByReportVersion;
 import static org.folio.rest.util.ReportExportHelper.createExportMultipleMonthsResponseByReportVersion;
 import static org.folio.rest.util.ReportExportHelper.createExportResponseByFormat;
+import static org.folio.rest.util.ReportExportHelper.createGetMultipleReportsCQL;
 import static org.folio.rest.util.VertxUtil.executeBlocking;
 
 import io.vertx.core.AsyncResult;
@@ -41,7 +42,6 @@ import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.ValidationHelper;
-import org.folio.rest.util.Constants;
 import org.folio.rest.util.PgHelper;
 import org.folio.rest.util.UploadHelper;
 
@@ -484,50 +484,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 ValidationHelper.handleError(ar.cause(), asyncResultHandler);
               }
             });
-  }
-
-  private CQLWrapper createGetMultipleReportsCQL(
-      String providerId,
-      String reportName,
-      String reportVersion,
-      String beginMonth,
-      String endMonth) {
-    Criteria providerCrit =
-        new Criteria()
-            .addField(Constants.FIELD_NAME_PROVIDER_ID)
-            .setOperation(Constants.OPERATOR_EQUALS)
-            .setVal(providerId);
-    Criteria reportNameCrit =
-        new Criteria()
-            .addField(Constants.FIELD_NAME_REPORT_NAME)
-            .setOperation(Constants.OPERATOR_EQUALS)
-            .setVal(reportName);
-    Criteria releaseCrit =
-        new Criteria()
-            .addField(Constants.FIELD_NAME_RELEASE)
-            .setOperation(Constants.OPERATOR_EQUALS)
-            .setVal(reportVersion);
-    Criteria reportCrit =
-        new Criteria().addField("jsonb").setJSONB(false).setOperation("?").setVal("report");
-    Criteria yearMonthBeginCrit =
-        new Criteria()
-            .addField(Constants.FIELD_NAME_YEAR_MONTH)
-            .setOperation(">=")
-            .setVal(beginMonth);
-    Criteria yearMonthEndCrit =
-        new Criteria()
-            .addField(Constants.FIELD_NAME_YEAR_MONTH)
-            .setOperation("<=")
-            .setVal(endMonth);
-    Criterion criterion =
-        new Criterion()
-            .addCriterion(providerCrit)
-            .addCriterion(reportNameCrit)
-            .addCriterion(releaseCrit)
-            .addCriterion(reportCrit)
-            .addCriterion(yearMonthBeginCrit)
-            .addCriterion(yearMonthEndCrit);
-    return new CQLWrapper(criterion);
   }
 
   private Future<List<CounterReport>> decodeBase64Report(String encodedData, Context vertxContext) {
