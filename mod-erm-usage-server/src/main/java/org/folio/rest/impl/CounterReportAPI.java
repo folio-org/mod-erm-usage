@@ -472,7 +472,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                         vertxContext,
                         () ->
                             createExportMultipleMonthsResponseByReportVersion(
-                                ar.result().getResults(), format, aversion))
+                                ar.result().getResults(), name, format, aversion))
                     .onSuccess(resp -> asyncResultHandler.handle(succeededFuture(resp)))
                     .onFailure(
                         t ->

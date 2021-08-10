@@ -1,6 +1,7 @@
 package org.folio.rest.util;
 
 import com.google.common.io.ByteStreams;
+import com.google.gson.Gson;
 import io.vertx.core.json.Json;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,10 +24,14 @@ import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportMergeException;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
+import org.olf.erm.usage.counter50.converter.Converter;
+import org.olf.erm.usage.counter50.converter.ReportConverter;
 
 public class ReportExportHelper {
 
-  private static final List<String> SUPPORTED_FORMATS = Arrays.asList("csv", "xlsx");
+  private static final List<String> SUPPORTED_FORMATS = List.of("csv", "xlsx");
+  private static final List<String> SUPPORTED_VIEWS =
+      List.of("DR_D1", "TR_B1", "TR_B3", "TR_J1", "TR_J3", "TR_J4");
   private static final String UNSUPPORTED_COUNTER_VERSION_MSG =
       "Requested counter version \"%s\" is not supported.";
   private static final String UNSUPPORTED_FORMAT_MSG = "Requested format \"%s\" is not supported.";
@@ -158,8 +163,22 @@ public class ReportExportHelper {
         .respond200WithTextCsv(csvString);
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private static void convertR5Reports(List<CounterReport> reports, String reportName) {
+    Gson gson = new Gson();
+    Converter converter = ReportConverter.create(reportName);
+    reports.forEach(
+        r -> {
+          r.setReportName(reportName);
+          Object report = internalReportToCOP5Report(r);
+          Object converted = converter.convert(report);
+          r.setReport(
+              Json.decodeValue(gson.toJson(converted), org.folio.rest.jaxrs.model.Report.class));
+        });
+  }
+
   public static Response createExportMultipleMonthsResponseByReportVersion(
-      List<CounterReport> reportList, String format, String version) {
+      List<CounterReport> reportList, String reportName, String format, String version) {
     if (!SUPPORTED_FORMATS.contains(format)) {
       return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
           .respond400WithTextPlain(String.format(UNSUPPORTED_FORMAT_MSG, format));
@@ -170,6 +189,9 @@ public class ReportExportHelper {
       if (version.equals("4")) {
         csv = counter4ReportsToCsv(reportList);
       } else if (version.equals("5")) {
+        if (SUPPORTED_VIEWS.contains(reportName.toUpperCase())) {
+          convertR5Reports(reportList, reportName);
+        }
         csv = counter5ReportsToCsv(reportList);
       } else {
         return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
@@ -183,6 +205,7 @@ public class ReportExportHelper {
   }
 
   public static Response createExportResponseByFormat(CounterReport cr, String format) {
+
     if (!SUPPORTED_FORMATS.contains(format)) {
       return GetCounterReportsExportByIdResponse.respond400WithTextPlain(
           String.format(UNSUPPORTED_FORMAT_MSG, format));
