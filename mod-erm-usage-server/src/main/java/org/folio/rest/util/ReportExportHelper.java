@@ -4,7 +4,6 @@ import com.google.common.io.ByteStreams;
 import io.vertx.core.json.Json;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,6 +40,10 @@ public class ReportExportHelper {
       String reportVersion,
       String beginMonth,
       String endMonth) {
+    // fetch the master report if a view is requested
+    if ("5".equals(reportVersion) && SUPPORTED_VIEWS.contains(reportName.toUpperCase())) {
+      reportName = reportName.substring(0, 2);
+    }
     Criteria providerCrit =
         new Criteria()
             .addField(Constants.FIELD_NAME_PROVIDER_ID)
