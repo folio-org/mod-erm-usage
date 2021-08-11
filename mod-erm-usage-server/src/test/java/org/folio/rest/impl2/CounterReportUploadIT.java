@@ -684,6 +684,8 @@ public class CounterReportUploadIT {
       COUNTERDatabaseReport expected = (COUNTERDatabaseReport) expectedReports.get(index);
       assertThat(actual.getReportHeader())
           .usingRecursiveComparison()
+          .ignoringFields("customerID")
+          .ignoringFields("created")
           .ignoringCollectionOrder()
           .isEqualTo(expected.getReportHeader());
       assertThat(actual.getReportItems().size()).isEqualTo(expected.getReportItems().size());
@@ -707,6 +709,7 @@ public class CounterReportUploadIT {
       assertThat(actual.getReportHeader())
           .usingRecursiveComparison()
           .ignoringFields("customerID")
+          .ignoringFields("created")
           .ignoringCollectionOrder()
           .isEqualTo(expected.getReportHeader());
       assertThat(actual.getReportItems().size()).isEqualTo(expected.getReportItems().size());
