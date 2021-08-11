@@ -1,0 +1,1153 @@
+{
+  "Report_Header": {
+    "Created": "2021-08-11T12:35:05Z",
+    "Created_By": "S.Karger AG SushiService",
+    "Customer_ID": "12345",
+    "Report_ID": "TR_B1",
+    "Release": "5",
+    "Report_Name": "Book Requests (Excluding OA_Gold)",
+    "Institution_Name": "University",
+    "Report_Filters": [
+      {
+        "Name": "Begin_Date",
+        "Value": "2021-01-01"
+      },
+      {
+        "Name": "End_Date",
+        "Value": "2021-03-31"
+      },
+      {
+        "Name": "Metric_Type",
+        "Value": "Total_Item_Requests|Unique_Title_Requests"
+      },
+      {
+        "Name": "Access_Method",
+        "Value": "Regular"
+      },
+      {
+        "Name": "Access_Type",
+        "Value": "Controlled"
+      },
+      {
+        "Name": "Data_Type",
+        "Value": "Book"
+      }
+    ]
+  },
+  "Report_Items": [
+    {
+      "Title": "Diet Diversification and Health Promotion",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-01183-8"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2005",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        },
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Pituitary Surgery - A Modern Approach",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-01300-9"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2006",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Cochlear and Brainstem Implants",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-01380-1"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2006",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Detection, Assessment, Diagnosis and Monitoring of Caries",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-9185-0"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2009",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        },
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 9
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Toothpastes",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-02207-0"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2013",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 2
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Racial Stereotyping and Child Development",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-9983-2"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2012",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 2
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "TNF Pathophysiology",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-9384-7"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2010",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Genetics and Sports",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-9028-0"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2009",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 16
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Obesity and Metabolism",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-8430-2"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2008",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Das demenzgerechte Heim",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-8191-2"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2006",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        },
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Zelluläre Diagnostik",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-01217-0"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2007",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        },
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 2
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Handbook on Cerebral Artery Dissection",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-01258-3"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2005",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 3
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "IGF-I and IGF Binding Proteins",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-01215-6"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2005",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Home Care Enteral Feeding",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-01164-7"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2005",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Obesity and Binge Eating Disorder",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-01153-1"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2005",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Abnormalities in Puberty",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-01178-4"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2005",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 2
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Obesity in Childhood and Adolescence",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-01074-9"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2004",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Principles of Exercise Biochemistry",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-00996-5"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2004",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Pharmakotherapie der Sucht",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-00900-2"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2003",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Kompendium Psychiatrie, Psychotherapie, Psychosomatische Medizin",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-00745-9"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2002",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Assessment of Oral Health",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-00549-3"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2000",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Vestibular Dysfunction and Its Therapy",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-00315-4"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "1999",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 3
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Rektumkarzinom: Das Konzept der totalen mesorektalen Exzision",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-00273-7"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "1998",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Pathobiologie oraler Strukturen",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-05016-5"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "1997",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Atlas des EKG nach Frank",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-04333-4"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "1970",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Innovations and Frontiers in Neonatology",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-06621-0"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2019",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Die Physiologie und Pathologie des Wochenbettes",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-04603-8"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "1910",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Nutrition in Intensive Care Medicine: Beyond Physiology",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-02228-5"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2013",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 2
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Alzheimer's Disease - Modernizing Concept, Biological Diagnosis and Therapy",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-9803-3"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2012",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 2
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Glaucoma Surgery",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-9938-2"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2012",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-01-01",
+            "End_Date": "2021-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 2
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Pediatric and Adolescent Gynecology",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-9337-3"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2012",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Pathogenesis and Management of Atopic Dermatitis",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-9687-9"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2011",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Importance of Growth for Health and Development",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-9305-2"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2010",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-02-01",
+            "End_Date": "2021-02-28"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 2
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "Retinal Pharmacotherapeutics",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-318-05565-8"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2015",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "The Impact of Immigration on Children's Development",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-8055-9799-9"
+        }
+      ],
+      "Platform": "Karger",
+      "Publisher": "Karger",
+      "YOP": "2012",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2021-03-01",
+            "End_Date": "2021-03-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
