@@ -257,7 +257,8 @@ public class PgHelper {
   public static Future<ErrorCodes> getErrorCodes(
       Context vertxContext, Map<String, String> okapiHeaders) {
     String query =
-        "SELECT DISTINCT(SUBSTRING(jsonb->>'failedReason','Number=([0-9]{1,4})')) FROM counter_reports WHERE jsonb->>'failedReason' IS NOT NULL";
+        "SELECT DISTINCT(SUBSTRING(jsonb->>'failedReason','(?:Number=|\"Code\": ?)([0-9]{1,4})'))"
+            + " FROM counter_reports WHERE jsonb->>'failedReason' IS NOT NULL";
     Promise<ErrorCodes> result = Promise.promise();
     PgUtil.postgresClient(vertxContext, okapiHeaders)
         .select(
