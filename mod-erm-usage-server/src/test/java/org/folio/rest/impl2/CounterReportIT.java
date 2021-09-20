@@ -26,10 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Date;
 import java.time.Instant;
-import java.util.Arrays;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -72,9 +73,6 @@ public class CounterReportIT {
 
   private static CounterReport report;
   private static CounterReport reportChanged;
-  private static CounterReport reportFailedReason3000;
-  private static CounterReport reportFailedReason3031;
-  private static CounterReport reportFailedReasonUnkownHost;
   private static RequestSpecification reportsDeleteReqSpec;
   private static RequestSpecification counterReportsReqSpec;
   private static RequestSpecification defaultHeaderSpec;
@@ -87,23 +85,6 @@ public class CounterReportIT {
           new String(Files.readAllBytes(Paths.get("../ramls/examples/counterreport.sample")));
       report = Json.decodeValue(reportStr, CounterReport.class);
       reportChanged = Json.decodeValue(reportStr, CounterReport.class).withRelease("5");
-
-      String reportFailedReasonStr_3000 =
-          new String(
-              Files.readAllBytes(Paths.get("../ramls/examples/counterreport_failed_3000.sample")));
-      reportFailedReason3000 = Json.decodeValue(reportFailedReasonStr_3000, CounterReport.class);
-
-      String reportFailedReasonStr_3031 =
-          new String(
-              Files.readAllBytes(Paths.get("../ramls/examples/counterreport_failed_3031.sample")));
-      reportFailedReason3031 = Json.decodeValue(reportFailedReasonStr_3031, CounterReport.class);
-
-      String reportFailedReasonStr_unknownHost =
-          new String(
-              Files.readAllBytes(
-                  Paths.get("../ramls/examples/counterreport_failed_unknown_host.sample")));
-      reportFailedReasonUnkownHost =
-          Json.decodeValue(reportFailedReasonStr_unknownHost, CounterReport.class);
     } catch (Exception ex) {
       context.fail(ex);
     }
@@ -383,20 +364,17 @@ public class CounterReportIT {
         .then()
         .statusCode(201);
 
-    // POST report
-    given(counterReportsReqSpec)
-        .body(Json.encode(reportFailedReason3000))
-        .post()
-        .then()
-        .statusCode(201)
-        .body("release", equalTo(reportFailedReason3000.getRelease()))
-        .body("id", equalTo(reportFailedReason3000.getId()));
+    // POST reports
+    List<CounterReport> sampleReports =
+        createSampleReportsWithFailedReasonForProviderId(udprovider.getId());
+    sampleReports.forEach(
+        report ->
+            given(counterReportsReqSpec).body(Json.encode(report)).post().then().statusCode(201));
 
     // Check if hasFailedReport and errorCode of UDP is set
     UsageDataProvider udp =
         given(defaultHeaderSpec)
             .body(Json.encode(udprovider))
-            .request()
             .get("/usage-data-providers/" + udprovider.getId())
             .as(UsageDataProvider.class);
     assertThat(udp.getLabel()).isEqualTo(udprovider.getLabel());
@@ -405,14 +383,11 @@ public class CounterReportIT {
         .isEqualTo(UsageDataProvider.HasFailedReport.YES.value());
 
     List<String> udpErrorCodes = udp.getReportErrorCodes();
-    assertThat(udpErrorCodes).hasSize(1);
-    assertThat(reportFailedReason3000.getFailedReason()).contains(udpErrorCodes.get(0));
+    assertThat(udpErrorCodes).containsExactlyInAnyOrder("3000", "3031", "3060", "3070", "other");
 
-    // DELETE report
-    given(counterReportsReqSpec)
-        .delete("/" + reportFailedReason3000.getId())
-        .then()
-        .statusCode(204);
+    // DELETE reports
+    sampleReports.forEach(
+        report -> given(counterReportsReqSpec).delete("/" + report.getId()).then().statusCode(204));
 
     // DELETE udp
     given(defaultHeaderSpec)
@@ -424,41 +399,22 @@ public class CounterReportIT {
   @Test
   public void checkThatWeGetErrorCodes() {
     // POST reports
-    given(counterReportsReqSpec)
-        .body(Json.encode(reportFailedReason3000))
-        .post()
-        .then()
-        .statusCode(201)
-        .body("release", equalTo(reportFailedReason3000.getRelease()))
-        .body("id", equalTo(reportFailedReason3000.getId()));
-
-    given(counterReportsReqSpec)
-        .body(Json.encode(reportFailedReason3031))
-        .post()
-        .then()
-        .statusCode(201)
-        .body("release", equalTo(reportFailedReason3031.getRelease()))
-        .body("id", equalTo(reportFailedReason3031.getId()));
-
-    given(counterReportsReqSpec)
-        .body(Json.encode(reportFailedReasonUnkownHost))
-        .post()
-        .then()
-        .statusCode(201)
-        .body("release", equalTo(reportFailedReasonUnkownHost.getRelease()))
-        .body("id", equalTo(reportFailedReasonUnkownHost.getId()));
+    List<CounterReport> sampleReports =
+        createSampleReportsWithFailedReasonForProviderId("bf6c9ddc-ff82-40c4-be64-dd2414bdcd72");
+    sampleReports.forEach(
+        report ->
+            given(counterReportsReqSpec).body(Json.encode(report)).post().then().statusCode(201));
 
     // GET error codes
     ErrorCodes errorCodes =
         given(counterReportsReqSpec).get(PATH_ERROR_CODES).thenReturn().as(ErrorCodes.class);
 
     assertThat(errorCodes.getErrorCodes())
-        .hasSize(3)
-        .containsAll(Arrays.asList("3000", "3031", "other"));
+        .containsExactlyInAnyOrder("3000", "3031", "3060", "3070", "other");
 
     // DELETE reports
-    Stream.of(reportFailedReason3000, reportFailedReason3031, reportFailedReasonUnkownHost)
-        .forEach(r -> given(counterReportsReqSpec).delete("/" + r.getId()).then().statusCode(204));
+    sampleReports.forEach(
+        r -> given(counterReportsReqSpec).delete("/" + r.getId()).then().statusCode(204));
   }
 
   @Test
@@ -513,5 +469,28 @@ public class CounterReportIT {
     reportTypes =
         given(counterReportsReqSpec).get(PATH_REPORT_TYPES).thenReturn().as(ReportTypes.class);
     assertThat(reportTypes.getReportTypes()).isEmpty();
+  }
+
+  private List<CounterReport> createSampleReportsWithFailedReasonForProviderId(String providerId) {
+    YearMonth startMonth = YearMonth.of(2019, 1);
+    AtomicLong counter = new AtomicLong(0);
+    return Stream.of(
+            "Report not valid: Exception{Number=3000, Severity=ERROR, Message=Report Not Supported}",
+            "Number=3031",
+            "Some other error message 4040",
+            "\"Code\": 3060",
+            "\"Code\": 3060",
+            "\"Code\":3070")
+        .map(
+            msg ->
+                new CounterReport()
+                    .withId(UUID.randomUUID().toString())
+                    .withProviderId(providerId)
+                    .withDownloadTime(Date.from(Instant.now()))
+                    .withReportName("JR1")
+                    .withRelease("4")
+                    .withFailedReason(msg)
+                    .withYearMonth(startMonth.plusMonths(counter.getAndIncrement()).toString()))
+        .collect(Collectors.toList());
   }
 }
