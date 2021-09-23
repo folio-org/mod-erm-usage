@@ -3,6 +3,7 @@ package org.folio.rest.impl2;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.folio.rest.util.ReportExportHelper.CREATED_BY_SUFFIX;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -30,7 +31,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -49,6 +52,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.olf.erm.usage.counter.common.ExcelUtil;
+import org.olf.erm.usage.counter50.Counter5Utils;
+import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
+import org.openapitools.client.model.COUNTERTitleReport;
 
 @RunWith(VertxUnitRunner.class)
 public class CounterReportExportIT {
@@ -144,6 +150,37 @@ public class CounterReportExportIT {
             .extract()
             .asString();
     assertThat(csvResult).isEqualToNormalizingNewlines(expected);
+  }
+
+  @Test
+  public void testExportCSVOkTR() throws IOException, Counter5UtilsException {
+    String reportStr =
+        Resources.toString(Resources.getResource("TR/TR_1.json"), StandardCharsets.UTF_8);
+    CounterReport counterReport = Json.decodeValue(reportStr, CounterReport.class);
+    counterReport.setId(UUID.randomUUID().toString());
+    given().body(counterReport).post().then().statusCode(201);
+
+    String csvResult =
+        given()
+            .pathParam("id", counterReport.getId())
+            .get("/export/{id}")
+            .then()
+            .statusCode(200)
+            .contentType(equalTo("text/csv"))
+            .extract()
+            .asString();
+
+    COUNTERTitleReport expectedReport =
+        (COUNTERTitleReport) Counter5Utils.fromJSON(Json.encode(counterReport.getReport()));
+    expectedReport
+        .getReportHeader()
+        .setCreatedBy(expectedReport.getReportHeader().getCreatedBy() + " " + CREATED_BY_SUFFIX);
+    String expectedCsv = Counter5Utils.toCSV(expectedReport);
+
+    List<String> actualLines = csvResult.lines().collect(Collectors.toList());
+    List<String> expectedLines = expectedCsv.lines().collect(Collectors.toList());
+
+    assertThat(actualLines).containsExactlyInAnyOrderElementsOf(expectedLines);
   }
 
   @Test
