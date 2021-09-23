@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+import static org.folio.rest.util.ReportExportHelper.CREATED_BY_SUFFIX;
 
 import com.google.common.io.Resources;
 import io.restassured.RestAssured;
@@ -49,6 +50,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
+import org.openapitools.client.model.COUNTERTitleReport;
 
 @RunWith(VertxUnitRunner.class)
 public class CounterReportExportStandardViewIT {
@@ -121,11 +123,15 @@ public class CounterReportExportStandardViewIT {
             .asString();
 
     List<String> resultLines = IOUtils.readLines(new StringReader(result));
-    String expectedCsv =
-        Counter5Utils.toCSV(
+    COUNTERTitleReport expectedReport =
+        (COUNTERTitleReport)
             Counter5Utils.fromJSON(
                 Resources.toString(
-                    Resources.getResource("standardviews/tr_j1.json"), StandardCharsets.UTF_8)));
+                    Resources.getResource("standardviews/tr_j1.json"), StandardCharsets.UTF_8));
+    expectedReport
+        .getReportHeader()
+        .setCreatedBy(expectedReport.getReportHeader().getCreatedBy() + " " + CREATED_BY_SUFFIX);
+    String expectedCsv = Counter5Utils.toCSV(expectedReport);
     assertThat(expectedCsv).isNotNull();
     List<String> expectedLines = IOUtils.readLines(new StringReader(expectedCsv));
 
@@ -151,11 +157,16 @@ public class CounterReportExportStandardViewIT {
             .asString();
 
     List<String> resultLines = IOUtils.readLines(new StringReader(result));
-    String expectedCsv =
-        Counter5Utils.toCSV(
+
+    COUNTERTitleReport expectedReport =
+        (COUNTERTitleReport)
             Counter5Utils.fromJSON(
                 Resources.toString(
-                    Resources.getResource("standardviews/tr_b1.json"), StandardCharsets.UTF_8)));
+                    Resources.getResource("standardviews/tr_b1.json"), StandardCharsets.UTF_8));
+    expectedReport
+        .getReportHeader()
+        .setCreatedBy(expectedReport.getReportHeader().getCreatedBy() + " " + CREATED_BY_SUFFIX);
+    String expectedCsv = Counter5Utils.toCSV(expectedReport);
     assertThat(expectedCsv).isNotNull();
     List<String> expectedLines = IOUtils.readLines(new StringReader(expectedCsv));
 
