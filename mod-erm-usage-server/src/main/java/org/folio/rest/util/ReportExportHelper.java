@@ -29,6 +29,7 @@ import org.olf.erm.usage.counter50.converter.ReportConverter;
 
 public class ReportExportHelper {
 
+  public static final String CREATED_BY_SUFFIX = "via FOLIO eUsage app";
   private static final List<String> SUPPORTED_FORMATS = List.of("csv", "xlsx");
   private static final List<String> SUPPORTED_VIEWS =
       List.of("DR_D1", "TR_B1", "TR_B3", "TR_J1", "TR_J3", "TR_J4");
@@ -104,13 +105,12 @@ public class ReportExportHelper {
     }
   }
 
-  private static Optional<String> csvMapper(CounterReport cr) throws Counter5UtilsException {
+  private static Optional<String> csvMapper(CounterReport cr)
+      throws Counter5UtilsException, ReportMergeException {
     if (cr.getRelease().equals("4") && cr.getReport() != null) {
-      return Optional.ofNullable(
-          Counter4Utils.toCSV(Counter4Utils.fromJSON(Json.encode(cr.getReport()))));
+      return Optional.ofNullable(counter4ReportsToCsv(List.of(cr)));
     } else if (cr.getRelease().equals("5") && cr.getReport() != null) {
-      return Optional.ofNullable(
-          Counter5Utils.toCSV(Counter5Utils.fromJSON(Json.encode(cr.getReport()))));
+      return Optional.ofNullable(counter5ReportsToCsv(List.of(cr)));
     }
     return Optional.empty();
   }
@@ -142,7 +142,14 @@ public class ReportExportHelper {
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
     Object merge = Counter5Utils.merge(c5Reports);
-    return Counter5Utils.toCSV(merge);
+    return replaceCreatedBy(Counter5Utils.toCSV(merge));
+  }
+
+  public static String replaceCreatedBy(String csvReport) {
+    if (csvReport == null) return null;
+    return csvReport.replaceFirst(
+        "(?!.*" + CREATED_BY_SUFFIX + ".*)(Created_By,)(\"?)(.*(?=\")|.*)(\"?)",
+        "$1$2$3 " + CREATED_BY_SUFFIX + "$4");
   }
 
   private static Response createExportMultipleMonthsResponseByFormat(
@@ -232,7 +239,7 @@ public class ReportExportHelper {
           .orElse(
               GetCounterReportsExportByIdResponse.respond500WithTextPlain(
                   "No report data or no mapper available"));
-    } catch (Counter5UtilsException e) {
+    } catch (Counter5UtilsException | ReportMergeException e) {
       return GetCounterReportsExportByIdResponse.respond500WithTextPlain(e.getMessage());
     }
   }
