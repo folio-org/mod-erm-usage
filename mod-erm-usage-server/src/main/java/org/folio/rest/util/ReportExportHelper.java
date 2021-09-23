@@ -104,13 +104,12 @@ public class ReportExportHelper {
     }
   }
 
-  private static Optional<String> csvMapper(CounterReport cr) throws Counter5UtilsException {
+  private static Optional<String> csvMapper(CounterReport cr)
+      throws Counter5UtilsException, ReportMergeException {
     if (cr.getRelease().equals("4") && cr.getReport() != null) {
-      return Optional.ofNullable(
-          Counter4Utils.toCSV(Counter4Utils.fromJSON(Json.encode(cr.getReport()))));
+      return Optional.ofNullable(counter4ReportsToCsv(List.of(cr)));
     } else if (cr.getRelease().equals("5") && cr.getReport() != null) {
-      return Optional.ofNullable(
-          Counter5Utils.toCSV(Counter5Utils.fromJSON(Json.encode(cr.getReport()))));
+      return Optional.ofNullable(counter5ReportsToCsv(List.of(cr)));
     }
     return Optional.empty();
   }
@@ -232,7 +231,7 @@ public class ReportExportHelper {
           .orElse(
               GetCounterReportsExportByIdResponse.respond500WithTextPlain(
                   "No report data or no mapper available"));
-    } catch (Counter5UtilsException e) {
+    } catch (Counter5UtilsException | ReportMergeException e) {
       return GetCounterReportsExportByIdResponse.respond500WithTextPlain(e.getMessage());
     }
   }
