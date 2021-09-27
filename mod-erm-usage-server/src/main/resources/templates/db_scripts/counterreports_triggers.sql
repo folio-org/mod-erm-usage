@@ -10,43 +10,32 @@ $$ LANGUAGE sql;
 
 -- returns the counter/sushi error codes of the usage data provider's counter reports
 CREATE OR REPLACE FUNCTION udp_report_errors(providerId TEXT) RETURNS jsonb AS $$
-  SELECT json_agg(error)::jsonb
+  SELECT json_agg(errors)::jsonb
   FROM (
     SELECT
-      CASE
-        WHEN error_code IS NOT NULL THEN error_code
-        ELSE 'other'
-      END
-    AS error
-    FROM (
-      SELECT
-        DISTINCT(SUBSTRING(jsonb->>'failedReason','(?:Number=|"Code": ?)([0-9]{1,4})')) as error_code,
-        COUNT(jsonb->>'failedReason') as number_failed
-      FROM  	counter_reports
-      WHERE		jsonb->>'providerId'=$1 AND jsonb->>'failedReason' IS NOT NULL
-      GROUP BY 	jsonb->>'providerId', error_code, jsonb->>'failedReason')
-      AS sub
-  ) AS sub2;
+      DISTINCT(
+        COALESCE(SUBSTRING(jsonb->>'failedReason','(?:Number=|"Code": ?)([0-9]{1,4})'), 'other')
+      ) AS errors
+    FROM counter_reports
+    WHERE jsonb->>'providerId'=$1 AND jsonb->>'failedReason' IS NOT NULL
+    ORDER BY 1
+  )
+  AS sub
 $$ LANGUAGE sql;
 
 -- returns the counter reports types of the usage data provider's counter reports
 CREATE OR REPLACE FUNCTION udp_report_types(providerId TEXT) RETURNS jsonb AS $$
-  SELECT json_agg(name)::jsonb
+  SELECT json_agg(reportNames)::jsonb
   FROM (
     SELECT
-      CASE
-        WHEN name IS NOT NULL THEN name
-        ELSE 'other'
-      END
-    AS name
-    FROM (
-      SELECT
-        DISTINCT(jsonb->>'reportName') as name
-      FROM  	counter_reports
-      WHERE   jsonb->>'providerId'=$1
-      GROUP BY 	jsonb->>'providerId', name)
-      AS sub
-  ) AS sub2;
+      DISTINCT(
+        COALESCE(jsonb->>'reportName', 'other')
+      ) AS reportNames
+    FROM counter_reports
+    WHERE jsonb->>'providerId'=$1
+    ORDER BY 1
+  )
+  AS sub
 $$ LANGUAGE sql;
 
 -- trigger function to update latest report available of an usage data provider
