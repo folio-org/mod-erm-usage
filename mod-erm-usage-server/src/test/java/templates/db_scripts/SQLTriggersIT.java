@@ -24,9 +24,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.commons.lang3.RandomUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
@@ -360,13 +360,13 @@ public class SQLTriggersIT {
   public void updateProviderErrorCodesOnInsertConcurrent(TestContext context) {
     Async async = context.async();
     final YearMonth reportStart = YearMonth.of(2018, 1);
-    final int errNumberStart = 1000;
-    final int reportCount = 12;
+    final int reportCount = 52;
+    final List<String> errorCodes = List.of("3030", "3020", "3060", "3070", "other");
+    final List<String> errorMsgs = List.of("Number=", "\"Code\":", "\"Code\": ", "error message");
 
     String udpId = "5edd37a4-6789-4f43-bb9d-850180470631";
     UsageDataProvider udp = new UsageDataProvider().withId(udpId);
 
-    AtomicInteger errNumber = new AtomicInteger(errNumberStart);
     List<CounterReport> reports =
         IntStream.rangeClosed(1, reportCount)
             .mapToObj(i -> reportStart.plusMonths(i - 1))
@@ -380,7 +380,10 @@ public class SQLTriggersIT {
                         .withRelease("4")
                         .withFailedAttempts(1)
                         .withFailedReason(
-                            "Number=".concat(String.valueOf(errNumber.getAndIncrement()))))
+                            errorMsgs
+                                .get(RandomUtils.nextInt(0, errorMsgs.size()))
+                                .concat(
+                                    errorCodes.get(RandomUtils.nextInt(0, errorCodes.size() - 1)))))
             .collect(Collectors.toList());
 
     Promise<String> saveUDPPromise = Promise.promise();
@@ -391,8 +394,6 @@ public class SQLTriggersIT {
             s ->
                 CompositeFuture.all(
                     reports.stream()
-                        .unordered()
-                        .parallel()
                         .map(
                             cr -> {
                               Promise<String> promise = Promise.promise();
@@ -411,13 +412,10 @@ public class SQLTriggersIT {
               context.verify(
                   v -> {
                     assertThat(result).isNotNull();
-                    assertThat(result.getHasFailedReport().equals(HasFailedReport.YES));
+                    assertThat(result.getHasFailedReport()).isEqualTo(HasFailedReport.YES);
                     assertThat(result.getReportErrorCodes())
-                        .containsAll(
-                            IntStream.range(errNumberStart, errNumberStart + reportCount)
-                                .boxed()
-                                .map(String::valueOf)
-                                .collect(Collectors.toList()));
+                        .doesNotHaveDuplicates()
+                        .isSubsetOf(errorCodes);
                     assertThat(result.getEarliestReport()).isNull();
                     assertThat(result.getLatestReport()).isNull();
                   });
