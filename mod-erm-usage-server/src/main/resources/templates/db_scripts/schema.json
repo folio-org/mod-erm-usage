@@ -13,12 +13,12 @@
     {
       "run": "after",
       "snippetPath": "counterreports_triggers.sql",
-      "fromModuleVersion": "mod-erm-usage-4.0.0"
+      "fromModuleVersion": "mod-erm-usage-4.2.0"
     },
     {
       "run": "after",
       "snippetPath": "custom_indexes.sql",
-      "fromModuleVersion": "mod-erm-usage-4.0.0"
+      "fromModuleVersion": "mod-erm-usage-4.2.0"
     },
     {
       "run": "after",
