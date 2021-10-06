@@ -1,3 +1,16 @@
+# 4.2.0
+* Incorrect cell formatting in xlsx downloads (MODEUS-113)
+* Support download of Standard Report Views (MODEUS-116)
+* Replace ErmUsageFile POJO by RAML type (MODEUS-118)
+* Upload of CSV report fails if the first line contains quotes (MODEUS-120)
+* OutOfMemoryError when uploading CSV files (MODEUS-121)
+* Update required attributes in UDP JSON schema  (MODEUS-123)
+* Counter 5 SUSHI error codes not included in /counter-reports/error/codes (MODEUS-126)
+* Schema upgrade test (MODEUS-127)
+* Duplicate error codes in usage data provider (MODEUS-129)
+* Add FOLIO info to Created_By value in exported files (MODEUS-130)
+* Missing data in download files for reports with YOP (MODEUS-132)
+
 # 4.1.0 (2021-06-11)
 * Upgrade RMB to v33 (MODEUS-112)
 * Multiple reports can be deleted with one request (MODEUS-111)
