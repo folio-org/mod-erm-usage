@@ -27,9 +27,9 @@
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <maven.compiler.release>11</maven.compiler.release>
 
-    <raml-module-builder.version>33.0.0</raml-module-builder.version>
+    <raml-module-builder.version>33.2.1</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
-    <vertx.version>4.1.0.CR1</vertx.version>
+    <vertx.version>4.2.1</vertx.version>
     <erm.usage.counter.version>2.2.2</erm.usage.counter.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
