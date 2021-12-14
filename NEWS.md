@@ -1,3 +1,7 @@
+# 4.2.1
+* [MODEUS-134](https://issues.folio.org/browse/MODEUS-134) Update to RMB 32.2.2 fixing remote exectution (CVE-2021-44228)
+* [MODEUS-133](https://issues.folio.org/browse/MODEUS-133) Update to RMB 32.2.1 fixing remote exectution (CVE-2021-44228)
+
 # 4.2.0
 * Incorrect cell formatting in xlsx downloads (MODEUS-113)
 * Support download of Standard Report Views (MODEUS-116)
