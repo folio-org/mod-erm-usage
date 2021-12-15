@@ -1,3 +1,6 @@
+# 4.0.1
+* [MODEUS-136](https://issues.folio.org/browse/MODEUS-136) Iris R1 2021 Log4j vulnerability
+
 # 4.0.0 (2021-03-17)
 * Upgrade to RMB 32 (MODEUS-101)
 * Add endpoint to get all available report types (MODEUS-103)
