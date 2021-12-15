@@ -1,3 +1,6 @@
+# 4.1.1
+* [MODEUS-137](https://issues.folio.org/browse/MODEUS-137) Juniper R2 2021 - Log4j vulnerability verification and correction
+
 # 4.1.0 (2021-06-11)
 * Upgrade RMB to v33 (MODEUS-112)
 * Multiple reports can be deleted with one request (MODEUS-111)
