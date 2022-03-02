@@ -1,3 +1,6 @@
+# 4.3.0
+* [MODEUS-140](https://issues.folio.org/browse/MODEUS-140) Update to the latest RMB 33.* release
+
 # 4.2.1
 * [MODEUS-134](https://issues.folio.org/browse/MODEUS-134) Update to RMB 32.2.2 fixing remote exectution (CVE-2021-44228)
 * [MODEUS-133](https://issues.folio.org/browse/MODEUS-133) Update to RMB 32.2.1 fixing remote exectution (CVE-2021-44228)
