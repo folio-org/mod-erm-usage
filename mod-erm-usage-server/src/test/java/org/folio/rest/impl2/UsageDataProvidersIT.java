@@ -30,8 +30,8 @@ import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
-import org.folio.rest.util.ModuleVersion;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -102,7 +102,7 @@ public class UsageDataProvidersIT {
         res -> {
           try {
             tenantClient.postTenant(
-                new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
+                new TenantAttributes().withModuleTo(ModuleName.getModuleVersion()),
                 res2 -> async.complete());
           } catch (Exception e) {
             context.fail(e);

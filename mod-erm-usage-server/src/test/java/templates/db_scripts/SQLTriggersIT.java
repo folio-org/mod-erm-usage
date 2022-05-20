@@ -41,8 +41,8 @@ import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.persist.interfaces.Results;
+import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
-import org.folio.rest.util.ModuleVersion;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -80,7 +80,7 @@ public class SQLTriggersIT {
       port = NetworkUtils.nextFreePort();
       tenantAttributes =
           new TenantAttributes()
-              .withModuleTo(ModuleVersion.getModuleVersion())
+              .withModuleTo(ModuleName.getModuleVersion())
               .withParameters(parameters);
 
       String aggregatorJSON =
