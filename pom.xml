@@ -22,15 +22,13 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <!--<maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>-->
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <maven.compiler.release>11</maven.compiler.release>
 
-    <raml-module-builder.version>33.2.6</raml-module-builder.version>
+    <raml-module-builder.version>33.2.9</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
-    <vertx.version>4.2.5</vertx.version>
-    <erm.usage.counter.version>2.2.2</erm.usage.counter.version>
+    <vertx.version>4.2.6</vertx.version>
+    <erm.usage.counter.version>2.2.4</erm.usage.counter.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
   </properties>
@@ -54,19 +52,19 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.13.1</version>
+      <version>4.13.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.17.1</version>
+      <version>3.22.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
-      <version>1.7.30</version>
+      <version>1.7.36</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -34,8 +34,8 @@ import org.folio.rest.RestVerticle;
 import org.folio.rest.impl.TenantAPI;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
-import org.folio.rest.util.ModuleVersion;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -81,7 +81,7 @@ public class ErmUsageFilesIT {
           try {
             new TenantAPI()
                 .postTenantSync(
-                    new TenantAttributes().withModuleTo(ModuleVersion.getModuleVersion()),
+                    new TenantAttributes().withModuleTo(ModuleName.getModuleVersion()),
                     Map.of(XOkapiHeaders.TENANT.toLowerCase(), TENANT),
                     res2 -> {
                       context.verify(v -> assertThat(res2.result().getStatus()).isEqualTo(204));
