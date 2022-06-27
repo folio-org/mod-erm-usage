@@ -37,7 +37,7 @@ public class PgHelperIT {
   private static final String providerId2 = "6c0b057b-0bad-4559-93b8-b4d9b1062f40";
   private static final String tenant = "tenant1";
   private static final Map<String, String> okapiHeaders =
-      Collections.singletonMap(XOkapiHeaders.TENANT.toLowerCase(), tenant);
+      Collections.singletonMap(XOkapiHeaders.TENANT, tenant);
 
   private static Vertx vertx = Vertx.vertx();
   @ClassRule public static PostgresContainerRule pgRule = new PostgresContainerRule(vertx, tenant);
