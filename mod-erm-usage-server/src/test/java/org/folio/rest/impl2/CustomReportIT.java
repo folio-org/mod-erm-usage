@@ -112,7 +112,7 @@ public class CustomReportIT {
             new TenantAPI()
                 .postTenantSync(
                     new TenantAttributes().withModuleTo(ModuleName.getModuleVersion()),
-                    Map.of(XOkapiHeaders.TENANT.toLowerCase(), TENANT),
+                    Map.of(XOkapiHeaders.TENANT, TENANT),
                     res2 -> {
                       context.verify(v -> assertThat(res2.result().getStatus()).isEqualTo(204));
                       async.complete();

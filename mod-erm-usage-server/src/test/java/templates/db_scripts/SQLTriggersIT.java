@@ -126,25 +126,21 @@ public class SQLTriggersIT {
   }
 
   private static Future<Void> validateSampleData(TestContext context) {
-    Promise<Results<UsageDataProvider>> providerPromise = Promise.promise();
-    getPGClient().get(TABLE_NAME_UDP, new UsageDataProvider(), false, providerPromise);
+    Future<Results<UsageDataProvider>> providerResults =
+        getPGClient().get(TABLE_NAME_UDP, UsageDataProvider.class, new Criterion(), false);
+    Future<Results<CounterReport>> reportResults =
+        getPGClient().get(TABLE_NAME_COUNTER_REPORTS, CounterReport.class, new Criterion(), false);
+    Future<Results<AggregatorSetting>> aggregatorResults =
+        getPGClient().get(TABLE_AGGREGATOR, AggregatorSetting.class, new Criterion(), false);
 
-    Promise<Results<CounterReport>> reportPromise = Promise.promise();
-    getPGClient().get(TABLE_NAME_COUNTER_REPORTS, new CounterReport(), false, reportPromise);
-
-    Promise<Results<AggregatorSetting>> aggregatorPromise = Promise.promise();
-    getPGClient().get(TABLE_AGGREGATOR, new AggregatorSetting(), false, aggregatorPromise);
-
-    return CompositeFuture.all(
-            providerPromise.future(), reportPromise.future(), aggregatorPromise.future())
+    return CompositeFuture.all(providerResults, reportResults, aggregatorResults)
         .compose(
             cf -> {
               context.verify(
                   v -> {
-                    assertThat(providerPromise.future().result().getResults().size()).isEqualTo(4);
-                    assertThat(reportPromise.future().result().getResults().size()).isEqualTo(4);
-                    assertThat(aggregatorPromise.future().result().getResults().size())
-                        .isEqualTo(1);
+                    assertThat(providerResults.result().getResults()).hasSize(4);
+                    assertThat(reportResults.result().getResults()).hasSize(4);
+                    assertThat(aggregatorResults.result().getResults()).hasSize(1);
                   });
               return Future.succeededFuture();
             });
@@ -184,11 +180,7 @@ public class SQLTriggersIT {
       new TenantReferenceAPI()
           .postTenant(
               tenantAttributes,
-              Map.of(
-                  XOkapiHeaders.TENANT.toLowerCase(),
-                  TENANT,
-                  XOkapiHeaders.URL,
-                  "http://localhost:" + port),
+              Map.of(XOkapiHeaders.TENANT, TENANT, XOkapiHeaders.URL, "http://localhost:" + port),
               res -> {
                 if (res.result().getStatus() == 204) {
                   promise.complete();
