@@ -46,7 +46,7 @@ public class CustomIndexesIT {
                             .next()
                             .getInteger("count")
                             .equals(TENANTS.length)) {
-                          async.complete();
+                          async.countDown();
                         } else {
                           context.fail(String.format("Index %s not found.", idxName));
                         }
