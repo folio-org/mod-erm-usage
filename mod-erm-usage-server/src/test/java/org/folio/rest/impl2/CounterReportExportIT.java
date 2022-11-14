@@ -31,6 +31,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -52,6 +54,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.olf.erm.usage.counter.common.ExcelUtil;
+import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.openapitools.client.model.COUNTERTitleReport;
@@ -134,6 +137,32 @@ public class CounterReportExportIT {
     int size =
         get().then().statusCode(200).extract().as(CounterReports.class).getCounterReports().size();
     assertThat(size).isZero();
+  }
+
+  @Test
+  public void testExportCSVFailsJR1GOA() throws IOException {
+    String xml =
+        Resources.toString(
+            Resources.getResource("fileupload/reportJR1GOA.xml"), StandardCharsets.UTF_8);
+    String json = Counter4Utils.toJSON(Counter4Utils.fromString(xml));
+    CounterReport counterReport =
+        new CounterReport()
+            .withId(UUID.randomUUID().toString())
+            .withRelease("4")
+            .withReportName("JR1 GOA")
+            .withDownloadTime(Date.from(Instant.now()))
+            .withProviderId("4b659cb9-e4bb-493d-ae30-5f5690c54802")
+            .withYearMonth("2020-07")
+            .withReport(Json.decodeValue(json, org.folio.rest.jaxrs.model.Report.class));
+
+    given().body(counterReport).post().then().statusCode(201);
+
+    given()
+        .pathParam("id", counterReport.getId())
+        .get("/export/{id}")
+        .then()
+        .statusCode(500)
+        .body(containsString("no csv mapper"));
   }
 
   @Test
