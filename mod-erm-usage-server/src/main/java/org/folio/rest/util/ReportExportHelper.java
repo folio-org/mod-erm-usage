@@ -238,7 +238,7 @@ public class ReportExportHelper {
               })
           .orElse(
               GetCounterReportsExportByIdResponse.respond500WithTextPlain(
-                  "No report data or no mapper available"));
+                  "No report data or no csv mapper available"));
     } catch (Counter5UtilsException | ReportMergeException e) {
       return GetCounterReportsExportByIdResponse.respond500WithTextPlain(e.getMessage());
     }
