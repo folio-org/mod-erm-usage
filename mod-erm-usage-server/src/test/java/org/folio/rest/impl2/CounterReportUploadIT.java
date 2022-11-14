@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.xml.bind.JAXB;
 import org.folio.okapi.common.XOkapiHeaders;
@@ -63,7 +62,6 @@ import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.openapitools.client.model.COUNTERDatabaseReport;
 import org.openapitools.client.model.COUNTERDatabaseUsage;
-import org.openapitools.client.model.COUNTERItemIdentifiers;
 import org.openapitools.client.model.COUNTERTitleReport;
 import org.openapitools.client.model.COUNTERTitleUsage;
 
@@ -215,7 +213,7 @@ public class CounterReportUploadIT {
   private CounterReportDocument createReport(
       File file, String mimeType, Boolean reportEditedManually, String editReason)
       throws IOException {
-    String fileAsString = Files.toString(file, StandardCharsets.UTF_8);
+    String fileAsString = Files.asCharSource(file, StandardCharsets.UTF_8).read();
     return createReport(fileAsString, mimeType, reportEditedManually, editReason);
   }
 
@@ -435,7 +433,7 @@ public class CounterReportUploadIT {
 
     org.folio.rest.jaxrs.model.Report report =
         Json.decodeValue(
-            Files.toString(FILE_REPORT5_OK, StandardCharsets.UTF_8),
+            Files.asCharSource(FILE_REPORT5_OK, StandardCharsets.UTF_8).read(),
             org.folio.rest.jaxrs.model.Report.class);
     assertThat(savedReport.getReport()).usingRecursiveComparison().isEqualTo(report);
   }
@@ -635,7 +633,7 @@ public class CounterReportUploadIT {
 
     // check content here
     assertThat(report).isNotNull();
-    List<Object> expectedReports = new ArrayList<>(Counter5Utils.split(report));
+    ArrayList<Object> expectedReports = new ArrayList<Object>(Counter5Utils.split(report));
     // expectedReports.forEach(this::removeAttributes);
 
     List<Object> actualReports =
@@ -708,7 +706,7 @@ public class CounterReportUploadIT {
   }
 
   private void compareCOP5Reports(
-      List<Object> actualReports, List<Object> expectedReports, int index) {
+      List<Object> actualReports, ArrayList<Object> expectedReports, int index) {
     Object first = expectedReports.get(index);
     if (first instanceof COUNTERDatabaseReport) {
       COUNTERDatabaseReport actual = (COUNTERDatabaseReport) actualReports.get(index);
@@ -719,7 +717,7 @@ public class CounterReportUploadIT {
           .ignoringFields("created")
           .ignoringCollectionOrder()
           .isEqualTo(expected.getReportHeader());
-      assertThat(actual.getReportItems().size()).isEqualTo(expected.getReportItems().size());
+      assertThat(actual.getReportItems()).hasSameSizeAs(expected.getReportItems());
 
       // Compare each platform usage
       for (int i = 0; i < actual.getReportItems().size(); i++) {
@@ -743,18 +741,11 @@ public class CounterReportUploadIT {
           .ignoringFields("created")
           .ignoringCollectionOrder()
           .isEqualTo(expected.getReportHeader());
-      assertThat(actual.getReportItems().size()).isEqualTo(expected.getReportItems().size());
+      assertThat(actual.getReportItems()).hasSameSizeAs(expected.getReportItems());
 
       // Compare each platform usage
       for (int i = 0; i < actual.getReportItems().size(); i++) {
-
         COUNTERTitleUsage actualUsage = actual.getReportItems().get(i);
-        List<COUNTERItemIdentifiers> itemIDsWoNull =
-            actual.getReportItems().get(i).getItemID().stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        actualUsage.setItemID(itemIDsWoNull);
-
         COUNTERTitleUsage expectedUsage =
             expected.getReportItems().stream()
                 .filter(item -> item.getTitle().equals(actualUsage.getTitle()))
