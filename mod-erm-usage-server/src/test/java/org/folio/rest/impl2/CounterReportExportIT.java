@@ -271,7 +271,7 @@ public class CounterReportExportIT {
         .get("/export/{id}")
         .then()
         .statusCode(500)
-        .body(containsString("no mapper"));
+        .body(containsString("no csv mapper"));
   }
 
   @Test
