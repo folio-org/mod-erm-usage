@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<report Created="2021-04-13T12:26:38.000Z" ID="JR1 GOA" Version="4" Name="JR1 GOA"
+  Title="Journal Report 1 GOA" xmlns:ns2="http://www.niso.org/schemas/counter">
+  <ns2:Vendor>
+    <ns2:Name>Vendor name</ns2:Name>
+    <ns2:ID>Vendor id</ns2:ID>
+    <ns2:Contact>
+      <ns2:E-mail>Vendor mail</ns2:E-mail>
+    </ns2:Contact>
+  </ns2:Vendor>
+  <ns2:Customer>
+    <ns2:Name>Library name</ns2:Name>
+    <ns2:ID>Library id</ns2:ID>
+    <ns2:InstitutionalIdentifier>
+      <ns2:Type>Proprietary</ns2:Type>
+      <ns2:Value>Institutional identifier</ns2:Value>
+    </ns2:InstitutionalIdentifier>
+    <ns2:ReportItems>
+      <ns2:ItemIdentifier>
+        <ns2:Type>Print_ISSN</ns2:Type>
+        <ns2:Value>1559-128X</ns2:Value>
+      </ns2:ItemIdentifier>
+      <ns2:ItemIdentifier>
+        <ns2:Type>Online_ISSN</ns2:Type>
+        <ns2:Value>2155-3165</ns2:Value>
+      </ns2:ItemIdentifier>
+      <ns2:ItemIdentifier>
+        <ns2:Type>DOI</ns2:Type>
+        <ns2:Value>10.1364/ao</ns2:Value>
+      </ns2:ItemIdentifier>
+      <ns2:ItemIdentifier>
+        <ns2:Type>Proprietary</ns2:Type>
+        <ns2:Value>AO</ns2:Value>
+      </ns2:ItemIdentifier>
+      <ns2:ItemPlatform>OSA Publishing</ns2:ItemPlatform>
+      <ns2:ItemPublisher>The Optical Society</ns2:ItemPublisher>
+      <ns2:ItemName>Applied Optics</ns2:ItemName>
+      <ns2:ItemDataType>Journal</ns2:ItemDataType>
+      <ns2:ItemPerformance>
+        <ns2:Period>
+          <ns2:Begin>2020-07-01</ns2:Begin>
+          <ns2:End>2020-07-31</ns2:End>
+        </ns2:Period>
+        <ns2:Category>Requests</ns2:Category>
+        <ns2:Instance>
+          <ns2:MetricType>ft_html</ns2:MetricType>
+          <ns2:Count>0</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_html_mobile</ns2:MetricType>
+          <ns2:Count>0</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_pdf</ns2:MetricType>
+          <ns2:Count>1</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_pdf_mobile</ns2:MetricType>
+          <ns2:Count>0</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_ps</ns2:MetricType>
+          <ns2:Count>0</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_ps_mobile</ns2:MetricType>
+          <ns2:Count>0</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_total</ns2:MetricType>
+          <ns2:Count>1</ns2:Count>
+        </ns2:Instance>
+      </ns2:ItemPerformance>
+    </ns2:ReportItems>
+    <ns2:ReportItems>
+      <ns2:ItemIdentifier>
+        <ns2:Type>Print_ISSN</ns2:Type>
+        <ns2:Value>0740-3224</ns2:Value>
+      </ns2:ItemIdentifier>
+      <ns2:ItemIdentifier>
+        <ns2:Type>Online_ISSN</ns2:Type>
+        <ns2:Value>1520-8540</ns2:Value>
+      </ns2:ItemIdentifier>
+      <ns2:ItemIdentifier>
+        <ns2:Type>DOI</ns2:Type>
+        <ns2:Value>10.1364/josab</ns2:Value>
+      </ns2:ItemIdentifier>
+      <ns2:ItemIdentifier>
+        <ns2:Type>Proprietary</ns2:Type>
+        <ns2:Value>JOSAB</ns2:Value>
+      </ns2:ItemIdentifier>
+      <ns2:ItemPlatform>OSA Publishing</ns2:ItemPlatform>
+      <ns2:ItemPublisher>The Optical Society</ns2:ItemPublisher>
+      <ns2:ItemName>Journal of the Optical Society of America B</ns2:ItemName>
+      <ns2:ItemDataType>Journal</ns2:ItemDataType>
+      <ns2:ItemPerformance>
+        <ns2:Period>
+          <ns2:Begin>2020-07-01</ns2:Begin>
+          <ns2:End>2020-07-31</ns2:End>
+        </ns2:Period>
+        <ns2:Category>Requests</ns2:Category>
+        <ns2:Instance>
+          <ns2:MetricType>ft_html</ns2:MetricType>
+          <ns2:Count>0</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_html_mobile</ns2:MetricType>
+          <ns2:Count>0</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_pdf</ns2:MetricType>
+          <ns2:Count>2</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_pdf_mobile</ns2:MetricType>
+          <ns2:Count>0</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_ps</ns2:MetricType>
+          <ns2:Count>0</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_ps_mobile</ns2:MetricType>
+          <ns2:Count>0</ns2:Count>
+        </ns2:Instance>
+        <ns2:Instance>
+          <ns2:MetricType>ft_total</ns2:MetricType>
+          <ns2:Count>2</ns2:Count>
+        </ns2:Instance>
+      </ns2:ItemPerformance>
+    </ns2:ReportItems>
+  </ns2:Customer>
+</report>

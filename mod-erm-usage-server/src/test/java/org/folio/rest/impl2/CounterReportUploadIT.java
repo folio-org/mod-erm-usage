@@ -75,6 +75,9 @@ public class CounterReportUploadIT {
   private static final String PROVIDER_ID2 = "4b659cb9-e4bb-493d-ae30-5f5690c54803";
   private static final File FILE_REPORT_OK =
       new File(Resources.getResource("fileupload/reportJSTOR.xml").getFile());
+
+  private static final File FILE_REPORT_JR1GOA =
+      new File(Resources.getResource("fileupload/reportJR1GOA.xml").getFile());
   private static final File FILE_REPORT_UNSUPPORTED =
       new File(Resources.getResource("fileupload/reportUnsupported.xml").getFile());
   private static final File FILE_REPORT_NSS_OK =
@@ -225,6 +228,34 @@ public class CounterReportUploadIT {
       metadata.setEditReason(editReason);
     }
     return new CounterReportDocument().withReportMetadata(metadata).withContents(content);
+  }
+
+  @Test
+  public void testReportR4OkJR1GOA() throws IOException {
+    CounterReportDocument report = createReportFromJson(FILE_REPORT_JR1GOA);
+    String savedReportId =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.JSON)
+            .body(report)
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report"))
+            .extract()
+            .asString()
+            .replace("Saved report with ids: ", "");
+
+    CounterReport savedReport =
+        given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
+    assertThat(savedReport.getProviderId()).isEqualTo(PROVIDER_ID);
+    assertThat(savedReport.getRelease()).isEqualTo("4");
+    assertThat(savedReport.getYearMonth()).isEqualTo("2020-07");
+    assertThat(savedReport.getDownloadTime()).isNotNull();
+    assertThat(savedReport.getReportName()).isEqualTo("JR1 GOA");
+
+    Report reportFromXML = JAXB.unmarshal(FILE_REPORT_JR1GOA, Report.class);
+    Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
+    assertThat(reportFromXML).usingRecursiveComparison().isEqualTo(reportFromDB);
   }
 
   @Test
