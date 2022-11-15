@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.xml.bind.JAXB;
 import org.folio.okapi.common.XOkapiHeaders;
@@ -63,7 +62,6 @@ import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.openapitools.client.model.COUNTERDatabaseReport;
 import org.openapitools.client.model.COUNTERDatabaseUsage;
-import org.openapitools.client.model.COUNTERItemIdentifiers;
 import org.openapitools.client.model.COUNTERTitleReport;
 import org.openapitools.client.model.COUNTERTitleUsage;
 
@@ -75,6 +73,9 @@ public class CounterReportUploadIT {
   private static final String PROVIDER_ID2 = "4b659cb9-e4bb-493d-ae30-5f5690c54803";
   private static final File FILE_REPORT_OK =
       new File(Resources.getResource("fileupload/reportJSTOR.xml").getFile());
+
+  private static final File FILE_REPORT_JR1GOA =
+      new File(Resources.getResource("fileupload/reportJR1GOA.xml").getFile());
   private static final File FILE_REPORT_UNSUPPORTED =
       new File(Resources.getResource("fileupload/reportUnsupported.xml").getFile());
   private static final File FILE_REPORT_NSS_OK =
@@ -212,7 +213,7 @@ public class CounterReportUploadIT {
   private CounterReportDocument createReport(
       File file, String mimeType, Boolean reportEditedManually, String editReason)
       throws IOException {
-    String fileAsString = Files.toString(file, StandardCharsets.UTF_8);
+    String fileAsString = Files.asCharSource(file, StandardCharsets.UTF_8).read();
     return createReport(fileAsString, mimeType, reportEditedManually, editReason);
   }
 
@@ -225,6 +226,34 @@ public class CounterReportUploadIT {
       metadata.setEditReason(editReason);
     }
     return new CounterReportDocument().withReportMetadata(metadata).withContents(content);
+  }
+
+  @Test
+  public void testReportR4OkJR1GOA() throws IOException {
+    CounterReportDocument report = createReportFromJson(FILE_REPORT_JR1GOA);
+    String savedReportId =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, ContentType.JSON)
+            .body(report)
+            .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+            .then()
+            .statusCode(200)
+            .body(containsString("Saved report"))
+            .extract()
+            .asString()
+            .replace("Saved report with ids: ", "");
+
+    CounterReport savedReport =
+        given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
+    assertThat(savedReport.getProviderId()).isEqualTo(PROVIDER_ID);
+    assertThat(savedReport.getRelease()).isEqualTo("4");
+    assertThat(savedReport.getYearMonth()).isEqualTo("2020-07");
+    assertThat(savedReport.getDownloadTime()).isNotNull();
+    assertThat(savedReport.getReportName()).isEqualTo("JR1 GOA");
+
+    Report reportFromXML = JAXB.unmarshal(FILE_REPORT_JR1GOA, Report.class);
+    Report reportFromDB = Counter4Utils.fromJSON(Json.encode(savedReport.getReport()));
+    assertThat(reportFromXML).usingRecursiveComparison().isEqualTo(reportFromDB);
   }
 
   @Test
@@ -404,7 +433,7 @@ public class CounterReportUploadIT {
 
     org.folio.rest.jaxrs.model.Report report =
         Json.decodeValue(
-            Files.toString(FILE_REPORT5_OK, StandardCharsets.UTF_8),
+            Files.asCharSource(FILE_REPORT5_OK, StandardCharsets.UTF_8).read(),
             org.folio.rest.jaxrs.model.Report.class);
     assertThat(savedReport.getReport()).usingRecursiveComparison().isEqualTo(report);
   }
@@ -604,7 +633,7 @@ public class CounterReportUploadIT {
 
     // check content here
     assertThat(report).isNotNull();
-    List<Object> expectedReports = new ArrayList<>(Counter5Utils.split(report));
+    ArrayList<Object> expectedReports = new ArrayList<Object>(Counter5Utils.split(report));
     // expectedReports.forEach(this::removeAttributes);
 
     List<Object> actualReports =
@@ -677,7 +706,7 @@ public class CounterReportUploadIT {
   }
 
   private void compareCOP5Reports(
-      List<Object> actualReports, List<Object> expectedReports, int index) {
+      List<Object> actualReports, ArrayList<Object> expectedReports, int index) {
     Object first = expectedReports.get(index);
     if (first instanceof COUNTERDatabaseReport) {
       COUNTERDatabaseReport actual = (COUNTERDatabaseReport) actualReports.get(index);
@@ -688,7 +717,7 @@ public class CounterReportUploadIT {
           .ignoringFields("created")
           .ignoringCollectionOrder()
           .isEqualTo(expected.getReportHeader());
-      assertThat(actual.getReportItems().size()).isEqualTo(expected.getReportItems().size());
+      assertThat(actual.getReportItems()).hasSameSizeAs(expected.getReportItems());
 
       // Compare each platform usage
       for (int i = 0; i < actual.getReportItems().size(); i++) {
@@ -712,18 +741,11 @@ public class CounterReportUploadIT {
           .ignoringFields("created")
           .ignoringCollectionOrder()
           .isEqualTo(expected.getReportHeader());
-      assertThat(actual.getReportItems().size()).isEqualTo(expected.getReportItems().size());
+      assertThat(actual.getReportItems()).hasSameSizeAs(expected.getReportItems());
 
       // Compare each platform usage
       for (int i = 0; i < actual.getReportItems().size(); i++) {
-
         COUNTERTitleUsage actualUsage = actual.getReportItems().get(i);
-        List<COUNTERItemIdentifiers> itemIDsWoNull =
-            actual.getReportItems().get(i).getItemID().stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        actualUsage.setItemID(itemIDsWoNull);
-
         COUNTERTitleUsage expectedUsage =
             expected.getReportItems().stream()
                 .filter(item -> item.getTitle().equals(actualUsage.getTitle()))
