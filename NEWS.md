@@ -1,3 +1,7 @@
+# 4.5.1
+* [MODEUS-151](https://issues.folio.org/browse/MODEUS-151) Possible to export csv for unsupported report types via api
+* [MODEUS-150](https://issues.folio.org/browse/MODEUS-150) XML import fails for several R4 report types
+
 # 4.5.0
 * [MODEUS-147](https://issues.folio.org/browse/MODEUS-147) Upgrade to RMB v35
 * [MODEUS-148](https://issues.folio.org/browse/MODEUS-148) Remove required attributes from udp schema
