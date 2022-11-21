@@ -1,3 +1,6 @@
+# 4.4.1
+* [MODEUS-153](https://issues.folio.org/browse/MODEUS-153) XML import fails for several R4 report types (MG backport)
+
 # 4.4.0
 * [MODEUS-145](https://issues.folio.org/browse/MODEUS-145) RMB v34 upgrade - Morning Glory 2022 R2 module release
 * [MODEUS-144](https://issues.folio.org/browse/MODEUS-144) Publish javadoc and sources to maven repository
