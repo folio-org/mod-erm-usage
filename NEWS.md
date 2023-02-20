@@ -1,3 +1,7 @@
+# 4.5.2
+* [MODEUS-157](https://issues.folio.org/browse/MODEUS-157) RMB 35.0.6, Vert.x 4.3.8, latest erm-usage-counter
+* [MODEUS-155](https://issues.folio.org/browse/MODEUS-155) RMB 35.0.5, Vert.x 4.3.7
+
 # 4.5.1
 * [MODEUS-151](https://issues.folio.org/browse/MODEUS-151) Possible to export csv for unsupported report types via api
 * [MODEUS-150](https://issues.folio.org/browse/MODEUS-150) XML import fails for several R4 report types
