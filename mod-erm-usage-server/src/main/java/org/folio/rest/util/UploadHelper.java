@@ -1,6 +1,5 @@
 package org.folio.rest.util;
 
-import com.google.gson.Gson;
 import io.vertx.core.json.Json;
 import java.io.IOException;
 import java.time.YearMonth;
@@ -102,7 +101,6 @@ public class UploadHelper {
       reports = Counter5Utils.split(cop5Report);
     }
 
-    Gson gson = new Gson();
     return reports.stream()
         .map(
             r -> {
@@ -112,7 +110,7 @@ public class UploadHelper {
                     .withRelease("5")
                     .withReportName(header.getReportID())
                     .withReport(
-                        Json.decodeValue(gson.toJson(r), org.folio.rest.jaxrs.model.Report.class))
+                        Json.decodeValue(Json.encode(r), org.folio.rest.jaxrs.model.Report.class))
                     .withYearMonth(ym.get(0).toString());
               } else {
                 return null;
@@ -182,6 +180,5 @@ public class UploadHelper {
     }
   }
 
-  private UploadHelper() {
-  }
+  private UploadHelper() {}
 }
