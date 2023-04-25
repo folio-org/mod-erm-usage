@@ -257,7 +257,7 @@ public class CounterReportExportIT {
         .statusCode(200)
         .body(
             containsString(
-                "Title 1,My Press,Proprietary=my:mypress,My Journals,8910.DOI,my:foo,,0011-1122,0123-4567,,,,,,,Total_Item_Investigations,9,3,,6"));
+                "Title 1,My Press,my:mypress,My Journals,8910.DOI,my:foo,,0011-1122,0123-4567,,,,,,,Total_Item_Investigations,9,3,0,6"));
   }
 
   @Test
