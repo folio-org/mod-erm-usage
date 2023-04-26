@@ -4,6 +4,8 @@ import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.folio.rest.util.UploadHelper.MSG_UNSUPPORTED_REPORT;
+import static org.folio.rest.util.UploadHelper.MSG_WRONG_FORMAT;
 import static org.hamcrest.Matchers.containsString;
 
 import com.google.common.io.Files;
@@ -87,6 +89,8 @@ public class CounterReportUploadIT {
   private static final File FILE_REPORT_MULTI_COP5 =
       new File(Resources.getResource("fileupload/reportCOP5TRMultiMonth.json").getFile());
   private static final File FILE_REPORT5_OK =
+      new File(Resources.getResource("fileupload/brill_tr.json").getFile());
+  private static final File FILE_REPORT5_NOT_OK =
       new File(Resources.getResource("fileupload/hwire_trj1.json").getFile());
   private static Vertx vertx;
   @Rule public Timeout timeout = Timeout.seconds(10);
@@ -427,15 +431,27 @@ public class CounterReportUploadIT {
         given().get("/counter-reports/" + savedReportId).then().extract().as(CounterReport.class);
     assertThat(savedReport.getProviderId()).isEqualTo(PROVIDER_ID);
     assertThat(savedReport.getRelease()).isEqualTo("5");
-    assertThat(savedReport.getYearMonth()).isEqualTo("2019-01");
+    assertThat(savedReport.getYearMonth()).isEqualTo("2022-01");
     assertThat(savedReport.getDownloadTime()).isNotNull();
-    assertThat(savedReport.getReportName()).isEqualTo("TR_J1");
+    assertThat(savedReport.getReportName()).isEqualTo("TR");
 
     org.folio.rest.jaxrs.model.Report report =
         Json.decodeValue(
             Files.asCharSource(FILE_REPORT5_OK, StandardCharsets.UTF_8).read(),
             org.folio.rest.jaxrs.model.Report.class);
     assertThat(savedReport.getReport()).usingRecursiveComparison().isEqualTo(report);
+  }
+
+  @Test
+  public void testReportR5NotOk() throws Exception {
+    CounterReportDocument reportDoc = createReportFromJson(FILE_REPORT5_NOT_OK);
+    given()
+        .header(HttpHeaders.CONTENT_TYPE, ContentType.JSON)
+        .body(reportDoc)
+        .post("/counter-reports/upload/provider/" + PROVIDER_ID)
+        .then()
+        .statusCode(400)
+        .body(containsString(MSG_UNSUPPORTED_REPORT));
   }
 
   @Test
@@ -447,7 +463,7 @@ public class CounterReportUploadIT {
         .post("/counter-reports/upload/provider/" + PROVIDER_ID)
         .then()
         .statusCode(400)
-        .body(containsString("Wrong format"));
+        .body(containsString(MSG_WRONG_FORMAT));
   }
 
   @Test

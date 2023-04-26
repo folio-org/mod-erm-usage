@@ -18,6 +18,12 @@
         "Value": "2019-09-01"
       }
     ],
+    "Report_Attributes": [
+      {
+        "Name": "Attributes_To_Show",
+        "Value": "Data_Type|Section_Type|YOP|Access_Type|Access_Method"
+      }
+    ],
     "Created": "2020-03-27T11:09:19Z",
     "Created_By": "FooBar Systems",
     "Release": "5",

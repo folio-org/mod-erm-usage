@@ -1,0 +1,176 @@
+{
+  "Report_Header": {
+    "Created": "2023-04-24T09:52:36Z",
+    "Created_By": "Creator",
+    "Customer_ID": "cust1234",
+    "Report_ID": "TR",
+    "Release": "5",
+    "Report_Name": "Title Master Report",
+    "Institution_Name": "Institution",
+    "Institution_ID": [
+      {
+        "Type": "Proprietary",
+        "Value": "abc:cust1234"
+      }
+    ],
+    "Report_Filters": [
+      {
+        "Name": "Begin_Date",
+        "Value": "2022-01-01"
+      },
+      {
+        "Name": "End_Date",
+        "Value": "2022-01-31"
+      }
+    ],
+    "Report_Attributes": [
+      {
+        "Name": "Attributes_To_Show",
+        "Value": "Data_Type|Section_Type|YOP|Access_Type|Access_Method"
+      }
+    ]
+  },
+  "Report_Items": [
+    {
+      "Title": "\"Alles ist Front!\"",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-3-657-77183-7"
+        },
+        {
+          "Type": "DOI",
+          "Value": "10.30965/9783657771837"
+        },
+        {
+          "Type": "URI",
+          "Value": "https://brill.com/view/title/48913"
+        }
+      ],
+      "Platform": "Brill",
+      "Publisher": "Brill | Schöningh",
+      "Data_Type": "Book",
+      "Section_Type": "Book",
+      "YOP": "2019",
+      "Access_Type": "Controlled",
+      "Access_Method": "Regular",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2022-01-01",
+            "End_Date": "2022-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Item_Investigations",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Total_Item_Investigations",
+              "Count": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "\"At the Shores of the Sky\"",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-90-04-43820-0"
+        },
+        {
+          "Type": "DOI",
+          "Value": "10.1163/9789004438200"
+        },
+        {
+          "Type": "URI",
+          "Value": "https://brill.com/view/title/57671"
+        }
+      ],
+      "Platform": "Brill",
+      "Publisher": "BRILL",
+      "Data_Type": "Book",
+      "Section_Type": "Book",
+      "YOP": "2020",
+      "Access_Type": "OA_Gold",
+      "Access_Method": "Regular",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2022-01-01",
+            "End_Date": "2022-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Total_Item_Investigations",
+              "Count": 2
+            },
+            {
+              "Metric_Type": "Total_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Item_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Item_Investigations",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Title": "\"At the Shores of the Sky\"",
+      "Item_ID": [
+        {
+          "Type": "ISBN",
+          "Value": "978-90-04-43820-0"
+        },
+        {
+          "Type": "DOI",
+          "Value": "10.1163/9789004438200"
+        },
+        {
+          "Type": "URI",
+          "Value": "https://brill.com/view/title/57671"
+        }
+      ],
+      "Platform": "Brill",
+      "Publisher": "BRILL",
+      "Data_Type": "Book",
+      "YOP": "2020",
+      "Access_Type": "OA_Gold",
+      "Access_Method": "Regular",
+      "Performance": [
+        {
+          "Period": {
+            "Begin_Date": "2022-01-01",
+            "End_Date": "2022-01-31"
+          },
+          "Instance": [
+            {
+              "Metric_Type": "Unique_Title_Requests",
+              "Count": 1
+            },
+            {
+              "Metric_Type": "Unique_Title_Investigations",
+              "Count": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

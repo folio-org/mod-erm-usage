@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.time.YearMonth;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -19,10 +20,39 @@ import org.openapitools.client.model.COUNTERItemReport;
 import org.openapitools.client.model.COUNTERPlatformReport;
 import org.openapitools.client.model.COUNTERTitleReport;
 import org.openapitools.client.model.SUSHIReportHeader;
+import org.openapitools.client.model.SUSHIReportHeaderReportAttributes;
 
 public class UploadHelper {
 
-  private static final String MSG_WRONG_FORMAT = "Wrong format supplied";
+  private static final String ATTRIBUTES_TO_SHOW = "Attributes_To_Show";
+  public static final Map<String, List<SUSHIReportHeaderReportAttributes>> SUPPORTED_REPORTS =
+      Map.of(
+          "Title Master Report",
+              List.of(
+                  new SUSHIReportHeaderReportAttributes()
+                      .name(ATTRIBUTES_TO_SHOW)
+                      .value("Data_Type|Section_Type|YOP|Access_Type|Access_Method")),
+          "Item Master Report",
+              List.of(
+                  new SUSHIReportHeaderReportAttributes()
+                      .name(ATTRIBUTES_TO_SHOW)
+                      .value(
+                          "Authors|Publication_Date|Article_Version|Data_Type|YOP|Access_Type|Access_Method"),
+                  new SUSHIReportHeaderReportAttributes()
+                      .name("Include_Parent_Details")
+                      .value("True")),
+          "Platform Master Report",
+              List.of(
+                  new SUSHIReportHeaderReportAttributes()
+                      .name(ATTRIBUTES_TO_SHOW)
+                      .value("Data_Type|Access_Method")),
+          "Database Master Report",
+              List.of(
+                  new SUSHIReportHeaderReportAttributes()
+                      .name(ATTRIBUTES_TO_SHOW)
+                      .value("Data_Type|Access_Method")));
+  public static final String MSG_WRONG_FORMAT = "Wrong format supplied";
+  public static final String MSG_UNSUPPORTED_REPORT = "Unsupported report";
 
   public static List<CounterReport> getCounterReportsFromString(String content)
       throws FileUploadException, Counter5UtilsException, ReportSplitException {
@@ -66,7 +96,7 @@ public class UploadHelper {
     Report finalReport = report;
     String reportName =
         Optional.ofNullable(Counter4Utils.getNameForReportTitle(finalReport.getName()))
-            .orElseThrow(() -> new FileUploadException("Unsupported report"));
+            .orElseThrow(() -> new FileUploadException(MSG_UNSUPPORTED_REPORT));
 
     result =
         reports.stream()
@@ -90,11 +120,30 @@ public class UploadHelper {
     return result;
   }
 
+  private static void checkThatReportIsSupported(SUSHIReportHeader header)
+      throws FileUploadException {
+    if (!SUPPORTED_REPORTS.containsKey(header.getReportName())) {
+      throw new FileUploadException(MSG_UNSUPPORTED_REPORT);
+    }
+
+    List<SUSHIReportHeaderReportAttributes> expectedAttributes =
+        SUPPORTED_REPORTS.get(header.getReportName());
+    List<SUSHIReportHeaderReportAttributes> actualAttributes = header.getReportAttributes();
+    if (!(actualAttributes != null
+        && actualAttributes.size() == expectedAttributes.size()
+        && actualAttributes.containsAll(expectedAttributes))) {
+      throw new FileUploadException(MSG_UNSUPPORTED_REPORT);
+    }
+  }
+
   private static List<CounterReport> getCOP5Reports(String content)
       throws FileUploadException, Counter5UtilsException {
     // Counter 5
     Object cop5Report = createCOP5Report(content);
     SUSHIReportHeader header = Counter5Utils.getSushiReportHeaderFromReportObject(cop5Report);
+
+    checkThatReportIsSupported(header);
+
     List<YearMonth> yearMonthsFromReportCOP5 = Counter5Utils.getYearMonthsFromReportHeader(header);
     List<Object> reports = Collections.singletonList(cop5Report);
     if (yearMonthsFromReportCOP5.size() != 1) {
