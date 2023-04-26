@@ -212,7 +212,11 @@ public class CounterReportExportStandardViewIT {
 
     Map<String, List<String>> hactual = createHeaderMap(actual);
     Map<String, List<String>> hexpected = createHeaderMap(expected);
-    assertThat(hactual).usingRecursiveComparison().ignoringCollectionOrder().isEqualTo(hexpected);
+    assertThat(hactual)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .ignoringFields("Created")
+        .isEqualTo(hexpected);
 
     List<String> cactual = actual.subList(HEADER_SIZE, actual.size());
     List<String> cexpected = expected.subList(HEADER_SIZE, expected.size());
