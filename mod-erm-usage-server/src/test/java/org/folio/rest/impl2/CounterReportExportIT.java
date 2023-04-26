@@ -208,6 +208,9 @@ public class CounterReportExportIT {
 
     List<String> actualLines = csvResult.lines().collect(Collectors.toList());
     List<String> expectedLines = expectedCsv.lines().collect(Collectors.toList());
+    // ignore Created
+    actualLines.remove(10);
+    expectedLines.remove(10);
 
     assertThat(actualLines).containsExactlyInAnyOrderElementsOf(expectedLines);
   }
