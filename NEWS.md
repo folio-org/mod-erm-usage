@@ -1,3 +1,7 @@
+# 4.5.3
+* [MODEUS-158](https://issues.folio.org/browse/MODEUS-158) Upgrade counter dependency to v3, fixes a few issues with csv/xlsx output of counter reports
+* [MODEUS-159](https://issues.folio.org/browse/MODEUS-159) Limit upload of counter5 reports to specific master reports
+
 # 4.5.2
 * [MODEUS-157](https://issues.folio.org/browse/MODEUS-157) RMB 35.0.6, Vert.x 4.3.8, latest erm-usage-counter
 * [MODEUS-155](https://issues.folio.org/browse/MODEUS-155) RMB 35.0.5, Vert.x 4.3.7
