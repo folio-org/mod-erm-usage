@@ -1,7 +1,6 @@
 package org.folio.rest.util;
 
 import com.google.common.io.ByteStreams;
-import com.google.gson.Gson;
 import io.vertx.core.json.Json;
 import java.io.IOException;
 import java.io.InputStream;
@@ -172,7 +171,6 @@ public class ReportExportHelper {
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   private static void convertR5Reports(List<CounterReport> reports, String reportName) {
-    Gson gson = new Gson();
     Converter converter = ReportConverter.create(reportName);
     reports.forEach(
         r -> {
@@ -180,7 +178,7 @@ public class ReportExportHelper {
           Object report = internalReportToCOP5Report(r);
           Object converted = converter.convert(report);
           r.setReport(
-              Json.decodeValue(gson.toJson(converted), org.folio.rest.jaxrs.model.Report.class));
+              Json.decodeValue(Json.encode(converted), org.folio.rest.jaxrs.model.Report.class));
         });
   }
 

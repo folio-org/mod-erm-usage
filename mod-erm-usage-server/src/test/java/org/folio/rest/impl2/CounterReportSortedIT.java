@@ -7,7 +7,6 @@ import static org.hamcrest.Matchers.equalTo;
 
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
-import com.google.gson.Gson;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.parsing.Parser;
@@ -121,17 +120,16 @@ public class CounterReportSortedIT {
   }
 
   private static List<CounterReport> createReportsForYearsFrom(CounterReport base) {
-    Gson gson = new Gson();
     List<CounterReport> result = new ArrayList<>();
     for (int y = 2018; y <= 2019; y++) {
       for (int m = 1; m <= 12; m++) {
-        CounterReport JR1 = gson.fromJson(gson.toJson(base), CounterReport.class);
+        CounterReport JR1 = Json.decodeValue(Json.encode(base), CounterReport.class);
         String month = m < 10 ? "0" + m : String.valueOf(m);
         JR1.setYearMonth(y + "-" + month);
         JR1.setId(UUID.randomUUID().toString());
         result.add(JR1);
 
-        CounterReport TR1 = gson.fromJson(gson.toJson(base), CounterReport.class);
+        CounterReport TR1 = Json.decodeValue(Json.encode(base), CounterReport.class);
         TR1.setReportName("TR1");
         TR1.setYearMonth(y + "-" + month);
         TR1.setId(UUID.randomUUID().toString());
