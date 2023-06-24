@@ -23,12 +23,12 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
-    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.release>17</maven.compiler.release>
 
     <raml-module-builder.version>35.0.6</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
     <vertx.version>4.3.8</vertx.version>
-    <erm.usage.counter.version>3.0.0</erm.usage.counter.version>
+    <erm.usage.counter.version>4.0.0-SNAPSHOT</erm.usage.counter.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
   </properties>
