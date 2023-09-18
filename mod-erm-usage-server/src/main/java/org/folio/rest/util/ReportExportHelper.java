@@ -1,7 +1,15 @@
 package org.folio.rest.util;
 
+import static io.vertx.core.Future.succeededFuture;
+import static org.folio.rest.util.VertxUtil.executeBlocking;
+
 import com.google.common.io.ByteStreams;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.json.Json;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -23,15 +31,13 @@ import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportMergeException;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
-import org.olf.erm.usage.counter50.converter.Converter;
-import org.olf.erm.usage.counter50.converter.ReportConverter;
 
 public class ReportExportHelper {
 
   public static final String CREATED_BY_SUFFIX = "via FOLIO eUsage app";
-  private static final List<String> SUPPORTED_FORMATS = List.of("csv", "xlsx");
-  private static final List<String> SUPPORTED_VIEWS =
+  public static final List<String> SUPPORTED_VIEWS =
       List.of("DR_D1", "TR_B1", "TR_B3", "TR_J1", "TR_J3", "TR_J4");
+  private static final List<String> SUPPORTED_FORMATS = List.of("csv", "xlsx");
   private static final String UNSUPPORTED_COUNTER_VERSION_MSG =
       "Requested counter version \"%s\" is not supported.";
   private static final String UNSUPPORTED_FORMAT_MSG = "Requested format \"%s\" is not supported.";
@@ -169,44 +175,58 @@ public class ReportExportHelper {
         .respond200WithTextCsv(csvString);
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  private static void convertR5Reports(List<CounterReport> reports, String reportName) {
-    Converter converter = ReportConverter.create(reportName);
-    reports.forEach(
-        r -> {
-          r.setReportName(reportName);
-          Object report = internalReportToCOP5Report(r);
-          Object converted = converter.convert(report);
-          r.setReport(
-              Json.decodeValue(Json.encode(converted), org.folio.rest.jaxrs.model.Report.class));
-        });
+  public static Future<Response> createExportMultipleMonthsResponseByReportVersion(
+      Context vertxContext,
+      RowStream<Row> rowStream,
+      String reportName,
+      String format,
+      String version) {
+    if (!SUPPORTED_FORMATS.contains(format)) {
+      return succeededFuture(
+          GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
+              .respond400WithTextPlain(String.format(UNSUPPORTED_FORMAT_MSG, format)));
+    }
+
+    if ("4".equals(version)) {
+      Promise<Report> mergedResult = Promise.promise();
+      new RowStreamHandlerR4(vertxContext, mergedResult).handle(rowStream);
+      return mergedResult
+          .future()
+          .compose(report -> executeCounter4ToCsv(vertxContext, report))
+          .compose(
+              csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
+    } else if ("5".equals(version)) {
+      Promise<Object> mergedResult = Promise.promise();
+      new RowStreamHandlerR5(vertxContext, reportName, mergedResult).handle(rowStream);
+      return mergedResult
+          .future()
+          .compose(obj -> executeCounter5ToCsv(vertxContext, obj))
+          .compose(str -> executeReplaceCreatedBy(vertxContext, str))
+          .compose(
+              csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
+    } else {
+      return succeededFuture(
+          GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
+              .respond400WithTextPlain(String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version)));
+    }
   }
 
-  public static Response createExportMultipleMonthsResponseByReportVersion(
-      List<CounterReport> reportList, String reportName, String format, String version) {
-    if (!SUPPORTED_FORMATS.contains(format)) {
-      return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
-          .respond400WithTextPlain(String.format(UNSUPPORTED_FORMAT_MSG, format));
-    }
+  private static Future<String> executeReplaceCreatedBy(Context vertxContext, String str) {
+    return executeBlocking(vertxContext, () -> ReportExportHelper.replaceCreatedBy(str));
+  }
 
-    String csv;
-    try {
-      if (version.equals("4")) {
-        csv = counter4ReportsToCsv(reportList);
-      } else if (version.equals("5")) {
-        if (SUPPORTED_VIEWS.contains(reportName.toUpperCase())) {
-          convertR5Reports(reportList, reportName);
-        }
-        csv = counter5ReportsToCsv(reportList);
-      } else {
-        return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
-            .respond400WithTextPlain(String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version));
-      }
-    } catch (Exception e) {
-      return GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
-          .respond500WithTextPlain(e.getMessage());
-    }
-    return createExportMultipleMonthsResponseByFormat(csv, format);
+  private static Future<String> executeCounter5ToCsv(Context vertxContext, Object obj) {
+    return executeBlocking(vertxContext, () -> Counter5Utils.toCSV(obj));
+  }
+
+  private static Future<Response> executeCreateExportMultipleMonthsResponseByFormat(
+      Context vertxContext, String format, String csv) {
+    return executeBlocking(
+        vertxContext, () -> createExportMultipleMonthsResponseByFormat(csv, format));
+  }
+
+  private static Future<String> executeCounter4ToCsv(Context vertxContext, Report report) {
+    return executeBlocking(vertxContext, () -> Counter4Utils.toCSV(report));
   }
 
   public static Response createExportResponseByFormat(CounterReport cr, String format) {

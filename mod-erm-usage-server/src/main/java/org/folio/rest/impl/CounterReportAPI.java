@@ -1,6 +1,7 @@
 package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
+import static org.folio.rest.persist.PostgresClient.DEFAULT_JSONB_FIELD_NAME;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.ReportExportHelper.createDownloadResponseByReportVersion;
 import static org.folio.rest.util.ReportExportHelper.createExportMultipleMonthsResponseByReportVersion;
@@ -13,6 +14,8 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowStream;
 import io.vertx.sqlclient.Tuple;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -460,30 +463,34 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
           Context vertxContext) {
 
     CQLWrapper cql = createGetMultipleReportsCQL(id, name, aversion, begin, end);
+    Promise<RowStream<Row>> rowStreamPromise = Promise.promise();
     PgUtil.postgresClient(vertxContext, okapiHeaders)
-        .get(
-            TABLE_NAME_COUNTER_REPORTS,
-            CounterReport.class,
-            cql,
-            false,
-            ar -> {
-              if (ar.succeeded()) {
-                executeBlocking(
-                        vertxContext,
-                        () ->
-                            createExportMultipleMonthsResponseByReportVersion(
-                                ar.result().getResults(), name, format, aversion))
-                    .onSuccess(resp -> asyncResultHandler.handle(succeededFuture(resp)))
-                    .onFailure(
-                        t ->
-                            asyncResultHandler.handle(
-                                succeededFuture(
-                                    GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
-                                        .respond500WithTextPlain(t.getMessage()))));
-              } else {
-                ValidationHelper.handleError(ar.cause(), asyncResultHandler);
-              }
-            });
+        .selectReadStream(
+            "SELECT "
+                + DEFAULT_JSONB_FIELD_NAME
+                + " FROM "
+                + TABLE_NAME_COUNTER_REPORTS
+                + " "
+                + cql,
+            Tuple.tuple(),
+            1,
+            rowStreamPromise::complete)
+        .onFailure(rowStreamPromise::fail);
+
+    rowStreamPromise
+        .future()
+        .compose(
+            rowStream ->
+                createExportMultipleMonthsResponseByReportVersion(
+                    vertxContext, rowStream, name, format, aversion))
+        .transform(
+            ar ->
+                (ar.succeeded())
+                    ? succeededFuture(ar.result())
+                    : succeededFuture(
+                        GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
+                            .respond500WithTextPlain(ar.cause().getMessage())))
+        .onComplete(asyncResultHandler);
   }
 
   private Future<List<CounterReport>> decodeBase64Report(String encodedData, Context vertxContext) {
