@@ -15,7 +15,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.resource.CounterReports.GetCounterReportsDownloadByIdResponse;
@@ -134,7 +133,7 @@ public class ReportExportHelper {
         reports.stream()
             .map(cr -> Counter4Utils.fromJSON(Json.encode(cr.getReport())))
             .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+            .toList();
     Report merge = Counter4Utils.merge(c4Reports);
     return Counter4Utils.toCSV(merge);
   }
@@ -145,7 +144,7 @@ public class ReportExportHelper {
         reports.stream()
             .map(ReportExportHelper::internalReportToCOP5Report)
             .filter(Objects::nonNull)
-            .collect(Collectors.toList());
+            .toList();
     Object merge = Counter5Utils.merge(c5Reports);
     return replaceCreatedBy(Counter5Utils.toCSV(merge));
   }

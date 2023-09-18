@@ -200,8 +200,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         .compose(
             resp -> {
               Object entity = resp.getEntity();
-              if (entity instanceof CounterReport) {
-                CounterReport report = (CounterReport) entity;
+              if (entity instanceof CounterReport report) {
                 return executeBlocking(
                     vertxContext,
                     () ->
@@ -393,8 +392,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
 
     UUID[] uuids;
     try {
-      uuids =
-          entity.stream().map(UUID::fromString).collect(Collectors.toList()).toArray(UUID[]::new);
+      uuids = entity.stream().map(UUID::fromString).toList().toArray(UUID[]::new);
     } catch (Exception e) {
       asyncResultHandler.handle(
           succeededFuture(
