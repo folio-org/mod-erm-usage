@@ -13,7 +13,6 @@ import io.vertx.sqlclient.RowStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import javax.ws.rs.core.Response;
 import org.folio.rest.jaxrs.model.CounterReport;
@@ -27,7 +26,6 @@ import org.folio.rest.tools.utils.BinaryOutStream;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter.common.ExcelUtil;
 import org.olf.erm.usage.counter41.Counter4Utils;
-import org.olf.erm.usage.counter41.Counter4Utils.ReportMergeException;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 
@@ -109,14 +107,15 @@ public class ReportExportHelper {
     }
   }
 
-  private static Optional<String> csvMapper(CounterReport cr)
-      throws Counter5UtilsException, ReportMergeException {
-    if (cr.getRelease().equals("4") && cr.getReport() != null) {
-      return Optional.ofNullable(counter4ReportsToCsv(List.of(cr)));
-    } else if (cr.getRelease().equals("5") && cr.getReport() != null) {
-      return Optional.ofNullable(counter5ReportsToCsv(List.of(cr)));
-    }
-    return Optional.empty();
+  private static Optional<String> csvMapper(CounterReport cr) {
+    return Optional.ofNullable(cr)
+        .map(CounterReport::getReport)
+        .map(
+            report -> {
+              if ("4".equals(cr.getRelease())) return counter4ReportToCsv(cr);
+              if ("5".equals(cr.getRelease())) return counter5ReportToCsv(cr);
+              return null;
+            });
   }
 
   private static Object internalReportToCOP5Report(CounterReport report) {
@@ -127,26 +126,14 @@ public class ReportExportHelper {
     }
   }
 
-  private static String counter4ReportsToCsv(List<CounterReport> reports)
-      throws ReportMergeException {
-    List<Report> c4Reports =
-        reports.stream()
-            .map(cr -> Counter4Utils.fromJSON(Json.encode(cr.getReport())))
-            .filter(Objects::nonNull)
-            .toList();
-    Report merge = Counter4Utils.merge(c4Reports);
-    return Counter4Utils.toCSV(merge);
+  private static String counter4ReportToCsv(CounterReport counterReport) {
+    Report report = Counter4Utils.fromJSON(Json.encode(counterReport.getReport()));
+    return report == null ? null : Counter4Utils.toCSV(report);
   }
 
-  private static String counter5ReportsToCsv(List<CounterReport> reports)
-      throws Counter5UtilsException {
-    List<Object> c5Reports =
-        reports.stream()
-            .map(ReportExportHelper::internalReportToCOP5Report)
-            .filter(Objects::nonNull)
-            .toList();
-    Object merge = Counter5Utils.merge(c5Reports);
-    return replaceCreatedBy(Counter5Utils.toCSV(merge));
+  private static String counter5ReportToCsv(CounterReport counterReport) {
+    Object report = ReportExportHelper.internalReportToCOP5Report(counterReport);
+    return report == null ? null : replaceCreatedBy(Counter5Utils.toCSV(report));
   }
 
   public static String replaceCreatedBy(String csvReport) {
@@ -229,36 +216,31 @@ public class ReportExportHelper {
   }
 
   public static Response createExportResponseByFormat(CounterReport cr, String format) {
-
     if (!SUPPORTED_FORMATS.contains(format)) {
       return GetCounterReportsExportByIdResponse.respond400WithTextPlain(
           String.format(UNSUPPORTED_FORMAT_MSG, format));
     }
-    try {
-      return csvMapper(cr)
-          .map(
-              csvString -> {
-                if ("xlsx".equals(format)) {
-                  try {
-                    InputStream in = ExcelUtil.fromCSV(csvString);
-                    BinaryOutStream bos = new BinaryOutStream();
-                    bos.setData(ByteStreams.toByteArray(in));
-                    return GetCounterReportsExportByIdResponse
-                        .respond200WithApplicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet(
-                            bos);
-                  } catch (IOException e) {
-                    return GetCounterReportsExportByIdResponse.respond500WithTextPlain(
-                        String.format(XLSX_ERR_MSG, e.getMessage()));
-                  }
+    return csvMapper(cr)
+        .map(
+            csvString -> {
+              if ("xlsx".equals(format)) {
+                try {
+                  InputStream in = ExcelUtil.fromCSV(csvString);
+                  BinaryOutStream bos = new BinaryOutStream();
+                  bos.setData(ByteStreams.toByteArray(in));
+                  return GetCounterReportsExportByIdResponse
+                      .respond200WithApplicationVndOpenxmlformatsOfficedocumentSpreadsheetmlSheet(
+                          bos);
+                } catch (IOException e) {
+                  return GetCounterReportsExportByIdResponse.respond500WithTextPlain(
+                      String.format(XLSX_ERR_MSG, e.getMessage()));
                 }
-                return GetCounterReportsExportByIdResponse.respond200WithTextCsv(csvString);
-              })
-          .orElse(
-              GetCounterReportsExportByIdResponse.respond500WithTextPlain(
-                  "No report data or no csv mapper available"));
-    } catch (Counter5UtilsException | ReportMergeException e) {
-      return GetCounterReportsExportByIdResponse.respond500WithTextPlain(e.getMessage());
-    }
+              }
+              return GetCounterReportsExportByIdResponse.respond200WithTextCsv(csvString);
+            })
+        .orElse(
+            GetCounterReportsExportByIdResponse.respond500WithTextPlain(
+                "No report data or no csv mapper available"));
   }
 
   private static class CounterReportAPIRuntimeException extends RuntimeException {
