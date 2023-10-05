@@ -59,6 +59,7 @@ public class ErmUsageFilesIT {
     webClient = WebClient.create(vertxRx);
 
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
+    PostgresClient.getInstance(vertx);
 
     int port = NetworkUtils.nextFreePort();
 

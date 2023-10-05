@@ -69,6 +69,7 @@ public class CounterReportSortedIT {
     }
 
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
+    PostgresClient.getInstance(vertx);
 
     Async async = context.async();
     int port = NetworkUtils.nextFreePort();

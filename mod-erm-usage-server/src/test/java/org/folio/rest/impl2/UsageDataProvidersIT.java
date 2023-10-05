@@ -84,6 +84,8 @@ public class UsageDataProvidersIT {
     }
 
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
+    PostgresClient.getInstance(vertx);
+
     Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 
