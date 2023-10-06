@@ -100,6 +100,8 @@ public class CounterReportUploadIT {
     vertx = Vertx.vertx();
 
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
+    PostgresClient.getInstance(vertx);
+
     int port = NetworkUtils.nextFreePort();
 
     RestAssured.reset();

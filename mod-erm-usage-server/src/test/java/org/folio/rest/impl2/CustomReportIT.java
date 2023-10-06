@@ -94,6 +94,8 @@ public class CustomReportIT {
         reportFirst.withFileName("newFileName.txt").withLinkUrl("http://localhost/changed");
 
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
+    PostgresClient.getInstance(vertx);
+
     Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 

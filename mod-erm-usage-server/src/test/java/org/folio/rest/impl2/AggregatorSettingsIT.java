@@ -67,6 +67,8 @@ public class AggregatorSettingsIT {
 
     vertx = Vertx.vertx();
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
+    PostgresClient.getInstance(vertx);
+
     Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 

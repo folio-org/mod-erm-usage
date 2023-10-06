@@ -25,10 +25,10 @@
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <maven.compiler.release>17</maven.compiler.release>
 
-    <raml-module-builder.version>35.0.6</raml-module-builder.version>
+    <raml-module-builder.version>35.1.0</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
-    <vertx.version>4.3.8</vertx.version>
-    <erm.usage.counter.version>4.0.0-SNAPSHOT</erm.usage.counter.version>
+    <vertx.version>4.4.5</vertx.version>
+    <erm.usage.counter.version>4.1.0-SNAPSHOT</erm.usage.counter.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
   </properties>
@@ -48,7 +48,30 @@
     </pluginRepository>
   </pluginRepositories>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-bom</artifactId>
+        <version>2.20.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-stack-depchain</artifactId>
+        <version>${vertx.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -59,12 +82,6 @@
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <version>3.22.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>1.7.36</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -77,6 +77,8 @@ public class SQLTriggersIT {
     vertx = Vertx.vertx();
     try {
       PostgresClient.setPostgresTester(new PostgresTesterContainer());
+      PostgresClient.getInstance(vertx);
+
       port = NetworkUtils.nextFreePort();
       tenantAttributes =
           new TenantAttributes()
