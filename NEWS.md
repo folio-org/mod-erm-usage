@@ -1,3 +1,9 @@
+# 4.6.0
+* [MODEUS-167](https://issues.folio.org/browse/MODEUS-167) RMB v35.1.x update
+* [MODEUS-166](https://issues.folio.org/browse/MODEUS-166) Invalid sample report
+* [MODEUS-165](https://issues.folio.org/browse/MODEUS-165) High memory consumption during multi month export
+* [MODEUS-164](https://issues.folio.org/browse/MODEUS-164) Update to Java 17
+
 # 4.5.3
 * [MODEUS-158](https://issues.folio.org/browse/MODEUS-158) Upgrade counter dependency to v3, fixes a few issues with csv/xlsx output of counter reports
 * [MODEUS-159](https://issues.folio.org/browse/MODEUS-159) Limit upload of counter5 reports to specific master reports
