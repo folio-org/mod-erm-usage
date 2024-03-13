@@ -30,8 +30,8 @@
     <vertx.version>4.5.4</vertx.version>
     <aspectj.version>1.9.21.1</aspectj.version>
     <aspectj-maven-plugin.version>1.14</aspectj-maven-plugin.version>
-    <log4j.version>2.20.0</log4j.version>
-    <erm.usage.counter.version>4.0.0</erm.usage.counter.version>
+    <log4j.version>2.23.0</log4j.version>
+    <erm.usage.counter.version>4.1.0</erm.usage.counter.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
   </properties>
@@ -84,7 +84,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.22.0</version>
+      <version>3.25.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
