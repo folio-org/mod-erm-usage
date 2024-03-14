@@ -25,10 +25,13 @@
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <maven.compiler.release>17</maven.compiler.release>
 
-    <raml-module-builder.version>35.1.0</raml-module-builder.version>
+    <raml-module-builder.version>35.2.0</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
-    <vertx.version>4.4.5</vertx.version>
-    <erm.usage.counter.version>4.0.0</erm.usage.counter.version>
+    <vertx.version>4.5.4</vertx.version>
+    <aspectj.version>1.9.21.1</aspectj.version>
+    <aspectj-maven-plugin.version>1.14</aspectj-maven-plugin.version>
+    <log4j.version>2.23.0</log4j.version>
+    <erm.usage.counter.version>4.1.0</erm.usage.counter.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
   </properties>
@@ -53,7 +56,7 @@
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-bom</artifactId>
-        <version>2.20.0</version>
+        <version>${log4j.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -81,7 +84,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.22.0</version>
+      <version>3.25.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
