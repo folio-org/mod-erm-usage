@@ -1,3 +1,6 @@
+# 4.7.0
+* [MODEUS-171](https://folio-org.atlassian.net/browse/MODEUS-171) Upgrade RMB to v35.2.0
+
 # 4.6.0
 * [MODEUS-167](https://issues.folio.org/browse/MODEUS-167) RMB v35.1.x update
 * [MODEUS-166](https://issues.folio.org/browse/MODEUS-166) Invalid sample report
