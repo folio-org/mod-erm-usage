@@ -159,6 +159,27 @@ resourceTypes:
         500:
           body:
             text/plain:
+  /multipartupload/provider/{id}:
+      description: Upload a report from file via multipart-form for a provider identified by id
+      post:
+        queryParameters:
+          overwrite:
+            description: Overwrite existing reports?
+            type: boolean
+            default: false
+        is: [validate]
+        body:
+          multipart/form-data:
+        responses:
+          200:
+            body:
+              text/plain:
+          400:
+            body:
+              text/plain:
+          500:
+            body:
+              text/plain:
   /errors/codes:
     get:
       description: Get counter/sushi error codes existent in counter reports

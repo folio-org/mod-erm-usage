@@ -24,9 +24,9 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <maven.compiler.release>17</maven.compiler.release>
-
     <raml-module-builder.version>35.2.0</raml-module-builder.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
+    <generate_routing_context>/counter-reports/multipartupload/provider/{id}</generate_routing_context>
     <vertx.version>4.5.4</vertx.version>
     <aspectj.version>1.9.21.1</aspectj.version>
     <aspectj-maven-plugin.version>1.14</aspectj-maven-plugin.version>

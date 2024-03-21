@@ -125,7 +125,7 @@
     },
     {
       "id": "counter-reports",
-      "version": "3.1",
+      "version": "3.2",
       "handlers": [
         {
           "methods": [
@@ -213,6 +213,15 @@
             "POST"
           ],
           "pathPattern": "/counter-reports/upload/provider/{id}",
+          "permissionsRequired": [
+            "counterreports.item.post"
+          ]
+        },
+        {
+          "methods": [
+            "POST"
+          ],
+          "pathPattern": "/counter-reports/multipartupload/provider/{id}",
           "permissionsRequired": [
             "counterreports.item.post"
           ]
