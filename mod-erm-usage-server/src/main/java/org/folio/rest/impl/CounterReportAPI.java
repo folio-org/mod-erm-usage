@@ -14,6 +14,9 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerFileUpload;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowStream;
 import io.vertx.sqlclient.Tuple;
@@ -26,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
@@ -39,6 +43,8 @@ import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.CounterReportsGetOrder;
 import org.folio.rest.jaxrs.model.CounterReportsPerYear;
 import org.folio.rest.jaxrs.model.CounterReportsSorted;
+import org.folio.rest.jaxrs.model.ErrorCodes;
+import org.folio.rest.jaxrs.model.ReportTypes;
 import org.folio.rest.jaxrs.model.ReportsPerType;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -50,8 +56,12 @@ import org.folio.rest.util.UploadHelper;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
+  public static final String FORM_ATTR_EDITED = "reportEditedManually";
+  public static final String FORM_ATTR_REASON = "editReason";
+  private static final int MAX_FILES = 1;
+  private static final int MAX_FILE_SIZE_IN_BYTES = 200 * 1024 * 1024; // 200 MB
+  private static final String ERR_MSG_SAVE_REPORT = "Error saving report: %s";
   private final Logger logger = LogManager.getLogger(CounterReportAPI.class);
-
   private final Comparator<CounterReportsPerYear> compareByYear =
       Comparator.comparing(CounterReportsPerYear::getYear);
 
@@ -74,7 +84,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting counter reports");
-    logger.debug("Headers present are: {}", okapiHeaders::toString);
+    logger.debug("Headers present are: {}", okapiHeaders);
 
     CQLWrapper cql;
     try {
@@ -224,7 +234,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
     logger.debug("Getting sorted counter reports");
-    logger.debug("Headers present are: {}", okapiHeaders::toString);
+    logger.debug("Headers present are: {}", okapiHeaders);
 
     Criteria updCrit = new Criteria();
     updCrit.addField("'providerId'").setOperation("=").setVal(udpId).setJSONB(true);
@@ -330,13 +340,133 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                                 succeededFuture(
                                     PostCounterReportsUploadProviderByIdResponse
                                         .respond500WithTextPlain(
-                                            String.format("Error saving report: %s", throwable))))))
+                                            String.format(ERR_MSG_SAVE_REPORT, throwable))))))
         .onFailure(
             throwable ->
                 asyncResultHandler.handle(
                     succeededFuture(
                         PostCounterReportsUploadProviderByIdResponse.respond400WithTextPlain(
-                            String.format("Error saving report: %s", throwable)))));
+                            String.format(ERR_MSG_SAVE_REPORT, throwable)))));
+  }
+
+  private void processUpload(
+      String id,
+      boolean overwrite,
+      Buffer buffer,
+      RoutingContext routingContext,
+      Context vertxContext,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler) {
+    executeBlocking(
+            vertxContext,
+            () -> {
+              try {
+                return UploadHelper.getCounterReportsFromString(buffer.toString());
+              } catch (Exception e) {
+                throw new ReportUploadException(e);
+              }
+            })
+        .compose(
+            counterReports ->
+                PgHelper.getUDPfromDbById(vertxContext, okapiHeaders, id)
+                    .map(
+                        udp -> {
+                          boolean reportEditedManually =
+                              Optional.ofNullable(
+                                      routingContext.request().getFormAttribute(FORM_ATTR_EDITED))
+                                  .map(s -> s.equals("true"))
+                                  .orElse(false);
+                          String editReason =
+                              routingContext.request().getFormAttribute(FORM_ATTR_REASON);
+                          Date date = Date.from(Instant.now());
+                          counterReports.forEach(
+                              cr -> {
+                                cr.setEditReason(editReason);
+                                cr.setReportEditedManually(reportEditedManually);
+                                cr.withProviderId(udp.getId()).withDownloadTime(date);
+                              });
+                          return counterReports;
+                        }))
+        .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, okapiHeaders, crs, overwrite))
+        .onSuccess(
+            reportIds ->
+                asyncResultHandler.handle(
+                    succeededFuture(
+                        PostCounterReportsUploadProviderByIdResponse.respond200WithTextPlain(
+                            String.format(
+                                "Saved report with ids: %s", String.join(",", reportIds))))))
+        .onFailure(
+            throwable -> {
+              Response.ResponseBuilder response =
+                  Response.status(500)
+                      .header("Content-Type", "text/plain")
+                      .entity(String.format(ERR_MSG_SAVE_REPORT, throwable));
+              if (throwable instanceof ReportUploadException) {
+                asyncResultHandler.handle(succeededFuture(response.status(400).build()));
+              } else {
+                asyncResultHandler.handle(succeededFuture(response.build()));
+              }
+            });
+  }
+
+  /** Method gets called by the route/handler that is set up in PostDeployImpl */
+  @Override
+  public void postCounterReportsMultipartuploadProviderById(
+      String id,
+      boolean overwrite,
+      Object entity,
+      RoutingContext routingContext,
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+    Buffer buffer = Buffer.buffer();
+    AtomicInteger fileCount = new AtomicInteger();
+    routingContext
+        .request()
+        .setExpectMultipart(true)
+        .uploadHandler(fileUploadHandler(fileCount, buffer, routingContext, asyncResultHandler))
+        .endHandler(
+            v -> {
+              if (!routingContext.response().ended()) {
+                processUpload(
+                    id,
+                    overwrite,
+                    buffer,
+                    routingContext,
+                    vertxContext,
+                    okapiHeaders,
+                    asyncResultHandler);
+              }
+            });
+  }
+
+  private Handler<HttpServerFileUpload> fileUploadHandler(
+      AtomicInteger fileCount,
+      Buffer buffer,
+      RoutingContext routingContext,
+      Handler<AsyncResult<Response>> asyncResultHandler) {
+    return fileUpload -> {
+      if (fileCount.incrementAndGet() > MAX_FILES) {
+        routingContext.cancelAndCleanupFileUploads();
+        asyncResultHandler.handle(
+            succeededFuture(
+                PostCounterReportsMultipartuploadProviderByIdResponse.respond400WithTextPlain(
+                    "Multiple files are not supported")));
+      } else {
+        fileUpload.handler(
+            buf -> {
+              if (buffer.length() > MAX_FILE_SIZE_IN_BYTES) {
+                routingContext.cancelAndCleanupFileUploads();
+                asyncResultHandler.handle(
+                    succeededFuture(
+                        PostCounterReportsMultipartuploadProviderByIdResponse
+                            .respond400WithTextPlain("File size exceeds the limit")));
+              } else {
+                buffer.appendBuffer(buf);
+              }
+            });
+      }
+    };
   }
 
   @Override
@@ -348,7 +478,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         .onComplete(
             ar -> {
               if (ar.succeeded()) {
-                org.folio.rest.jaxrs.model.ErrorCodes result = ar.result();
+                ErrorCodes result = ar.result();
                 asyncResultHandler.handle(
                     succeededFuture(
                         GetCounterReportsErrorsCodesResponse.respond200WithApplicationJson(
@@ -370,7 +500,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         .onComplete(
             ar -> {
               if (ar.succeeded()) {
-                org.folio.rest.jaxrs.model.ReportTypes result = ar.result();
+                ReportTypes result = ar.result();
                 asyncResultHandler.handle(
                     succeededFuture(
                         GetCounterReportsReportsTypesResponse.respond200WithApplicationJson(
