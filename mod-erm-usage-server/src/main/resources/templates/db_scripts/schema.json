@@ -1,6 +1,16 @@
 {
   "scripts": [
     {
+      "run": "before",
+      "snippetPath": "migration/4.8.0/migrate_files_table.sql",
+      "fromModuleVersion": "mod-erm-usage-4.8.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "create_files_table.sql",
+      "fromModuleVersion": "mod-erm-usage-4.8.0"
+    },
+    {
       "run": "after",
       "snippetPath": "aggregatorsettings_triggers.sql",
       "fromModuleVersion": "mod-erm-usage-2.6.0"
@@ -128,11 +138,6 @@
           "tOps": "ADD"
         }
       ]
-    },
-    {
-      "tableName": "files",
-      "fromModuleVersion": "mod-erm-usage-2.9.0-SNAPSHOT",
-      "withMetadata": true
     },
     {
       "tableName": "custom_reports",

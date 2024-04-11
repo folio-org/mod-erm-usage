@@ -1,25 +1,27 @@
 package org.folio.rest.impl;
 
+import static org.folio.rest.util.Constants.TABLE_NAME_FILES;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowIterator;
+import io.vertx.sqlclient.Tuple;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.UUID;
+import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.ArrayUtils;
 import org.folio.rest.annotations.Stream;
 import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.ErmUsageFile;
 import org.folio.rest.jaxrs.resource.ErmUsageFiles;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.tools.utils.BinaryOutStream;
-
-import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Base64;
-import java.util.Map;
-
-import static org.folio.rest.util.Constants.TABLE_NAME_FILES;
 
 public class ErmUsageFilesAPI implements ErmUsageFiles {
 
@@ -48,16 +50,16 @@ public class ErmUsageFilesAPI implements ErmUsageFiles {
     }
 
     if (okapiHeaders.containsKey("complete")) {
-      String base64 = Base64.getEncoder().encodeToString(stream);
-      ErmUsageFile file = new ErmUsageFile().withData(base64);
+      String uuid = UUID.randomUUID().toString();
       PgUtil.postgresClient(vertxContext, okapiHeaders)
-          .save(
-              TABLE_NAME_FILES,
-              file,
+          .execute(
+              "INSERT INTO " + TABLE_NAME_FILES + " (id, data) VALUES ($1, $2)",
+              Tuple.of(uuid, stream))
+          .onComplete(
               ar -> {
                 if (ar.succeeded()) {
                   JsonObject result = new JsonObject();
-                  result.put("id", ar.result());
+                  result.put("id", uuid);
                   result.put("size", stream.length / 1000F);
                   asyncResultHandler.handle(
                       Future.succeededFuture(
@@ -82,26 +84,26 @@ public class ErmUsageFilesAPI implements ErmUsageFiles {
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
+
     PgUtil.postgresClient(vertxContext, okapiHeaders)
-        .getById(
-            TABLE_NAME_FILES,
-            id,
-            ErmUsageFile.class,
+        .execute("SELECT data FROM " + TABLE_NAME_FILES + " WHERE id = $1", Tuple.of(id))
+        .onComplete(
             ar -> {
               if (ar.succeeded()) {
-                if (ar.result() == null) {
-                  asyncResultHandler.handle(
-                      Future.succeededFuture(
-                          GetErmUsageFilesByIdResponse.respond404WithTextPlain("Not found.")));
-                } else {
-                  String dataAsString = ar.result().getData();
-                  byte[] decoded = Base64.getDecoder().decode(dataAsString);
+                RowIterator<Row> iterator = ar.result().iterator();
+                if (iterator.hasNext()) {
+                  Row next = iterator.next();
+                  Buffer buffer = next.getBuffer(0);
                   BinaryOutStream binaryOutStream = new BinaryOutStream();
-                  binaryOutStream.setData(decoded);
+                  binaryOutStream.setData(buffer.getBytes());
                   asyncResultHandler.handle(
                       Future.succeededFuture(
                           GetErmUsageFilesByIdResponse.respond200WithApplicationOctetStream(
                               binaryOutStream)));
+                } else {
+                  asyncResultHandler.handle(
+                      Future.succeededFuture(
+                          GetErmUsageFilesByIdResponse.respond404WithTextPlain("Not found.")));
                 }
               } else {
                 asyncResultHandler.handle(
