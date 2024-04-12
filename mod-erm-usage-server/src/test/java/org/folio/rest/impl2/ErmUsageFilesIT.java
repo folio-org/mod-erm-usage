@@ -18,7 +18,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.ext.web.client.HttpResponse;
@@ -38,7 +37,6 @@ import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -50,7 +48,6 @@ public class ErmUsageFilesIT {
   private static final String TEST_CONTENT = "This is the test content!!!!";
   private static Vertx vertx;
   private static WebClient webClient;
-  @Rule public Timeout timeout = Timeout.seconds(10);
 
   @BeforeClass
   public static void setUp(TestContext context) {
@@ -194,5 +191,34 @@ public class ErmUsageFilesIT {
         .then()
         .contentType(TEXT)
         .statusCode(404);
+  }
+
+  @Test
+  public void testUploadLargeFile() {
+    byte[] content = new byte[30 * 1024 * 1024]; // 30 MB
+
+    // POST file
+    String id =
+        given()
+            .body(content)
+            .header(CONTENT_TYPE, BINARY)
+            .post(ERM_USAGE_FILES_ENDPOINT)
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("id");
+
+    // GET uploaded file
+    byte[] getResult =
+        given()
+            .header(CONTENT_TYPE, BINARY)
+            .get(ERM_USAGE_FILES_ENDPOINT + "/" + id)
+            .then()
+            .contentType(BINARY)
+            .statusCode(200)
+            .extract()
+            .asByteArray();
+
+    assertThat(getResult).isEqualTo(content);
   }
 }
