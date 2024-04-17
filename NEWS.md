@@ -1,3 +1,10 @@
+# 4.8.0
+* Upgrade to RMB v35.2.2, vert.x v4.5.7 
+* [MODEUS-175](https://folio-org.atlassian.net/browse/MODEUS-175) Implement multipart/form-data upload for counter reports
+* [MODEUS-170](https://folio-org.atlassian.net/browse/MODEUS-170) Upload of R5 TR report fails
+* [MODEUS-177](https://folio-org.atlassian.net/browse/MODEUS-177) Change table structure of files table
+* [MODEUS-174](https://folio-org.atlassian.net/browse/MODEUS-174) Upload of non-counter reports fails for large files 
+
 # 4.7.0
 * [MODEUS-171](https://folio-org.atlassian.net/browse/MODEUS-171) Upgrade RMB to v35.2.0
 
