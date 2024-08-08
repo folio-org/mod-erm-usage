@@ -307,7 +307,7 @@
       ]
     },
     {
-      "id": "erm-usage/files",
+      "id": "erm-usage-files",
       "version": "1.0",
       "handlers": [
         {
