@@ -91,7 +91,7 @@ public class ExportObject {
     this.providerName = provider.getLabel();
     this.harvestingStatus =
         Objects.toString(provider.getHarvestingConfig().getHarvestingStatus(), null);
-    this.reportRelease = Objects.toString(provider.getHarvestingConfig().getReportRelease(), null);
+    this.reportRelease = provider.getHarvestingConfig().getReportRelease();
     this.requestedReports = String.join(", ", provider.getHarvestingConfig().getRequestedReports());
     this.customerId = provider.getSushiCredentials().getCustomerId();
     this.requestorId = provider.getSushiCredentials().getRequestorId();

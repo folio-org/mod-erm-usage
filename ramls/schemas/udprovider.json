@@ -71,7 +71,7 @@
           ]
         },
         "reportRelease": {
-          "type": "integer",
+          "type": "string",
           "description": "Specifies the counter report version."
         },
         "requestedReports": {
