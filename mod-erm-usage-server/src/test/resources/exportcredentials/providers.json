@@ -8,7 +8,7 @@
         "aggregator": {
           "id": "0adec15b-8230-48fe-b4df-87106c5dc36e"
         },
-        "reportRelease": 4,
+        "reportRelease": "4",
         "requestedReports": [
           "JR1",
           "JR4"
@@ -30,7 +30,7 @@
         "aggregator": {
           "id": "0adec15b-8230-48fe-b4df-87106c5dc36e"
         },
-        "reportRelease": 4,
+        "reportRelease": "4",
         "requestedReports": [
           "JR1",
           "JR4"
@@ -52,7 +52,7 @@
         "aggregator": {
           "id": "0adec15b-8230-48fe-b4df-87106c5dc36e"
         },
-        "reportRelease": 4,
+        "reportRelease": "4",
         "requestedReports": [
           "JR1",
           "JR4"
@@ -74,7 +74,7 @@
         "aggregator": {
           "id": "fe965f77-d9d1-4127-b057-3c76b56b3e6a"
         },
-        "reportRelease": 4,
+        "reportRelease": "4",
         "requestedReports": [
           "JR1",
           "JR4"

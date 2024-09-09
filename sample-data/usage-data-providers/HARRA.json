@@ -8,7 +8,7 @@
       "serviceType": "cs41",
       "serviceUrl": "https://counter.harra.de/counter/webservice/sushi"
     },
-    "reportRelease": 4,
+    "reportRelease": "4",
     "requestedReports": [
       "JR1"
     ],
