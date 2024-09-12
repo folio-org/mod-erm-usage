@@ -1,6 +1,11 @@
 {
   "scripts": [
     {
+      "run": "after",
+      "snippetPath": "migration/5.0.0/migrate_udp_schema.sql",
+      "fromModuleVersion": "mod-erm-usage-5.0.0"
+    },
+    {
       "run": "before",
       "snippetPath": "migration/4.8.0/migrate_files_table.sql",
       "fromModuleVersion": "mod-erm-usage-4.8.0"
