@@ -8,7 +8,7 @@
       "id": "5b6ba83e-d7e5-414e-ba7b-134749c0d950",
       "vendorCode": "ACSO"
     },
-    "reportRelease": 5,
+    "reportRelease": "5",
     "requestedReports": [
       "IR",
       "TR"

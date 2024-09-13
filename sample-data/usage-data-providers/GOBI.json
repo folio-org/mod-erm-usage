@@ -8,7 +8,7 @@
       "serviceType": "cs41",
       "serviceUrl": "http://usage.gobi.com/SushiServer"
     },
-    "reportRelease": 4,
+    "reportRelease": "4",
     "requestedReports": [
       "DR1"
     ],

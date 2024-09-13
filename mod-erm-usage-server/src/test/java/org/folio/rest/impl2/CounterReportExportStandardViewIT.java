@@ -179,7 +179,7 @@ public class CounterReportExportStandardViewIT {
         .withLabel("TestProvider")
         .withHarvestingConfig(
             new HarvestingConfig()
-                .withReportRelease(5)
+                .withReportRelease("5")
                 .withHarvestingStart("2021-01")
                 .withHarvestingStatus(HarvestingStatus.INACTIVE)
                 .withHarvestVia(HarvestVia.SUSHI)
