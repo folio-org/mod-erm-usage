@@ -125,7 +125,7 @@
     },
     {
       "id": "counter-reports",
-      "version": "3.2",
+      "version": "3.3",
       "handlers": [
         {
           "methods": [
@@ -240,6 +240,15 @@
             "GET"
           ],
           "pathPattern": "/counter-reports/reports/types",
+          "permissionsRequired": [
+            "counterreports.collection.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/counter-reports/reports/releases",
           "permissionsRequired": [
             "counterreports.collection.get"
           ]

@@ -33,7 +33,7 @@
     {
       "run": "after",
       "snippetPath": "custom_indexes.sql",
-      "fromModuleVersion": "mod-erm-usage-4.2.0"
+      "fromModuleVersion": "mod-erm-usage-5.0.0"
     },
     {
       "run": "after",

@@ -8,7 +8,6 @@ import static org.folio.rest.util.Constants.OPERATOR_EQUALS;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -22,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.ErrorCodes;
+import org.folio.rest.jaxrs.model.ReportReleases;
 import org.folio.rest.jaxrs.model.ReportTypes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criteria;
@@ -164,7 +164,7 @@ public class PgHelper {
             providerId,
             reportName,
             release,
-            counterReports.stream().map(CounterReport::getYearMonth).collect(Collectors.toList()));
+            counterReports.stream().map(CounterReport::getYearMonth).toList());
 
     return existingReports.compose(
         existingList -> {
@@ -175,13 +175,12 @@ public class PgHelper {
                         .map(CounterReport::getYearMonth)
                         .collect(Collectors.joining(", ")));
           } else {
-            @SuppressWarnings({"rawtypes", "squid:S3740"})
-            List<Future> saveFutures = new ArrayList<>();
+            List<Future<String>> saveFutures = new ArrayList<>();
             counterReports.forEach(
                 cr -> saveFutures.add(saveCounterReportToDb(vertxContext, okapiHeaders, cr, true)));
 
-            return CompositeFuture.join(saveFutures)
-                .map(cf -> cf.list().stream().map(o -> (String) o).collect(Collectors.toList()));
+            return Future.join(saveFutures)
+                .map(cf -> cf.list().stream().map(o -> (String) o).toList());
           }
         });
   }
@@ -268,7 +267,7 @@ public class PgHelper {
                 List<String> collect =
                     StreamSupport.stream(updateResultAsyncResult.result().spliterator(), false)
                         .map(row -> Optional.ofNullable(row.getString(0)).orElse("other"))
-                        .collect(Collectors.toList());
+                        .toList();
                 ErrorCodes errorCodes = new ErrorCodes().withErrorCodes(collect);
                 result.complete(errorCodes);
               } else {
@@ -291,9 +290,33 @@ public class PgHelper {
                     StreamSupport.stream(ar.result().spliterator(), false)
                         .map(row -> row.getString(0))
                         .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
+                        .toList();
                 ReportTypes reportTypes = new ReportTypes().withReportTypes(collect);
                 result.complete(reportTypes);
+              } else {
+                result.fail(ar.cause());
+              }
+            });
+    return result.future();
+  }
+
+  public static Future<ReportReleases> getReportReleases(
+      Context vertxContext, Map<String, String> okapiHeaders) {
+    String query =
+        "SELECT DISTINCT(jsonb->>'release') FROM counter_reports ORDER BY jsonb->>'release'";
+    Promise<ReportReleases> result = Promise.promise();
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .select(
+            query,
+            ar -> {
+              if (ar.succeeded()) {
+                List<String> collect =
+                    StreamSupport.stream(ar.result().spliterator(), false)
+                        .map(row -> row.getString(0))
+                        .filter(Objects::nonNull)
+                        .toList();
+                ReportReleases reportReleases = new ReportReleases().withReportReleases(collect);
+                result.complete(reportReleases);
               } else {
                 result.fail(ar.cause());
               }

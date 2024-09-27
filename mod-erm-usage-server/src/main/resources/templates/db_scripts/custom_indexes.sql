@@ -14,5 +14,8 @@ CREATE INDEX IF NOT EXISTS usage_data_providers_custom_aggregatorid_idx ON usage
 
 DROP INDEX IF EXISTS counter_reports_custom_reporttypes_idx;
 CREATE INDEX IF NOT EXISTS counter_reports_custom_reporttypes_idx ON counter_reports
-  USING btree ((jsonb->>'reportName'))
-  WHERE jsonb ->> 'reportName' IS NOT NULL;
+  USING btree ((jsonb->>'reportName'));
+
+DROP INDEX IF EXISTS counter_reports_custom_reportreleases_idx;
+CREATE INDEX IF NOT EXISTS counter_reports_custom_reportreleases_idx ON counter_reports
+  USING btree ((jsonb->>'release'));
