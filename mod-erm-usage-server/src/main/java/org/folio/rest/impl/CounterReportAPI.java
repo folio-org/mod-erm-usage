@@ -44,6 +44,7 @@ import org.folio.rest.jaxrs.model.CounterReportsGetOrder;
 import org.folio.rest.jaxrs.model.CounterReportsPerYear;
 import org.folio.rest.jaxrs.model.CounterReportsSorted;
 import org.folio.rest.jaxrs.model.ErrorCodes;
+import org.folio.rest.jaxrs.model.ReportReleases;
 import org.folio.rest.jaxrs.model.ReportTypes;
 import org.folio.rest.jaxrs.model.ReportsPerType;
 import org.folio.rest.persist.Criteria.Criteria;
@@ -511,6 +512,26 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                         GetCounterReportsReportsTypesResponse.respond500WithTextPlain(ar.cause())));
               }
             });
+  }
+
+  @Override
+  public void getCounterReportsReportsReleases(Map<String, String> okapiHeaders,
+    Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+    PgHelper.getReportReleases(vertxContext, okapiHeaders)
+      .onComplete(
+        ar -> {
+          if (ar.succeeded()) {
+            ReportReleases result = ar.result();
+            asyncResultHandler.handle(
+              succeededFuture(
+                GetCounterReportsReportsReleasesResponse.respond200WithApplicationJson(
+                  result)));
+          } else {
+            asyncResultHandler.handle(
+              succeededFuture(
+                GetCounterReportsReportsReleasesResponse.respond500WithTextPlain(ar.cause())));
+          }
+        });
   }
 
   @Override

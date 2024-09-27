@@ -41,6 +41,7 @@ import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.ErrorCodes;
 import org.folio.rest.jaxrs.model.Report;
+import org.folio.rest.jaxrs.model.ReportReleases;
 import org.folio.rest.jaxrs.model.ReportTypes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -62,6 +63,7 @@ public class CounterReportIT {
 
   private static final String PATH_BASE = "/counter-reports";
   private static final String PATH_DOWNLOAD = "/{id}/download";
+  private static final String PATH_REPORT_RELEASES = "/reports/releases";
   private static final String PATH_REPORT_TYPES = "/reports/types";
   private static final String PATH_ERROR_CODES = "/errors/codes";
   private static final String TENANT = "diku";
@@ -415,6 +417,34 @@ public class CounterReportIT {
     // DELETE reports
     sampleReports.forEach(
         r -> given(counterReportsReqSpec).delete("/" + r.getId()).then().statusCode(204));
+  }
+
+  @Test
+  public void checkThatWeGetReportReleases() {
+    // GET release versions
+    ReportReleases initialResult =
+        given(counterReportsReqSpec).get(PATH_REPORT_RELEASES).as(ReportReleases.class);
+    assertThat(initialResult.getReportReleases()).isEmpty();
+
+    // POST sample reports
+    Stream.of("5.0", "5", "5.0")
+        .map(
+            release ->
+                new CounterReport()
+                    .withId(UUID.randomUUID().toString())
+                    .withProviderId(UUID.randomUUID().toString())
+                    .withReportName("TR")
+                    .withReport(new Report())
+                    .withDownloadTime(Date.from(Instant.now()))
+                    .withYearMonth("2022-01")
+                    .withRelease(release))
+        .forEach(
+            cr -> given(counterReportsReqSpec).body(Json.encode(cr)).post().then().statusCode(201));
+
+    // GET release versions
+    ReportReleases finalResult =
+        given(counterReportsReqSpec).get(PATH_REPORT_RELEASES).as(ReportReleases.class);
+    assertThat(finalResult.getReportReleases()).containsExactly("5", "5.0");
   }
 
   @Test

@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "List of available counter report release versions",
+  "properties": {
+    "reportReleases": {
+      "description": "Available report release versions",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "reportReleases"
+  ]
+}

@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.ErrorCodes;
+import org.folio.rest.jaxrs.model.ReportReleases;
 import org.folio.rest.jaxrs.model.ReportTypes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criteria;
@@ -294,6 +295,30 @@ public class PgHelper {
                         .collect(Collectors.toList());
                 ReportTypes reportTypes = new ReportTypes().withReportTypes(collect);
                 result.complete(reportTypes);
+              } else {
+                result.fail(ar.cause());
+              }
+            });
+    return result.future();
+  }
+
+  public static Future<ReportReleases> getReportReleases(
+      Context vertxContext, Map<String, String> okapiHeaders) {
+    String query =
+        "SELECT DISTINCT(jsonb->>'release') FROM counter_reports ORDER BY jsonb->>'release'";
+    Promise<ReportReleases> result = Promise.promise();
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .select(
+            query,
+            ar -> {
+              if (ar.succeeded()) {
+                List<String> collect =
+                    StreamSupport.stream(ar.result().spliterator(), false)
+                        .map(row -> row.getString(0))
+                        .filter(Objects::nonNull)
+                        .toList();
+                ReportReleases reportReleases = new ReportReleases().withReportReleases(collect);
+                result.complete(reportReleases);
               } else {
                 result.fail(ar.cause());
               }

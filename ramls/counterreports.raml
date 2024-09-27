@@ -14,6 +14,7 @@ types:
   counterReportsSorted: !include ./schemas/counterreports_sorted.json
   errorCodes: !include ./schemas/errorcodes.json
   reportTypes: !include ./schemas/reporttypes.json
+  reportReleases: !include ./schemas/reportreleases.json
   errors: !include ./raml-util/schemas/errors.schema
 
 traits:
@@ -206,6 +207,19 @@ resourceTypes:
         500:
           body:
             text/plain:
+  /reports/releases:
+      get:
+        description: Get report release versions of available counter reports
+        responses:
+          200:
+            description: available report release versions
+            body:
+              application/json:
+                example: !include examples/reportreleases.sample
+                schema: reportReleases
+          500:
+            body:
+              text/plain:
   /reports/delete:
     post:
       description: Delete multiple counter reports
