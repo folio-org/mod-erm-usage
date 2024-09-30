@@ -6,6 +6,21 @@
       "fromModuleVersion": "mod-erm-usage-5.0.0"
     },
     {
+      "run": "after",
+      "snippetPath": "counterreports_triggers.sql",
+      "fromModuleVersion": "mod-erm-usage-5.0.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "migration/5.0.0/migrate_update_udp_stats.sql",
+      "fromModuleVersion": "mod-erm-usage-5.0.0"
+    },
+    {
+      "run": "after",
+      "snippetPath": "custom_indexes.sql",
+      "fromModuleVersion": "mod-erm-usage-5.0.0"
+    },
+    {
       "run": "before",
       "snippetPath": "migration/4.8.0/migrate_files_table.sql",
       "fromModuleVersion": "mod-erm-usage-4.8.0"
@@ -24,16 +39,6 @@
       "run": "after",
       "snippetPath": "usagedataproviders_triggers.sql",
       "fromModuleVersion": "mod-erm-usage-2.6.0"
-    },
-    {
-      "run": "after",
-      "snippetPath": "counterreports_triggers.sql",
-      "fromModuleVersion": "mod-erm-usage-4.2.0"
-    },
-    {
-      "run": "after",
-      "snippetPath": "custom_indexes.sql",
-      "fromModuleVersion": "mod-erm-usage-5.0.0"
     },
     {
       "run": "after",

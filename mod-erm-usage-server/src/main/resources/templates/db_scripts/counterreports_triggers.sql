@@ -38,27 +38,29 @@ CREATE OR REPLACE FUNCTION udp_report_types(providerId TEXT) RETURNS jsonb AS $$
   AS sub
 $$ LANGUAGE sql;
 
--- trigger function to update latest report available of an usage data provider
-CREATE OR REPLACE FUNCTION update_latest_statistic_on_update() RETURNS TRIGGER AS
-$BODY$
-DECLARE providerId TEXT;
+-- returns the counter report release versions of the usage data provider's counter reports
+CREATE OR REPLACE FUNCTION udp_report_releases(providerId TEXT) RETURNS jsonb AS $$
+  SELECT COALESCE(jsonb_agg(DISTINCT jsonb->>'release'), '[]'::jsonb)
+  FROM counter_reports
+  WHERE jsonb->>'providerId' = $1
+  ORDER BY 1;
+$$ LANGUAGE sql;
+
+-- function to update the usage data provider statistics
+CREATE OR REPLACE FUNCTION update_udp_statistics(providerId TEXT) RETURNS VOID AS
+$$
 DECLARE latest TEXT;
 DECLARE earliest TEXT;
 DECLARE error_codes jsonb;
 DECLARE has_failed_report jsonb;
 DECLARE report_types jsonb;
+DECLARE report_releases jsonb;
 BEGIN
-  IF (TG_OP = 'DELETE') THEN
-    providerId := OLD.jsonb->>'providerId';
-  ELSE
-    providerId := NEW.jsonb->>'providerId';
-  END IF;
-
-  PERFORM pg_advisory_xact_lock(hashtext(providerId));
 	SELECT latest_year_month(providerId) INTO latest;
 	SELECT earliest_year_month(providerId) INTO earliest;
 	SELECT udp_report_errors(providerId) INTO error_codes;
 	SELECT udp_report_types(providerId) INTO report_types;
+	SELECT udp_report_releases(providerId) INTO report_releases;
   IF error_codes IS NOT NULL THEN
     SELECT to_jsonb('yes'::TEXT) INTO has_failed_report;
   ELSE
@@ -67,7 +69,7 @@ BEGIN
   END IF;
 
   IF report_types IS NULL THEN
-      SELECT jsonb_build_array() INTO report_types;
+    SELECT jsonb_build_array() INTO report_types;
   END IF;
 
 	UPDATE usage_data_providers SET
@@ -77,15 +79,31 @@ BEGIN
 	    ', "reportErrorCodes": ' || error_codes ||
 	    ', "hasFailedReport": ' || has_failed_report ||
 	    ', "reportTypes": ' || report_types ||
+	    ', "reportReleases": ' || report_releases ||
 	    '}')::jsonb	WHERE jsonb->>'id' = providerId;
+END;
+$$ LANGUAGE plpgsql;
+
+-- trigger function to update the statistics of an usage data provider
+CREATE OR REPLACE FUNCTION update_udp_statistics() RETURNS TRIGGER AS
+$$
+DECLARE providerId TEXT;
+BEGIN
+  IF (TG_OP = 'DELETE') THEN
+    providerId := OLD.jsonb->>'providerId';
+  ELSE
+    providerId := NEW.jsonb->>'providerId';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext(providerId));
+  PERFORM update_udp_statistics(providerId);
 
 	RETURN NULL;
 END;
-$BODY$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
--- trigger to update latestReport, earliestReport, reportErrorCodes and hasFailedReport
--- of the usage data provider, on update/insert/delete
+-- trigger to update usage data provider statistics, on update/insert/delete of reports
 DROP TRIGGER IF EXISTS update_usage_data_providers_on_insert_or_update_or_delete ON counter_reports;
 CREATE TRIGGER update_usage_data_providers_on_insert_or_update_or_delete
 AFTER INSERT OR UPDATE OR DELETE ON counter_reports
-FOR EACH ROW EXECUTE PROCEDURE update_latest_statistic_on_update();
+FOR EACH ROW EXECUTE PROCEDURE update_udp_statistics();

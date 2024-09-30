@@ -145,7 +145,7 @@
       "default": "no"
     },
     "reportErrorCodes": {
-      "description": "Counter error codes of reports",
+      "description": "Counter report error codes of reports associated with this UDP",
       "type": "array",
       "minItems": 0,
       "items": {
@@ -153,7 +153,15 @@
       }
     },
     "reportTypes": {
-      "description": "Counter report types of existent reports associated with this UDP",
+      "description": "Counter report types of reports associated with this UDP",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "string"
+      }
+    },
+    "reportReleases": {
+      "description": "Counter report release versions of reports associated with this UDP",
       "type": "array",
       "minItems": 0,
       "items": {
