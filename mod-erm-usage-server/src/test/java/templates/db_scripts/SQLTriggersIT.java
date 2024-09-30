@@ -1,837 +1,299 @@
 package templates.db_scripts;
 
+import static io.vertx.core.Future.succeededFuture;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
-import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+import static org.folio.rest.jaxrs.model.AccountConfig.ConfigType.MANUAL;
+import static org.folio.rest.jaxrs.model.HarvestingConfig.HarvestingStatus.INACTIVE;
+import static org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport.NO;
+import static org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport.YES;
 
-import com.google.common.io.Resources;
 import io.vertx.core.CompositeFuture;
-import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Repeat;
-import io.vertx.ext.unit.junit.RepeatRule;
-import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import java.nio.charset.StandardCharsets;
-import java.time.YearMonth;
-import java.util.Arrays;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import org.apache.commons.lang3.RandomUtils;
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.postgres.testing.PostgresTesterContainer;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.impl.TenantReferenceAPI;
+import org.folio.rest.jaxrs.model.AccountConfig;
 import org.folio.rest.jaxrs.model.Aggregator;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.jaxrs.model.Parameter;
-import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
-import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.persist.interfaces.Results;
-import org.folio.rest.tools.utils.ModuleName;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.junit.AfterClass;
+import org.folio.rest.util.PostgresContainerRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+/**
+ * Tests that the SQL triggers defined in the following files are working as expected.
+ *
+ * <ul>
+ *   <li>{@code templates/db_scripts/aggregatorsettings_triggers.sql}
+ *   <li>{@code templates/db_scripts/counterreports_triggers.sql}
+ *   <li>{@code templates/db_scripts/usagedataproviders_triggers.sql}
+ * </ul>
+ */
 @RunWith(VertxUnitRunner.class)
 public class SQLTriggersIT {
 
-  @Rule public RepeatRule repeatRule = new RepeatRule();
+  public static final String AGGREGATOR_TBL = "aggregator_settings";
+  public static final String UDP_TABLE = "usage_data_providers";
+  public static final String REPORTS_TBL = "counter_reports";
+  private static final String AGGREGATOR_ID = "5ea343c7-5aac-4648-bb37-c4f72a6c2836";
+  private static final String PROVIDER_ID = "af802f18-116d-4553-a5da-84db410c1eac";
+  private static final String TENANT = "tenant";
+  private static final Vertx vertx = Vertx.vertx();
+  private static final AggregatorSetting AGGREGATOR =
+      new AggregatorSetting()
+          .withId(AGGREGATOR_ID)
+          .withLabel("Aggregator")
+          .withServiceType("serviceType")
+          .withServiceUrl("http://localhost")
+          .withAccountConfig(new AccountConfig().withConfigType(MANUAL));
 
-  private static final String TENANT = "testtenant";
-  private static final String TABLE_AGGREGATOR = "aggregator_settings";
-  private static Vertx vertx;
-  private static int port;
-  private static final List<Parameter> parameters =
-      Arrays.asList(
-          new Parameter().withKey("loadSample").withValue("true"),
-          new Parameter().withKey("loadReference").withValue("true"));
-  private static TenantAttributes tenantAttributes;
-  private static AggregatorSetting sampleAggregator;
-  private static UsageDataProvider sampleUDP;
-  private static CounterReport sampleReport;
-  private static CounterReport reportFailed;
-  @Rule public Timeout timeout = Timeout.seconds(10);
+  private static final UsageDataProvider PROVIDER =
+      new UsageDataProvider()
+          .withId(PROVIDER_ID)
+          .withLabel("Test Provider")
+          .withHarvestingConfig(
+              new HarvestingConfig()
+                  .withAggregator(new Aggregator().withId(AGGREGATOR_ID))
+                  .withHarvestingStatus(INACTIVE));
 
-  static boolean start = true;
+  private final List<CounterReport> sampleReports =
+      List.of(
+          createReport("c068cdb3-6477-4307-922b-55c680db5262", "2020-01", "4", "JR1", null),
+          createReport("36ed3988-da14-48ae-a5df-9b83ad7f0ee7", "2020-02", "5", "TR", "Exception"),
+          createReport(
+                  "e3fb2da9-bf3a-4b49-b5a9-409457ac3637",
+                  "2020-03",
+                  "5.1",
+                  "IR",
+                  "\"Code\": " + "3003")
+              .withFailedAttempts(1));
 
-  @BeforeClass
-  public static void init(TestContext context) {
-    vertx = Vertx.vertx();
-    try {
-      PostgresClient.setPostgresTester(new PostgresTesterContainer());
-      PostgresClient.getInstance(vertx);
+  private final List<CounterReport> updatedReports =
+      List.of(
+          createReport("c068cdb3-6477-4307-922b-55c680db5262", "2019-12", "4", "JR1", null),
+          createReport("36ed3988-da14-48ae-a5df-9b83ad7f0ee7", "2020-02", "5", "TR", null),
+          createReport("e3fb2da9-bf3a-4b49-b5a9-409457ac3637", "2020-03", "5", "TR", null));
 
-      port = NetworkUtils.nextFreePort();
-      tenantAttributes =
-          new TenantAttributes()
-              .withModuleTo(ModuleName.getModuleVersion())
-              .withParameters(parameters);
-
-      String aggregatorJSON =
-          Resources.toString(
-              Resources.getResource(
-                  "sample-data/aggregator-settings/german_national_statistics_server.json"),
-              StandardCharsets.UTF_8);
-      sampleAggregator = Json.decodeValue(aggregatorJSON, AggregatorSetting.class);
-      String udpJSON =
-          Resources.toString(
-              Resources.getResource("sample-data/usage-data-providers/ACSO.json"),
-              StandardCharsets.UTF_8);
-      sampleUDP = Json.decodeValue(udpJSON, UsageDataProvider.class);
-      String reportJSON =
-          Resources.toString(
-              Resources.getResource("sample-data/counter-reports/2018-01.json"),
-              StandardCharsets.UTF_8);
-      sampleReport = Json.decodeValue(reportJSON, CounterReport.class);
-      reportFailed =
-          Json.decodeValue(reportJSON, CounterReport.class)
-              .withId(UUID.randomUUID().toString())
-              .withYearMonth("2018-02")
-              .withFailedAttempts(3)
-              .withFailedReason("This is a failed report")
-              .withReport(null);
-    } catch (Exception e) {
-      e.printStackTrace();
-      context.fail(e);
-    }
-
-    DeploymentOptions options =
-        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
-    vertx.deployVerticle(RestVerticle.class.getName(), options, context.asyncAssertSuccess());
-  }
-
-  @AfterClass
-  public static void tearDown(TestContext context) {
-    vertx.close(context.asyncAssertSuccess(res -> PostgresClient.stopPostgresTester()));
-  }
-
-  private static PostgresClient getPGClient() {
-    return PostgresClient.getInstance(vertx, TENANT);
-  }
-
-  private static Future<Void> validateSampleData(TestContext context) {
-    Future<Results<UsageDataProvider>> providerResults =
-        getPGClient().get(TABLE_NAME_UDP, UsageDataProvider.class, new Criterion(), false);
-    Future<Results<CounterReport>> reportResults =
-        getPGClient().get(TABLE_NAME_COUNTER_REPORTS, CounterReport.class, new Criterion(), false);
-    Future<Results<AggregatorSetting>> aggregatorResults =
-        getPGClient().get(TABLE_AGGREGATOR, AggregatorSetting.class, new Criterion(), false);
-
-    return CompositeFuture.all(providerResults, reportResults, aggregatorResults)
-        .compose(
-            cf -> {
-              context.verify(
-                  v -> {
-                    assertThat(providerResults.result().getResults()).hasSize(4);
-                    assertThat(reportResults.result().getResults()).hasSize(4);
-                    assertThat(aggregatorResults.result().getResults()).hasSize(1);
-                  });
-              return Future.succeededFuture();
-            });
-  }
-
-  @Before
-  public void before(TestContext context) {
-    deleteSampleData()
-        .compose(r -> loadSampleData())
-        .compose(r -> validateSampleData(context))
-        .onComplete(context.asyncAssertSuccess());
-  }
-
-  private Future<Integer> truncateTable(String tableName) {
-    Promise<Integer> promise = Promise.promise();
-    getPGClient()
-        .delete(
-            tableName,
-            new Criterion(),
-            ar -> promise.complete((ar.succeeded()) ? ar.result().rowCount() : 0));
-    return promise.future();
-  }
-
-  private Future<Integer> deleteSampleData() {
-    if (start) {
-      start = false;
-      return Future.succeededFuture();
-    }
-    return truncateTable(TABLE_NAME_UDP)
-        .compose(i -> truncateTable(TABLE_AGGREGATOR))
-        .compose(i -> truncateTable(TABLE_NAME_COUNTER_REPORTS));
-  }
-
-  private Future<Void> loadSampleData() {
-    Promise<Void> promise = Promise.promise();
-    try {
-      new TenantReferenceAPI()
-          .postTenant(
-              tenantAttributes,
-              Map.of(XOkapiHeaders.TENANT, TENANT, XOkapiHeaders.URL, "http://localhost:" + port),
-              res -> {
-                if (res.result().getStatus() == 204) {
-                  promise.complete();
-                } else {
-                  promise.fail(
-                      String.format(
-                          "Tenantloading returned %s %s",
-                          res.result().getStatus(),
-                          res.result().getStatusInfo().getReasonPhrase()));
-                }
-              },
-              vertx.getOrCreateContext());
-    } catch (Exception e) {
-      promise.fail(e);
-    }
-    return promise.future();
-  }
+  private static PostgresClient pgClient;
 
   @SuppressWarnings("unchecked")
-  private <T> T clone(T o) {
+  private <T> T deepClone(T o) {
     return Json.decodeValue(Json.encode(o), (Class<T>) o.getClass());
   }
 
-  private UsageDataProvider changeAggregatorId(UsageDataProvider p, String id) {
-    UsageDataProvider clone = clone(p);
-    Aggregator aggregator = clone.getHarvestingConfig().getAggregator();
-    aggregator.setId(id);
-    return clone;
+  private Future<UsageDataProvider> getTestProvider() {
+    return pgClient.getById(UDP_TABLE, PROVIDER_ID, UsageDataProvider.class);
+  }
+
+  private CounterReport createReport(
+      String id, String yearMonth, String release, String reportName, String failedReason) {
+    return new CounterReport()
+        .withId(id)
+        .withDownloadTime(Date.from(Instant.now()))
+        .withRelease(release)
+        .withReportName(reportName)
+        .withFailedReason(failedReason)
+        .withYearMonth(yearMonth)
+        .withProviderId(PROVIDER_ID);
+  }
+
+  private String getIdFromEntity(Object entity) {
+    JsonObject jsonEntity = JsonObject.mapFrom(entity);
+    return jsonEntity.getString("id");
+  }
+
+  private Future<Long> getRowCount(String table) {
+    return pgClient
+        .execute("SELECT COUNT(*) FROM " + table)
+        .map(rs -> rs.iterator().next().getLong(0));
+  }
+
+  private CompositeFuture insertEntity(String table, Object entity) {
+    return insertEntities(table, List.of(entity));
+  }
+
+  private CompositeFuture insertEntities(String table, List<?> entities) {
+    return Future.all(
+        entities.stream()
+            .unordered()
+            .parallel()
+            .map(entity -> pgClient.save(table, getIdFromEntity(entity), entity))
+            .toList());
+  }
+
+  private CompositeFuture updateEntity(String table, Object entity) {
+    return updateEntities(table, List.of(entity));
+  }
+
+  private CompositeFuture updateEntities(String table, List<?> entities) {
+    return Future.all(
+        entities.stream()
+            .unordered()
+            .parallel()
+            .map(entity -> pgClient.update(table, entity, getIdFromEntity(entity)))
+            .toList());
+  }
+
+  private CompositeFuture deleteEntity(String table, Object entity) {
+    return deleteEntities(table, List.of(entity));
+  }
+
+  private CompositeFuture deleteEntities(String table, List<?> entities) {
+    return Future.all(
+        entities.stream()
+            .unordered()
+            .parallel()
+            .map(entity -> pgClient.delete(table, getIdFromEntity(entity)))
+            .toList());
+  }
+
+  @ClassRule
+  public static PostgresContainerRule postgresContainerRule =
+      new PostgresContainerRule(vertx, TENANT);
+
+  @BeforeClass
+  public static void beforeClass() {
+    pgClient = PostgresClient.getInstance(vertx, TENANT);
+  }
+
+  @Before
+  public void setUp(TestContext context) {
+    Future.all(
+            pgClient.delete(UDP_TABLE, new Criterion()),
+            pgClient.delete(AGGREGATOR_TBL, new Criterion()))
+        .onComplete(context.asyncAssertSuccess());
   }
 
   @Test
-  public void updateAggregatorLabelReferencesAfterUpdate(TestContext context) {
-    AggregatorSetting aggregatorSetting = clone(sampleAggregator);
-    aggregatorSetting.setLabel("Some other label");
-
-    getPGClient()
-        .upsert(
-            TABLE_AGGREGATOR,
-            aggregatorSetting.getId(),
-            aggregatorSetting,
+  public void testStatisticsUpdateOnCounterReportInsert(TestContext context) {
+    succeededFuture()
+        .compose(v -> insertEntity(UDP_TABLE, PROVIDER))
+        .compose(v -> insertEntities(REPORTS_TBL, sampleReports))
+        .compose(v -> getTestProvider())
+        .onComplete(
             context.asyncAssertSuccess(
-                h ->
-                    getPGClient()
-                        .getById(
-                            TABLE_NAME_UDP,
-                            "e67924ee-aa00-454e-8fd0-c3f81339d20e",
-                            UsageDataProvider.class,
-                            context.asyncAssertSuccess(
-                                h2 ->
-                                    context.verify(
-                                        v ->
-                                            assertThat(
-                                                    h2.getHarvestingConfig()
-                                                        .getAggregator()
-                                                        .getName())
-                                                .isEqualTo(aggregatorSetting.getLabel()))))));
+                udp -> {
+                  assertThat(udp.getEarliestReport()).isEqualTo("2020-01");
+                  assertThat(udp.getLatestReport()).isEqualTo("2020-02");
+                  assertThat(udp.getHasFailedReport()).isEqualTo(YES);
+                  assertThat(udp.getReportErrorCodes()).containsExactly("3003", "other");
+                  assertThat(udp.getReportTypes()).containsExactly("IR", "JR1", "TR");
+                  assertThat(udp.getReportReleases()).containsExactly("4", "5", "5.1");
+                }));
   }
 
   @Test
-  public void resolveAggregatorLabelBeforeInsert(TestContext context) {
-    getPGClient()
-        .getById(
-            TABLE_NAME_UDP,
-            "e67924ee-aa00-454e-8fd0-c3f81339d20e",
-            UsageDataProvider.class,
+  public void testStatisticsUpdateOnCounterReportUpdate(TestContext context) {
+    succeededFuture()
+        .compose(v -> insertEntity(UDP_TABLE, PROVIDER))
+        .compose(v -> insertEntities(REPORTS_TBL, sampleReports))
+        .compose(v -> updateEntities(REPORTS_TBL, updatedReports))
+        .compose(cf -> getTestProvider())
+        .onComplete(
+            context.asyncAssertSuccess(
+                udp -> {
+                  assertThat(udp.getEarliestReport()).isEqualTo("2019-12");
+                  assertThat(udp.getLatestReport()).isEqualTo("2020-03");
+                  assertThat(udp.getHasFailedReport()).isEqualTo(NO);
+                  assertThat(udp.getReportErrorCodes()).isEmpty();
+                  assertThat(udp.getReportTypes()).containsExactly("JR1", "TR");
+                  assertThat(udp.getReportReleases()).containsExactly("4", "5");
+                }));
+  }
+
+  @Test
+  public void testStatisticsUpdateOnCounterReportDelete(TestContext context) {
+    succeededFuture()
+        .compose(v -> insertEntity(UDP_TABLE, PROVIDER))
+        .compose(v -> insertEntities(REPORTS_TBL, sampleReports))
+        .compose(v -> deleteEntities(REPORTS_TBL, sampleReports))
+        .compose(cf -> getTestProvider())
+        .onComplete(
+            context.asyncAssertSuccess(
+                udp -> {
+                  assertThat(udp.getEarliestReport()).isNull();
+                  assertThat(udp.getLatestReport()).isNull();
+                  assertThat(udp.getHasFailedReport()).isEqualTo(NO);
+                  assertThat(udp.getReportErrorCodes()).isEmpty();
+                  assertThat(udp.getReportTypes()).isEmpty();
+                  assertThat(udp.getReportReleases()).isEmpty();
+                }));
+  }
+
+  @Test
+  public void testAggregatorNameUpdatesOnAggregatorUpdate(TestContext context) {
+    AggregatorSetting updatedAggregator = deepClone(AGGREGATOR).withLabel("new label");
+    succeededFuture()
+        .compose(v -> insertEntity(AGGREGATOR_TBL, AGGREGATOR))
+        .compose(v -> insertEntity(UDP_TABLE, PROVIDER))
+        .compose(v -> updateEntity(AGGREGATOR_TBL, updatedAggregator))
+        .compose(v -> getTestProvider())
+        .onComplete(
             context.asyncAssertSuccess(
                 udp ->
-                    context.verify(
-                        v ->
-                            assertThat(udp.getHarvestingConfig().getAggregator().getName())
-                                .isEqualTo("German National Statistics Server"))));
+                    assertThat(udp.getHarvestingConfig().getAggregator().getName())
+                        .isEqualTo(updatedAggregator.getLabel())));
   }
 
   @Test
-  public void resolveAggregatorLabelBeforeUpdate(TestContext context) {
-    String id = "98027fd7-b6d8-45b2-8f29-f3029f98f20a";
-    String aggregatorName = "Aggregator2";
-    getPGClient()
-        .save( // save a new aggregator
-            TABLE_AGGREGATOR,
-            id,
-            clone(sampleAggregator).withId(id).withLabel(aggregatorName),
+  public void testAggregatorNameUpdatesOnUDPInsert(TestContext context) {
+    succeededFuture()
+        .compose(v -> insertEntity(AGGREGATOR_TBL, AGGREGATOR))
+        .compose(v -> insertEntity(UDP_TABLE, PROVIDER))
+        .compose(v -> getTestProvider())
+        .onComplete(
             context.asyncAssertSuccess(
-                s ->
-                    getPGClient()
-                        .update( // change udp to use new aggregator
-                            TABLE_NAME_UDP,
-                            changeAggregatorId(sampleUDP, id),
-                            sampleUDP.getId(),
-                            context.asyncAssertSuccess(
-                                ur ->
-                                    getPGClient()
-                                        .getById( // test if name got changed
-                                            TABLE_NAME_UDP,
-                                            sampleUDP.getId(),
-                                            UsageDataProvider.class,
-                                            context.asyncAssertSuccess(
-                                                udp ->
-                                                    context.verify(
-                                                        v ->
-                                                            assertThat(
-                                                                    udp.getHarvestingConfig()
-                                                                        .getAggregator()
-                                                                        .getName())
-                                                                .isEqualTo(aggregatorName))))))));
+                udp ->
+                    assertThat(udp.getHarvestingConfig().getAggregator().getName())
+                        .isEqualTo(AGGREGATOR.getLabel())));
   }
 
-  @Repeat(10)
   @Test
-  public void updateProviderOnInsertConcurrent(TestContext context) {
-    Async async = context.async();
-    final YearMonth reportStart = YearMonth.of(2018, 1);
-    final int reportCount = 12;
+  public void testAggregatorNameUpdatesOnUDPUpdate(TestContext context) {
+    AggregatorSetting aggregator2 =
+        deepClone(AGGREGATOR)
+            .withId("862b89ec-0783-484c-9eb0-705804721b3e")
+            .withLabel("Another Aggregator");
+    UsageDataProvider updatedProvider = deepClone(PROVIDER);
+    updatedProvider.getHarvestingConfig().getAggregator().setId(aggregator2.getId());
 
-    UsageDataProvider udp = new UsageDataProvider().withId(UUID.randomUUID().toString());
-    Promise<String> createUDPPromise = Promise.promise();
-    getPGClient().upsert(TABLE_NAME_UDP, udp.getId(), udp, createUDPPromise);
+    succeededFuture()
+        .compose(v -> insertEntities(AGGREGATOR_TBL, List.of(AGGREGATOR, aggregator2)))
+        .compose(v -> insertEntity(UDP_TABLE, PROVIDER))
+        .compose(v -> updateEntity(UDP_TABLE, updatedProvider))
+        .compose(v -> getTestProvider())
+        .onComplete(
+            context.asyncAssertSuccess(
+                udp ->
+                    assertThat(udp.getHarvestingConfig().getAggregator().getName())
+                        .isEqualTo(aggregator2.getLabel())));
+  }
 
-    List<CounterReport> reports =
-        IntStream.rangeClosed(1, reportCount)
-            .mapToObj(
-                i ->
-                    new CounterReport()
-                        .withReportName("report" + (i % 4 + 1))
-                        .withProviderId(udp.getId())
-                        .withYearMonth(reportStart.plusMonths(i - 1).toString()))
-            .collect(Collectors.toList());
-
-    createUDPPromise
-        .future()
+  @Test
+  public void testReportsAreDeletedOnUDPDelete(TestContext context) {
+    succeededFuture()
+        .compose(v -> insertEntity(UDP_TABLE, PROVIDER))
+        .compose(v -> insertEntities(REPORTS_TBL, sampleReports))
+        .compose(v -> getRowCount(REPORTS_TBL))
         .compose(
-            s ->
-                CompositeFuture.all(
-                    reports.stream()
-                        .unordered()
-                        .parallel()
-                        .map(
-                            cr -> {
-                              Promise<String> promise = Promise.promise();
-                              getPGClient().save(TABLE_NAME_COUNTER_REPORTS, cr, promise);
-                              return promise.future();
-                            })
-                        .collect(Collectors.toList())))
-        .compose(
-            cf -> {
-              Promise<UsageDataProvider> result = Promise.promise();
-              getPGClient().getById(TABLE_NAME_UDP, udp.getId(), UsageDataProvider.class, result);
-              return result.future();
+            count -> {
+              assertThat(count).isEqualTo(sampleReports.size());
+              return succeededFuture();
             })
-        .onSuccess(
-            result -> {
-              context.verify(
-                  v -> {
-                    assertThat(result.getLatestReport())
-                        .isEqualTo(reportStart.plusMonths(reportCount - 1).toString());
-                    assertThat(result.getEarliestReport()).isEqualTo(reportStart.toString());
-                    assertThat(result.getHasFailedReport()).isEqualTo(HasFailedReport.NO);
-                    assertThat(result.getReportErrorCodes()).isEmpty();
-                    assertThat(result.getReportTypes())
-                        .containsExactlyInAnyOrder("report1", "report2", "report3", "report4");
-                  });
-              async.complete();
-            })
-        .onFailure(context::fail);
-  }
-
-  @Repeat(10)
-  @Test
-  public void updateProviderErrorCodesOnInsertConcurrent(TestContext context) {
-    Async async = context.async();
-    final YearMonth reportStart = YearMonth.of(2018, 1);
-    final int reportCount = 52;
-    final List<String> errorCodes = List.of("3030", "3020", "3060", "3070", "other");
-    final List<String> errorMsgs = List.of("Number=", "\"Code\":", "\"Code\": ", "error message");
-
-    String udpId = "5edd37a4-6789-4f43-bb9d-850180470631";
-    UsageDataProvider udp = new UsageDataProvider().withId(udpId);
-
-    List<CounterReport> reports =
-        IntStream.rangeClosed(1, reportCount)
-            .mapToObj(i -> reportStart.plusMonths(i - 1))
-            .map(
-                ym ->
-                    new CounterReport()
-                        .withId(null)
-                        .withProviderId(udpId)
-                        .withYearMonth(ym.toString())
-                        .withReportName("JR1")
-                        .withRelease("4")
-                        .withFailedAttempts(1)
-                        .withFailedReason(
-                            errorMsgs
-                                .get(RandomUtils.nextInt(0, errorMsgs.size()))
-                                .concat(
-                                    errorCodes.get(RandomUtils.nextInt(0, errorCodes.size() - 1)))))
-            .collect(Collectors.toList());
-
-    Promise<String> saveUDPPromise = Promise.promise();
-    getPGClient().save(TABLE_NAME_UDP, udpId, udp, saveUDPPromise);
-    saveUDPPromise
-        .future()
-        .compose(
-            s ->
-                CompositeFuture.all(
-                    reports.stream()
-                        .map(
-                            cr -> {
-                              Promise<String> promise = Promise.promise();
-                              getPGClient().save(TABLE_NAME_COUNTER_REPORTS, cr, promise);
-                              return promise.future();
-                            })
-                        .collect(Collectors.toList())))
-        .compose(
-            cf -> {
-              Promise<UsageDataProvider> result = Promise.promise();
-              getPGClient().getById(TABLE_NAME_UDP, udpId, UsageDataProvider.class, result);
-              return result.future();
-            })
-        .onSuccess(
-            result -> {
-              context.verify(
-                  v -> {
-                    assertThat(result).isNotNull();
-                    assertThat(result.getHasFailedReport()).isEqualTo(HasFailedReport.YES);
-                    assertThat(result.getReportErrorCodes())
-                        .doesNotHaveDuplicates()
-                        .isSubsetOf(errorCodes);
-                    assertThat(result.getEarliestReport()).isNull();
-                    assertThat(result.getLatestReport()).isNull();
-                  });
-              async.complete();
-            })
-        .onFailure(context::fail);
-  }
-
-  @Test
-  public void testThatLatestReportAndEarliestReportAreNull(TestContext context) {
-    Async async = context.async();
-    String udpId = "c74d2bef-330a-43ea-8463-1080e22838cf";
-    UsageDataProvider udp = new UsageDataProvider().withId(udpId);
-
-    CounterReport failedReport =
-        new CounterReport()
-            .withProviderId(udpId)
-            .withYearMonth("2018-01")
-            .withRelease("4")
-            .withReportName("JR1")
-            .withFailedAttempts(1);
-
-    Promise<String> saveUDPPromise = Promise.promise();
-    getPGClient().save(TABLE_NAME_UDP, udpId, udp, saveUDPPromise);
-
-    saveUDPPromise
-        .future()
-        .compose(
-            s -> {
-              Promise<String> promise = Promise.promise();
-              getPGClient().save(TABLE_NAME_COUNTER_REPORTS, failedReport, promise);
-              return promise.future();
-            })
-        .compose(
-            s -> {
-              Promise<UsageDataProvider> promise = Promise.promise();
-              getPGClient().getById(TABLE_NAME_UDP, udpId, UsageDataProvider.class, promise);
-              return promise.future();
-            })
-        .onSuccess(
-            result -> {
-              context.verify(
-                  v -> {
-                    assertThat(result).isNotNull();
-                    assertThat(result.getLatestReport()).isNull();
-                    assertThat(result.getEarliestReport()).isNull();
-                  });
-              async.complete();
-            })
-        .onFailure(context::fail);
-  }
-
-  @Test
-  public void updateProviderReportDateOnInsertOrUpdate(TestContext context) {
-    Async async = context.async();
-    getPGClient()
-        .upsert(
-            TABLE_NAME_COUNTER_REPORTS,
-            sampleReport.getId(),
-            clone(sampleReport).withYearMonth("2017-01"),
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .getById(
-                        TABLE_NAME_UDP,
-                        sampleUDP.getId(),
-                        UsageDataProvider.class,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            context.verify(
-                                v -> {
-                                  assertThat(ar2.result().getLatestReport()).isEqualTo("2018-04");
-                                  assertThat(ar2.result().getEarliestReport()).isEqualTo("2017-01");
-                                });
-                            async.complete();
-                          } else {
-                            context.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-
-    async.await();
-    Async async2 = context.async();
-    getPGClient()
-        .upsert(
-            TABLE_NAME_COUNTER_REPORTS,
-            sampleReport.getId(),
-            clone(sampleReport).withYearMonth("2019-03"),
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .getById(
-                        TABLE_NAME_UDP,
-                        sampleUDP.getId(),
-                        UsageDataProvider.class,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            context.verify(
-                                v -> {
-                                  assertThat(ar2.result().getLatestReport()).isEqualTo("2019-03");
-                                  assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-02");
-                                });
-                            async2.complete();
-                          } else {
-                            context.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-
-    // report with failedAttempts should be excluded
-    async2.await();
-    Async async3 = context.async();
-    getPGClient()
-        .upsert(
-            TABLE_NAME_COUNTER_REPORTS,
-            sampleReport.getId(),
-            clone(sampleReport).withFailedAttempts(1),
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .getById(
-                        TABLE_NAME_UDP,
-                        sampleUDP.getId(),
-                        UsageDataProvider.class,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            context.verify(
-                                v -> {
-                                  assertThat(ar2.result().getLatestReport()).isEqualTo("2018-04");
-                                  assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-02");
-                                });
-                            async3.complete();
-                          } else {
-                            context.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-  }
-
-  @Test
-  public void updateProviderReportDateOnDelete(TestContext context) {
-    Async async = context.async();
-    getPGClient()
-        .delete(
-            TABLE_NAME_COUNTER_REPORTS,
-            "c07aa46b-fbca-45c8-bd44-c7f9a3648586", // Report 2018-04
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .getById(
-                        TABLE_NAME_UDP,
-                        sampleUDP.getId(),
-                        UsageDataProvider.class,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            context.verify(
-                                v -> {
-                                  assertThat(ar2.result().getLatestReport()).isEqualTo("2018-03");
-                                  assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-01");
-                                });
-                            async.complete();
-                          } else {
-                            context.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-
-    async.await();
-    Async async2 = context.async();
-    getPGClient()
-        .delete(
-            TABLE_NAME_COUNTER_REPORTS,
-            sampleReport.getId(), // Report 2018-01
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .getById(
-                        TABLE_NAME_UDP,
-                        sampleUDP.getId(),
-                        UsageDataProvider.class,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            context.verify(
-                                v -> {
-                                  assertThat(ar2.result().getLatestReport()).isEqualTo("2018-03");
-                                  assertThat(ar2.result().getEarliestReport()).isEqualTo("2018-02");
-                                });
-                            async2.complete();
-                          } else {
-                            context.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-  }
-
-  @Test
-  public void updateProviderHasFailedReportOnInsertOrUpdate(TestContext context) {
-    Async async = context.async();
-    getPGClient()
-        .upsert(
-            TABLE_NAME_COUNTER_REPORTS,
-            sampleReport.getId(),
-            sampleReport,
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .getById(
-                        TABLE_NAME_UDP,
-                        sampleUDP.getId(),
-                        UsageDataProvider.class,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            context.verify(
-                                v ->
-                                    assertThat(ar2.result().getHasFailedReport())
-                                        .isEqualTo(HasFailedReport.NO));
-                            async.complete();
-                          } else {
-                            context.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-
-    async.await();
-    Async async2 = context.async();
-    getPGClient()
-        .upsert(
-            TABLE_NAME_COUNTER_REPORTS,
-            reportFailed.getId(),
-            reportFailed,
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .getById(
-                        TABLE_NAME_UDP,
-                        sampleUDP.getId(),
-                        UsageDataProvider.class,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            context.verify(
-                                v ->
-                                    assertThat(ar2.result().getHasFailedReport())
-                                        .isEqualTo(HasFailedReport.YES));
-                            getPGClient()
-                                .delete(
-                                    TABLE_NAME_COUNTER_REPORTS,
-                                    reportFailed.getId(),
-                                    ar3 -> {
-                                      if (ar3.succeeded()) {
-                                        getPGClient()
-                                            .getById(
-                                                TABLE_NAME_UDP,
-                                                sampleUDP.getId(),
-                                                UsageDataProvider.class,
-                                                ar4 -> {
-                                                  if (ar4.succeeded()) {
-                                                    context.verify(
-                                                        v ->
-                                                            assertThat(
-                                                                    ar4.result()
-                                                                        .getHasFailedReport())
-                                                                .isEqualTo(HasFailedReport.NO));
-                                                    async2.complete();
-                                                  } else {
-                                                    context.fail(ar4.cause());
-                                                  }
-                                                });
-                                      } else {
-                                        context.fail(ar3.cause());
-                                      }
-                                    });
-                          } else {
-                            context.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-  }
-
-  @Test
-  public void updateProviderReportTypeOnInsertOrUpdate(TestContext context) {
-    Async async = context.async();
-    getPGClient()
-        .upsert(
-            TABLE_NAME_COUNTER_REPORTS,
-            sampleReport.getId(),
-            clone(sampleReport).withReportName("DR"),
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .getById(
-                        TABLE_NAME_UDP,
-                        sampleUDP.getId(),
-                        UsageDataProvider.class,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            context.verify(
-                                v ->
-                                    assertThat(ar2.result().getReportTypes())
-                                        .containsExactlyInAnyOrder("JR1", "DR"));
-                            async.complete();
-                          } else {
-                            context.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-
-    async.await();
-    Async async2 = context.async();
-    getPGClient()
-        .upsert(
-            TABLE_NAME_COUNTER_REPORTS,
-            sampleReport.getId(),
-            clone(sampleReport).withReportName("TR"),
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .getById(
-                        TABLE_NAME_UDP,
-                        sampleUDP.getId(),
-                        UsageDataProvider.class,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            context.verify(
-                                v ->
-                                    assertThat(ar2.result().getReportTypes())
-                                        .containsExactlyInAnyOrder("JR1", "TR"));
-                            async2.complete();
-                          } else {
-                            context.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-  }
-
-  @Test
-  public void updateProviderReportTypeOnDelete(TestContext context) {
-    String id = UUID.randomUUID().toString();
-    Async async = context.async();
-    getPGClient()
-        .upsert(
-            TABLE_NAME_COUNTER_REPORTS,
-            id,
-            clone(sampleReport).withReportName("PR").withId(id),
-            ar -> {
-              if (ar.succeeded()) {
-                getPGClient()
-                    .getById(
-                        TABLE_NAME_UDP,
-                        sampleUDP.getId(),
-                        UsageDataProvider.class,
-                        ar2 -> {
-                          if (ar2.succeeded()) {
-                            context.verify(
-                                v ->
-                                    assertThat(ar2.result().getReportTypes())
-                                        .containsExactlyInAnyOrder("JR1", "PR"));
-                            async.complete();
-                          } else {
-                            context.fail(ar2.cause());
-                          }
-                        });
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-    async.await();
-
-    Async async2 = context.async();
-    getPGClient()
-        .delete(
-            TABLE_NAME_COUNTER_REPORTS,
-            id,
-            ar -> {
-              if (ar.succeeded()) {
-                async2.complete();
-              } else {
-                context.fail(ar.cause());
-              }
-            });
-    async2.await();
-
-    Async async3 = context.async();
-    getPGClient()
-        .getById(
-            TABLE_NAME_UDP,
-            sampleUDP.getId(),
-            UsageDataProvider.class,
-            ar2 -> {
-              if (ar2.succeeded()) {
-                context.verify(
-                    v -> assertThat(ar2.result().getReportTypes()).containsExactly("JR1"));
-                async3.complete();
-              } else {
-                context.fail(ar2.cause());
-              }
-            });
+        .compose(v -> deleteEntity(UDP_TABLE, PROVIDER))
+        .compose(v -> getRowCount(REPORTS_TBL))
+        .onComplete(context.asyncAssertSuccess(count -> assertThat(count).isZero()));
   }
 }
