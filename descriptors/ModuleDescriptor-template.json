@@ -505,33 +505,6 @@
         "erm-usage.files.item.post",
         "erm-usage.files.item.delete"
       ]
-    },
-    {
-      "permissionName": "eusage.user",
-      "displayName": "eusage user",
-      "description": "Permission set for a standard erm user. Cannot edit aggregator settings.",
-      "subPermissions": [
-        "usagedataproviders.collection.get",
-        "usagedataproviders.item.get",
-        "usagedataproviders.item.post",
-        "usagedataproviders.item.put",
-        "usagedataproviders.item.delete",
-        "aggregatorsettings.collection.get",
-        "aggregatorsettings.item.get",
-        "counterreports.collection.get",
-        "counterreports.item.get",
-        "counterreports.item.post",
-        "counterreports.item.put",
-        "counterreports.item.delete",
-        "customreports.collection.get",
-        "customreports.item.get",
-        "customreports.item.post",
-        "customreports.item.put",
-        "customreports.item.delete",
-        "erm-usage.files.item.get",
-        "erm-usage.files.item.post",
-        "erm-usage.files.item.delete"
-      ]
     }
   ],
   "launchDescriptor": {
