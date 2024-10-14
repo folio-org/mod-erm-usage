@@ -135,31 +135,6 @@ resourceTypes:
                   description: Server Error
                   body:
                     text/plain:
-  /upload/provider/{id}:
-    description: Upload a report from file for a provider identified by id
-    post:
-      queryParameters:
-        overwrite:
-          description: Overwrite existing reports?
-          type: boolean
-          default: false
-      is: [validate]
-      body:
-        application/json:
-          schema: counterReportDocument
-      responses:
-        200:
-          body:
-            text/plain:
-        400:
-          body:
-            text/plain:
-        404:
-          body:
-            text/plain:
-        500:
-          body:
-            text/plain:
   /multipartupload/provider/{id}:
       description: Upload a report from file via multipart-form for a provider identified by id
       post:
