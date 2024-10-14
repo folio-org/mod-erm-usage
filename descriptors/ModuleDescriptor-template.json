@@ -117,8 +117,7 @@
           ],
           "pathPattern": "/aggregator-settings/{id}/exportcredentials",
           "permissionsRequired": [
-            "usagedataproviders.item.get",
-            "aggregatorsettings.item.get"
+            "aggregatorsettings.exportcredentials.item.get"
           ]
         }
       ]
@@ -412,6 +411,11 @@
       "description": "Delete an aggregator setting"
     },
     {
+      "permissionName": "aggregatorsettings.exportcredentials.item.get",
+      "displayName": "aggregator settings export credentials item get",
+      "description": "Export credentials for an aggregator setting"
+    },
+    {
       "permissionName": "counterreports.collection.get",
       "displayName": "counter reports collection get",
       "description": "Get a collection of counter reports"
@@ -491,6 +495,7 @@
         "aggregatorsettings.item.post",
         "aggregatorsettings.item.put",
         "aggregatorsettings.item.delete",
+        "aggregatorsettings.exportcredentials.item.get",
         "counterreports.collection.get",
         "counterreports.item.get",
         "counterreports.item.post",
