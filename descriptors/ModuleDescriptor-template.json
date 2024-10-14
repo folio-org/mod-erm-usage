@@ -186,7 +186,7 @@
           ],
           "pathPattern": "/counter-reports/sorted/{udpId}",
           "permissionsRequired": [
-            "counterreports.item.get"
+            "counterreports.sorted.collection.get"
           ]
         },
         {
@@ -466,6 +466,11 @@
       "description": "Get a counter report report types collection"
     },
     {
+      "permissionName": "counterreports.sorted.collection.get",
+      "displayName": "counter reports sorted collection get",
+      "description": "Get a sorted counter report collection for a provider"
+    },
+    {
       "permissionName": "customreports.collection.get",
       "displayName": "custom reports collection get",
       "description": "Get a collection of custom reports"
@@ -531,6 +536,7 @@
         "counterreports.item.delete",
         "counterreports.reportreleases.collection.get",
         "counterreports.reporttypes.collection.get",
+        "counterreports.sorted.collection.get",
         "customreports.collection.get",
         "customreports.item.get",
         "customreports.item.post",
