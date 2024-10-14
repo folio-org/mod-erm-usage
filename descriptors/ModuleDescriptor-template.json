@@ -249,7 +249,7 @@
           ],
           "pathPattern": "/counter-reports/reports/delete",
           "permissionsRequired": [
-            "counterreports.item.delete"
+            "counterreports.collection.delete"
           ]
         }
       ]
@@ -416,6 +416,11 @@
       "description": "Export credentials for an aggregator setting"
     },
     {
+      "permissionName": "counterreports.collection.delete",
+      "displayName": "counter reports collection delete",
+      "description": "Delete a collection of counter reports"
+    },
+    {
       "permissionName": "counterreports.collection.get",
       "displayName": "counter reports collection get",
       "description": "Get a collection of counter reports"
@@ -496,6 +501,7 @@
         "aggregatorsettings.item.put",
         "aggregatorsettings.item.delete",
         "aggregatorsettings.exportcredentials.item.get",
+        "counterreports.collection.delete",
         "counterreports.collection.get",
         "counterreports.item.get",
         "counterreports.item.post",
