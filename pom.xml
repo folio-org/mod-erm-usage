@@ -144,6 +144,7 @@
         <groupId>org.folio</groupId>
         <artifactId>folio-module-descriptor-validator</artifactId>
         <version>${folio-module-descriptor-validator.version}</version>
+        <inherited>false</inherited>
         <executions>
           <execution>
             <goals>
