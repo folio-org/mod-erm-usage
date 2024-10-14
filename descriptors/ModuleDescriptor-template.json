@@ -150,7 +150,7 @@
           ],
           "pathPattern": "/counter-reports/{id}/download",
           "permissionsRequired": [
-            "counterreports.item.get"
+            "counterreports.download.item.get"
           ]
         },
         {
@@ -431,6 +431,11 @@
       "description": "Get a collection of counter report error codes"
     },
     {
+      "permissionName": "counterreports.download.item.get",
+      "displayName": "counter reports download item get",
+      "description": "Download a counter report"
+    },
+    {
       "permissionName": "counterreports.item.get",
       "displayName": "counter reports item get",
       "description": "Get a single counter report"
@@ -519,6 +524,7 @@
         "counterreports.collection.delete",
         "counterreports.collection.get",
         "counterreports.errorcodes.collection.get",
+        "counterreports.download.item.get",
         "counterreports.item.get",
         "counterreports.item.post",
         "counterreports.item.put",
