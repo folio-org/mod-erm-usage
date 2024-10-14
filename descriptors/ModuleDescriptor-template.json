@@ -222,7 +222,7 @@
           ],
           "pathPattern": "/counter-reports/errors/codes",
           "permissionsRequired": [
-            "counterreports.collection.get"
+            "counterreports.errorcodes.collection.get"
           ]
         },
         {
@@ -426,6 +426,11 @@
       "description": "Get a collection of counter reports"
     },
     {
+      "permissionName": "counterreports.errorcodes.collection.get",
+      "displayName": "counter reports error codes collection get",
+      "description": "Get a collection of counter report error codes"
+    },
+    {
       "permissionName": "counterreports.item.get",
       "displayName": "counter reports item get",
       "description": "Get a single counter report"
@@ -503,6 +508,7 @@
         "aggregatorsettings.exportcredentials.item.get",
         "counterreports.collection.delete",
         "counterreports.collection.get",
+        "counterreports.errorcodes.collection.get",
         "counterreports.item.get",
         "counterreports.item.post",
         "counterreports.item.put",
