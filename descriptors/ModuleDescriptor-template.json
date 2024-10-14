@@ -231,7 +231,7 @@
           ],
           "pathPattern": "/counter-reports/reports/types",
           "permissionsRequired": [
-            "counterreports.collection.get"
+            "counterreports.reporttypes.collection.get"
           ]
         },
         {
@@ -451,6 +451,11 @@
       "description": "Delete a counter report"
     },
     {
+      "permissionName": "counterreports.reporttypes.collection.get",
+      "displayName": "counter reports report types collection get",
+      "description": "Get a counter report report types collection"
+    },
+    {
       "permissionName": "customreports.collection.get",
       "displayName": "custom reports collection get",
       "description": "Get a collection of custom reports"
@@ -513,6 +518,7 @@
         "counterreports.item.post",
         "counterreports.item.put",
         "counterreports.item.delete",
+        "counterreports.reporttypes.collection.get",
         "customreports.collection.get",
         "customreports.item.get",
         "customreports.item.post",
