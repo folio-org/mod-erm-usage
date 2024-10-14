@@ -11,7 +11,6 @@ import static org.folio.rest.util.VertxUtil.executeBlocking;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
@@ -22,7 +21,6 @@ import io.vertx.sqlclient.RowStream;
 import io.vertx.sqlclient.Tuple;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -38,7 +36,6 @@ import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.rest.annotations.Validate;
 import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.jaxrs.model.CounterReportDocument;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.CounterReportsGetOrder;
 import org.folio.rest.jaxrs.model.CounterReportsPerYear;
@@ -295,61 +292,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     return result;
   }
 
-  @Override
-  @Validate
-  public void postCounterReportsUploadProviderById(
-      String id,
-      boolean overwrite,
-      CounterReportDocument entity,
-      Map<String, String> okapiHeaders,
-      Handler<AsyncResult<Response>> asyncResultHandler,
-      Context vertxContext) {
-
-    Boolean isEditedManually = entity.getReportMetadata().getReportEditedManually();
-    String editReason = entity.getReportMetadata().getEditReason();
-    decodeBase64Report(entity.getContents().getData(), vertxContext)
-        .onSuccess(
-            counterReports ->
-                PgHelper.getUDPfromDbById(vertxContext, okapiHeaders, id)
-                    .compose(
-                        udp -> {
-                          counterReports.forEach(
-                              cr -> {
-                                cr.setEditReason(editReason);
-                                cr.setReportEditedManually(isEditedManually);
-                                cr.withProviderId(udp.getId())
-                                    .withDownloadTime(Date.from(Instant.now()));
-                              });
-                          return succeededFuture(counterReports);
-                        })
-                    .compose(
-                        crs ->
-                            PgHelper.saveCounterReportsToDb(
-                                vertxContext, okapiHeaders, crs, overwrite))
-                    .onSuccess(
-                        reportIds ->
-                            asyncResultHandler.handle(
-                                succeededFuture(
-                                    PostCounterReportsUploadProviderByIdResponse
-                                        .respond200WithTextPlain(
-                                            String.format(
-                                                "Saved report with ids: %s",
-                                                String.join(",", reportIds))))))
-                    .onFailure(
-                        throwable ->
-                            asyncResultHandler.handle(
-                                succeededFuture(
-                                    PostCounterReportsUploadProviderByIdResponse
-                                        .respond500WithTextPlain(
-                                            String.format(ERR_MSG_SAVE_REPORT, throwable))))))
-        .onFailure(
-            throwable ->
-                asyncResultHandler.handle(
-                    succeededFuture(
-                        PostCounterReportsUploadProviderByIdResponse.respond400WithTextPlain(
-                            String.format(ERR_MSG_SAVE_REPORT, throwable)))));
-  }
-
   private void processUpload(
       String id,
       boolean overwrite,
@@ -393,9 +335,10 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             reportIds ->
                 asyncResultHandler.handle(
                     succeededFuture(
-                        PostCounterReportsUploadProviderByIdResponse.respond200WithTextPlain(
-                            String.format(
-                                "Saved report with ids: %s", String.join(",", reportIds))))))
+                        PostCounterReportsMultipartuploadProviderByIdResponse
+                            .respond200WithTextPlain(
+                                String.format(
+                                    "Saved report with ids: %s", String.join(",", reportIds))))))
         .onFailure(
             throwable -> {
               Response.ResponseBuilder response =
@@ -640,27 +583,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                         GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
                             .respond500WithTextPlain(ar.cause().getMessage())))
         .onComplete(asyncResultHandler);
-  }
-
-  private Future<List<CounterReport>> decodeBase64Report(String encodedData, Context vertxContext) {
-    Promise<List<CounterReport>> result = Promise.promise();
-    executeBlocking(
-            vertxContext,
-            () -> {
-              try {
-                String[] base64Splitted = encodedData.split(",");
-                if (base64Splitted.length < 2) {
-                  throw new ReportUploadException(new Throwable("Report is empty."));
-                }
-                byte[] reportAsBytes = Base64.getDecoder().decode(base64Splitted[1]);
-                return UploadHelper.getCounterReportsFromString(new String(reportAsBytes));
-              } catch (Exception e) {
-                throw new ReportUploadException(e);
-              }
-            })
-        .onSuccess(result::complete)
-        .onFailure(result::fail);
-    return result.future();
   }
 
   private static class ReportUploadException extends RuntimeException {
