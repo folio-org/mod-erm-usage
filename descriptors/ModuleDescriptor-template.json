@@ -195,7 +195,7 @@
           ],
           "pathPattern": "/counter-reports/export/{id}",
           "permissionsRequired": [
-            "counterreports.item.get"
+            "counterreports.export.item.get"
           ]
         },
         {
@@ -431,6 +431,11 @@
       "description": "Get a collection of counter report error codes"
     },
     {
+      "permissionName": "counterreports.export.item.get",
+      "displayName": "counter reports export item get",
+      "description": "Export a counter report"
+    },
+    {
       "permissionName": "counterreports.download.item.get",
       "displayName": "counter reports download item get",
       "description": "Download a counter report"
@@ -529,6 +534,7 @@
         "counterreports.collection.delete",
         "counterreports.collection.get",
         "counterreports.errorcodes.collection.get",
+        "counterreports.export.item.get",
         "counterreports.download.item.get",
         "counterreports.item.get",
         "counterreports.item.post",
