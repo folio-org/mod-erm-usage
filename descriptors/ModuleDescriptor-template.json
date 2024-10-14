@@ -213,7 +213,7 @@
           ],
           "pathPattern": "/counter-reports/multipartupload/provider/{id}",
           "permissionsRequired": [
-            "counterreports.item.post"
+            "counterreports.upload.item.post"
           ]
         },
         {
@@ -481,6 +481,11 @@
       "description": "Get a sorted counter report collection for a provider"
     },
     {
+      "permissionName": "counterreports.upload.item.post",
+      "displayName": "counter reports upload item post",
+      "description": "Upload a counter report"
+    },
+    {
       "permissionName": "customreports.collection.get",
       "displayName": "custom reports collection get",
       "description": "Get a collection of custom reports"
@@ -549,6 +554,7 @@
         "counterreports.reportreleases.collection.get",
         "counterreports.reporttypes.collection.get",
         "counterreports.sorted.collection.get",
+        "counterreports.upload.item.post",
         "customreports.collection.get",
         "customreports.item.get",
         "customreports.item.post",
