@@ -377,12 +377,12 @@
     },
     {
       "permissionName": "usagedataproviders.item.put",
-      "displayName": "usage data providers item get",
+      "displayName": "usage data providers item put",
       "description": "Edit an usage data provider"
     },
     {
       "permissionName": "usagedataproviders.item.delete",
-      "displayName": "usage data providers item get",
+      "displayName": "usage data providers item delete",
       "description": "Delete an usage data provider"
     },
     {
@@ -402,12 +402,12 @@
     },
     {
       "permissionName": "aggregatorsettings.item.put",
-      "displayName": "aggregator settings item get",
+      "displayName": "aggregator settings item put",
       "description": "Edit an aggregator setting"
     },
     {
       "permissionName": "aggregatorsettings.item.delete",
-      "displayName": "aggregator settings item get",
+      "displayName": "aggregator settings item delete",
       "description": "Delete an aggregator setting"
     },
     {
@@ -433,12 +433,12 @@
     {
       "permissionName": "counterreports.item.put",
       "displayName": "counter reports item put",
-      "description": "Edit an counter report"
+      "description": "Edit a counter report"
     },
     {
       "permissionName": "counterreports.item.delete",
       "displayName": "counter reports item delete",
-      "description": "Delete an counter report"
+      "description": "Delete a counter report"
     },
     {
       "permissionName": "customreports.collection.get",
@@ -457,13 +457,13 @@
     },
     {
       "permissionName": "customreports.item.put",
-      "displayName": "custom reports item get",
-      "description": "Edit an custom report"
+      "displayName": "custom reports item put",
+      "description": "Edit a custom report"
     },
     {
       "permissionName": "customreports.item.delete",
       "displayName": "custom reports item delete",
-      "description": "Delete an custom report"
+      "description": "Delete a custom report"
     },
     {
       "permissionName": "erm-usage.files.item.get",
@@ -483,7 +483,7 @@
     {
       "permissionName": "eusage.all",
       "displayName": "eusage all",
-      "description": "All permissions for the mod-erm-usage module. An admin should get all permission, e.g. to edit aggregators.",
+      "description": "All permissions for the mod-erm-usage module",
       "subPermissions": [
         "usagedataproviders.collection.get",
         "usagedataproviders.item.get",
