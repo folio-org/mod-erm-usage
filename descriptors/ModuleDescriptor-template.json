@@ -55,7 +55,7 @@
     },
     {
       "id": "aggregator-settings",
-      "version": "1.2",
+      "version": "2.0",
       "handlers": [
         {
           "methods": [
@@ -117,8 +117,7 @@
           ],
           "pathPattern": "/aggregator-settings/{id}/exportcredentials",
           "permissionsRequired": [
-            "usagedataproviders.item.get",
-            "aggregatorsettings.item.get"
+            "aggregatorsettings.exportcredentials.item.get"
           ]
         }
       ]
@@ -151,7 +150,7 @@
           ],
           "pathPattern": "/counter-reports/{id}/download",
           "permissionsRequired": [
-            "counterreports.item.get"
+            "counterreports.download.item.get"
           ]
         },
         {
@@ -187,7 +186,7 @@
           ],
           "pathPattern": "/counter-reports/sorted/{udpId}",
           "permissionsRequired": [
-            "counterreports.item.get"
+            "counterreports.sorted.collection.get"
           ]
         },
         {
@@ -196,7 +195,7 @@
           ],
           "pathPattern": "/counter-reports/export/{id}",
           "permissionsRequired": [
-            "counterreports.item.get"
+            "counterreports.export.item.get"
           ]
         },
         {
@@ -205,7 +204,7 @@
           ],
           "pathPattern": "/counter-reports/export/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}",
           "permissionsRequired": [
-            "counterreports.item.get"
+            "counterreports.export.collection.get"
           ]
         },
         {
@@ -214,7 +213,7 @@
           ],
           "pathPattern": "/counter-reports/multipartupload/provider/{id}",
           "permissionsRequired": [
-            "counterreports.item.post"
+            "counterreports.upload.item.post"
           ]
         },
         {
@@ -223,7 +222,7 @@
           ],
           "pathPattern": "/counter-reports/errors/codes",
           "permissionsRequired": [
-            "counterreports.collection.get"
+            "counterreports.errorcodes.collection.get"
           ]
         },
         {
@@ -232,7 +231,7 @@
           ],
           "pathPattern": "/counter-reports/reports/types",
           "permissionsRequired": [
-            "counterreports.collection.get"
+            "counterreports.reporttypes.collection.get"
           ]
         },
         {
@@ -241,7 +240,7 @@
           ],
           "pathPattern": "/counter-reports/reports/releases",
           "permissionsRequired": [
-            "counterreports.collection.get"
+            "counterreports.reportreleases.collection.get"
           ]
         },
         {
@@ -250,7 +249,7 @@
           ],
           "pathPattern": "/counter-reports/reports/delete",
           "permissionsRequired": [
-            "counterreports.item.delete"
+            "counterreports.collection.delete"
           ]
         }
       ]
@@ -378,12 +377,12 @@
     },
     {
       "permissionName": "usagedataproviders.item.put",
-      "displayName": "usage data providers item get",
+      "displayName": "usage data providers item put",
       "description": "Edit an usage data provider"
     },
     {
       "permissionName": "usagedataproviders.item.delete",
-      "displayName": "usage data providers item get",
+      "displayName": "usage data providers item delete",
       "description": "Delete an usage data provider"
     },
     {
@@ -403,18 +402,48 @@
     },
     {
       "permissionName": "aggregatorsettings.item.put",
-      "displayName": "aggregator settings item get",
+      "displayName": "aggregator settings item put",
       "description": "Edit an aggregator setting"
     },
     {
       "permissionName": "aggregatorsettings.item.delete",
-      "displayName": "aggregator settings item get",
+      "displayName": "aggregator settings item delete",
       "description": "Delete an aggregator setting"
+    },
+    {
+      "permissionName": "aggregatorsettings.exportcredentials.item.get",
+      "displayName": "aggregator settings export credentials item get",
+      "description": "Export credentials for an aggregator setting"
+    },
+    {
+      "permissionName": "counterreports.collection.delete",
+      "displayName": "counter reports collection delete",
+      "description": "Delete a collection of counter reports"
     },
     {
       "permissionName": "counterreports.collection.get",
       "displayName": "counter reports collection get",
       "description": "Get a collection of counter reports"
+    },
+    {
+      "permissionName": "counterreports.errorcodes.collection.get",
+      "displayName": "counter reports error codes collection get",
+      "description": "Get a collection of counter report error codes"
+    },
+    {
+      "permissionName": "counterreports.export.collection.get",
+      "displayName": "counter reports export collection get",
+      "description": "Export a collection of counter reports"
+    },
+    {
+      "permissionName": "counterreports.export.item.get",
+      "displayName": "counter reports export item get",
+      "description": "Export a counter report"
+    },
+    {
+      "permissionName": "counterreports.download.item.get",
+      "displayName": "counter reports download item get",
+      "description": "Download a counter report"
     },
     {
       "permissionName": "counterreports.item.get",
@@ -429,12 +458,32 @@
     {
       "permissionName": "counterreports.item.put",
       "displayName": "counter reports item put",
-      "description": "Edit an counter report"
+      "description": "Edit a counter report"
     },
     {
       "permissionName": "counterreports.item.delete",
       "displayName": "counter reports item delete",
-      "description": "Delete an counter report"
+      "description": "Delete a counter report"
+    },
+    {
+      "permissionName": "counterreports.reportreleases.collection.get",
+      "displayName": "counter reports report releases collection get",
+      "description": "Get a counter report report releases collection"
+    },
+    {
+      "permissionName": "counterreports.reporttypes.collection.get",
+      "displayName": "counter reports report types collection get",
+      "description": "Get a counter report report types collection"
+    },
+    {
+      "permissionName": "counterreports.sorted.collection.get",
+      "displayName": "counter reports sorted collection get",
+      "description": "Get a sorted counter report collection for a provider"
+    },
+    {
+      "permissionName": "counterreports.upload.item.post",
+      "displayName": "counter reports upload item post",
+      "description": "Upload a counter report"
     },
     {
       "permissionName": "customreports.collection.get",
@@ -453,13 +502,13 @@
     },
     {
       "permissionName": "customreports.item.put",
-      "displayName": "custom reports item get",
-      "description": "Edit an custom report"
+      "displayName": "custom reports item put",
+      "description": "Edit a custom report"
     },
     {
       "permissionName": "customreports.item.delete",
       "displayName": "custom reports item delete",
-      "description": "Delete an custom report"
+      "description": "Delete a custom report"
     },
     {
       "permissionName": "erm-usage.files.item.get",
@@ -479,7 +528,7 @@
     {
       "permissionName": "eusage.all",
       "displayName": "eusage all",
-      "description": "All permissions for the mod-erm-usage module. An admin should get all permission, e.g. to edit aggregators.",
+      "description": "All permissions for the mod-erm-usage module",
       "subPermissions": [
         "usagedataproviders.collection.get",
         "usagedataproviders.item.get",
@@ -491,38 +540,21 @@
         "aggregatorsettings.item.post",
         "aggregatorsettings.item.put",
         "aggregatorsettings.item.delete",
+        "aggregatorsettings.exportcredentials.item.get",
+        "counterreports.collection.delete",
         "counterreports.collection.get",
+        "counterreports.errorcodes.collection.get",
+        "counterreports.export.collection.get",
+        "counterreports.export.item.get",
+        "counterreports.download.item.get",
         "counterreports.item.get",
         "counterreports.item.post",
         "counterreports.item.put",
         "counterreports.item.delete",
-        "customreports.collection.get",
-        "customreports.item.get",
-        "customreports.item.post",
-        "customreports.item.put",
-        "customreports.item.delete",
-        "erm-usage.files.item.get",
-        "erm-usage.files.item.post",
-        "erm-usage.files.item.delete"
-      ]
-    },
-    {
-      "permissionName": "eusage.user",
-      "displayName": "eusage user",
-      "description": "Permission set for a standard erm user. Cannot edit aggregator settings.",
-      "subPermissions": [
-        "usagedataproviders.collection.get",
-        "usagedataproviders.item.get",
-        "usagedataproviders.item.post",
-        "usagedataproviders.item.put",
-        "usagedataproviders.item.delete",
-        "aggregatorsettings.collection.get",
-        "aggregatorsettings.item.get",
-        "counterreports.collection.get",
-        "counterreports.item.get",
-        "counterreports.item.post",
-        "counterreports.item.put",
-        "counterreports.item.delete",
+        "counterreports.reportreleases.collection.get",
+        "counterreports.reporttypes.collection.get",
+        "counterreports.sorted.collection.get",
+        "counterreports.upload.item.post",
         "customreports.collection.get",
         "customreports.item.get",
         "customreports.item.post",
