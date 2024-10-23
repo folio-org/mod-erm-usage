@@ -24,12 +24,12 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <maven.compiler.release>17</maven.compiler.release>
-    <raml-module-builder.version>35.2.2</raml-module-builder.version>
+    <raml-module-builder.version>35.3.0</raml-module-builder.version>
     <folio-module-descriptor-validator.version>1.0.0</folio-module-descriptor-validator.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
     <generate_routing_context>/counter-reports/multipartupload/provider/{id}</generate_routing_context>
-    <vertx.version>4.5.7</vertx.version>
-    <aspectj.version>1.9.21.1</aspectj.version>
+    <vertx.version>4.5.10</vertx.version>
+    <aspectj.version>1.9.22.1</aspectj.version>
     <aspectj-maven-plugin.version>1.14</aspectj-maven-plugin.version>
     <log4j.version>2.23.0</log4j.version>
     <erm.usage.counter.version>4.1.0</erm.usage.counter.version>

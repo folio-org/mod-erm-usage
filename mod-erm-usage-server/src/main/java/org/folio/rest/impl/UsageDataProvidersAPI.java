@@ -35,9 +35,9 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       String query,
       String orderBy,
       UsageDataProvidersGetOrder order,
+      String totalRecords,
       int offset,
       int limit,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -78,7 +78,6 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
   @Override
   @Validate
   public void postUsageDataProviders(
-      String lang,
       UsageDataProvider entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
@@ -97,7 +96,6 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
   @Validate
   public void getUsageDataProvidersById(
       String id,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -116,7 +114,6 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
   @Validate
   public void deleteUsageDataProvidersById(
       String id,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -134,7 +131,6 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
   @Validate
   public void putUsageDataProvidersById(
       String id,
-      String lang,
       UsageDataProvider entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,

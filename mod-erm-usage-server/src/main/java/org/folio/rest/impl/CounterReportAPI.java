@@ -75,9 +75,9 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       String query,
       String orderBy,
       CounterReportsGetOrder order,
+      String totalRecords,
       int offset,
       int limit,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -121,7 +121,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   @Override
   @Validate
   public void postCounterReports(
-      String lang,
       CounterReport entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
@@ -140,7 +139,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   @Validate
   public void getCounterReportsById(
       String id,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -159,7 +157,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   @Validate
   public void deleteCounterReportsById(
       String id,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -177,7 +174,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   @Validate
   public void putCounterReportsById(
       String id,
-      String lang,
       CounterReport entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
@@ -201,7 +197,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Context vertxContext) {
 
     Promise<Response> promise = Promise.promise();
-    getCounterReportsById(id, null, okapiHeaders, promise, vertxContext);
+    getCounterReportsById(id, okapiHeaders, promise, vertxContext);
 
     promise
         .future()

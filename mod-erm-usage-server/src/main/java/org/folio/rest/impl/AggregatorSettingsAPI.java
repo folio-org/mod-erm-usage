@@ -67,9 +67,9 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
       String query,
       String orderBy,
       AggregatorSettingsGetOrder order,
+      String totalRecords,
       int offset,
       int limit,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -110,7 +110,6 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
   @Override
   @Validate
   public void postAggregatorSettings(
-      String lang,
       AggregatorSetting entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
@@ -129,7 +128,6 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
   @Validate
   public void getAggregatorSettingsById(
       String id,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -148,7 +146,6 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
   @Validate
   public void deleteAggregatorSettingsById(
       String id,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -166,7 +163,6 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
   @Validate
   public void putAggregatorSettingsById(
       String id,
-      String lang,
       AggregatorSetting entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,

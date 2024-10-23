@@ -23,9 +23,9 @@ public class CustomReportAPI implements CustomReports {
       String query,
       String orderBy,
       CustomReportsGetOrder order,
+      String totalRecords,
       int offset,
       int limit,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -45,7 +45,6 @@ public class CustomReportAPI implements CustomReports {
   @Override
   @Validate
   public void postCustomReports(
-      String lang,
       CustomReport entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
@@ -71,7 +70,6 @@ public class CustomReportAPI implements CustomReports {
   @Validate
   public void getCustomReportsById(
       String id,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -89,7 +87,6 @@ public class CustomReportAPI implements CustomReports {
   @Validate
   public void deleteCustomReportsById(
       String id,
-      String lang,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
@@ -106,7 +103,6 @@ public class CustomReportAPI implements CustomReports {
   @Validate
   public void putCustomReportsById(
       String id,
-      String lang,
       CustomReport entity,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
