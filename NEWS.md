@@ -1,3 +1,12 @@
+# 5.0.0
+* [APPDESCRIP-28](https://folio-org.atlassian.net/browse/APPDESCRIP-28) Update erm-usage/files interface id to be valid for Eureka platform
+* [MODEUS-178](https://folio-org.atlassian.net/browse/MODEUS-178) Review and cleanup Module Descriptor for mod-erm-usage
+* [MODEUS-179](https://folio-org.atlassian.net/browse/MODEUS-179) Change 'reportRelease' data type in 'udprovider' schema to string
+* [MODEUS-182](https://folio-org.atlassian.net/browse/MODEUS-182) Add report releases summary to UDP schema
+* [MODEUS-183](https://folio-org.atlassian.net/browse/MODEUS-183) Add reports/releases endpoint
+* [MODEUS-184](https://folio-org.atlassian.net/browse/MODEUS-184) Remove /counter-reports/upload/provider/{id} endpoint
+* [MODEUS-185](https://folio-org.atlassian.net/browse/MODEUS-185) Upgrade RMB to v35.3.0
+
 # 4.8.0
 * Upgrade to RMB v35.2.2, vert.x v4.5.7 
 * [MODEUS-175](https://folio-org.atlassian.net/browse/MODEUS-175) Implement multipart/form-data upload for counter reports
