@@ -177,28 +177,6 @@ public class CounterReportIT {
   }
 
   @Test
-  public void testGetCounterReportsDownloadByIdInvalidVersion() {
-    given(counterReportsReqSpec)
-        .body(Json.decodeValue(Json.encode(report), CounterReport.class).withRelease("1"))
-        .post()
-        .then()
-        .statusCode(201);
-
-    String body =
-        given(counterReportsReqSpec)
-            .pathParam("id", report.getId())
-            .get(PATH_DOWNLOAD)
-            .then()
-            .contentType(ContentType.TEXT)
-            .statusCode(500)
-            .extract()
-            .body()
-            .asString();
-
-    assertThat(body).contains("Unsupported", "version", "'1'");
-  }
-
-  @Test
   public void testDeleteMultipleReportsInvalidBody() {
     given(reportsDeleteReqSpec).post().then().statusCode(400);
     given(reportsDeleteReqSpec).body("{}").post().then().statusCode(400);

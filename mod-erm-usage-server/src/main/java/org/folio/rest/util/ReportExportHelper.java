@@ -92,19 +92,16 @@ public class ReportExportHelper {
 
   public static Response createDownloadResponseByReportVersion(CounterReport report) {
     if (report.getRelease().equals("4")) {
-      String xmlReport = Counter4Utils.toXML(Json.encode(report.getReport()));
-      return Optional.ofNullable(xmlReport)
-          .map(r -> GetCounterReportsDownloadByIdResponse.respond200WithApplicationXml(xmlReport))
+      return Optional.ofNullable(report.getReport())
+          .map(Json::encode)
+          .map(Counter4Utils::toXML)
+          .map(GetCounterReportsDownloadByIdResponse::respond200WithApplicationXml)
           .orElse(null);
-    } else if (report.getRelease().equals("5")) {
-      String jsonReport = Json.encode(report.getReport());
-      return Optional.ofNullable(jsonReport)
-          .map(r -> GetCounterReportsDownloadByIdResponse.respond200WithApplicationJson(jsonReport))
-          .orElse(null);
-    } else {
-      return GetCounterReportsDownloadByIdResponse.respond500WithTextPlain(
-          String.format("Unsupported report version '%s'", report.getRelease()));
     }
+    return Optional.ofNullable(report.getReport())
+        .map(Json::encode)
+        .map(GetCounterReportsDownloadByIdResponse::respond200WithApplicationJson)
+        .orElse(null);
   }
 
   private static Optional<String> csvMapper(CounterReport cr) {
