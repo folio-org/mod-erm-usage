@@ -1,6 +1,7 @@
 {
   "id": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd72",
   "label": "Data provider without aggregator",
+  "description": "maintained by Betty",
   "harvestingConfig": {
     "harvestingStatus": "active",
     "harvestVia": "sushi",

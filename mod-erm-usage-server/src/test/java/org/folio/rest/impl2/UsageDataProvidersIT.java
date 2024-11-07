@@ -4,11 +4,13 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.parsing.Parser;
+import io.restassured.response.Response;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
@@ -20,6 +22,8 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
+
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
@@ -28,7 +32,6 @@ import org.folio.rest.jaxrs.model.SushiCredentials;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
-import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -265,46 +268,38 @@ public class UsageDataProvidersIT {
 
   @Test
   public void checkThatWeCanSearchByCQL() {
-    String mockedOkapiUrl = "http://localhost:" + wireMockRule.port();
+    var udproviders = List.of(udprovider, udprovider2);
 
-    // POST provider without aggregator
-    UsageDataProvider udp =
-        given()
-            .body(Json.encode(udprovider))
-            .header("X-Okapi-Tenant", TENANT)
-            .header("X-Okapi-Url", mockedOkapiUrl)
-            .header("content-type", APPLICATION_JSON)
-            .header("accept", APPLICATION_JSON)
-            .request()
-            .post(BASE_URI)
-            .thenReturn()
-            .as(UsageDataProvider.class);
-    assertThat(udp.getLabel()).isEqualTo(udprovider.getLabel());
-    assertThat(udp.getId()).isNotEmpty();
+    // POST two providers
+    udproviders.forEach(this::postUdp);
 
-    String cqlLabel = "?query=(label=\"" + udprovider.getLabel() + "\")";
-    UsageDataProviders queryResult =
-        given()
-            .header("X-Okapi-Tenant", TENANT)
-            .header("content-type", APPLICATION_JSON)
-            .header("accept", APPLICATION_JSON)
-            .when()
-            .get(BASE_URI + cqlLabel)
-            .thenReturn()
-            .as(UsageDataProviders.class);
-    assertThat(queryResult.getUsageDataProviders().size()).isEqualTo(1);
-    assertThat(queryResult.getUsageDataProviders().get(0).getLabel()).isEqualTo(udp.getLabel());
-    assertThat(queryResult.getUsageDataProviders().get(0).getId()).isEqualTo(udp.getId());
+    // GET by CQL: search for label
+    get("""
+            label="%s"
+            """.formatted(udprovider.getLabel()))
+        .then()
+        .statusCode(200)
+        .body("usageDataProviders.label", is(List.of(udprovider.getLabel())))
+        .body("usageDataProviders.id", is(List.of(udprovider.getId())));
+
+    // GET by CQL: search for a word from aggregator name, description, and label
+    get("""
+            keywords all "digital meeting with"
+            """)
+        .then()
+        .statusCode(200)
+        .body("usageDataProviders.id", is(List.of(udprovider2.getId())));
 
     // DELETE
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .when()
-        .delete(BASE_URI + "/" + udprovider.getId())
-        .then()
-        .statusCode(204);
+    udproviders.forEach(udp ->
+      given()
+          .header("X-Okapi-Tenant", TENANT)
+          .header("content-type", APPLICATION_JSON)
+          .header("accept", "text/plain")
+          .when()
+          .delete(BASE_URI + "/" + udp.getId())
+          .then()
+          .statusCode(204));
   }
 
   @Test
@@ -345,5 +340,36 @@ public class UsageDataProvidersIT {
         .delete(BASE_URI + "/" + udprovider.getId())
         .then()
         .statusCode(204);
+  }
+
+  private UsageDataProvider postUdp(UsageDataProvider udprovider) {
+    String mockedOkapiUrl = "http://localhost:" + wireMockRule.port();
+
+    UsageDataProvider udp =
+        given()
+            .body(Json.encode(udprovider))
+            .header("X-Okapi-Tenant", TENANT)
+            .header("X-Okapi-Url", mockedOkapiUrl)
+            .header("content-type", APPLICATION_JSON)
+            .header("accept", APPLICATION_JSON)
+            .request()
+            .post(BASE_URI)
+            .thenReturn()
+            .as(UsageDataProvider.class);
+    assertThat(udp.getLabel()).isEqualTo(udprovider.getLabel());
+    assertThat(udp.getId()).isNotEmpty();
+
+    return udp;
+  }
+
+  private Response get(String cql) {
+    return
+        given()
+            .header("X-Okapi-Tenant", TENANT)
+            .header("content-type", APPLICATION_JSON)
+            .header("accept", APPLICATION_JSON)
+            .when()
+            .param("query", cql)
+            .get(BASE_URI);
   }
 }
