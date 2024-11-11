@@ -274,18 +274,14 @@ public class UsageDataProvidersIT {
     udproviders.forEach(this::postUdp);
 
     // GET by CQL: search for label
-    get("""
-            label="%s"
-            """.formatted(udprovider.getLabel()))
+    get("label=\"" + udprovider.getLabel() + "\"")
         .then()
         .statusCode(200)
         .body("usageDataProviders.label", is(List.of(udprovider.getLabel())))
         .body("usageDataProviders.id", is(List.of(udprovider.getId())));
 
     // GET by CQL: search for a word from aggregator name, description, and label
-    get("""
-            keywords all "digital meeting with"
-            """)
+    get("keywords all \"digital meeting with\"")
         .then()
         .statusCode(200)
         .body("usageDataProviders.id", is(List.of(udprovider2.getId())));
