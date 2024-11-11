@@ -117,6 +117,10 @@
       "withMetadata": true,
       "fullTextIndex": [
         {
+          "fieldName": "keywords",
+          "multiFieldNames": "label,description,harvestingConfig.aggregator.name"
+        },
+        {
           "fieldName": "harvestingConfig.harvestingStatus",
           "tOps": "ADD"
         },
