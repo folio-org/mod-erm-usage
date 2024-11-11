@@ -287,15 +287,16 @@ public class UsageDataProvidersIT {
         .body("usageDataProviders.id", is(List.of(udprovider2.getId())));
 
     // DELETE
-    udproviders.forEach(udp ->
-      given()
-          .header("X-Okapi-Tenant", TENANT)
-          .header("content-type", APPLICATION_JSON)
-          .header("accept", "text/plain")
-          .when()
-          .delete(BASE_URI + "/" + udp.getId())
-          .then()
-          .statusCode(204));
+    udproviders.forEach(
+        udp ->
+            given()
+                .header("X-Okapi-Tenant", TENANT)
+                .header("content-type", APPLICATION_JSON)
+                .header("accept", "text/plain")
+                .when()
+                .delete(BASE_URI + "/" + udp.getId())
+                .then()
+                .statusCode(204));
   }
 
   @Test
@@ -359,13 +360,12 @@ public class UsageDataProvidersIT {
   }
 
   private Response get(String cql) {
-    return
-        given()
-            .header("X-Okapi-Tenant", TENANT)
-            .header("content-type", APPLICATION_JSON)
-            .header("accept", APPLICATION_JSON)
-            .when()
-            .param("query", cql)
-            .get(BASE_URI);
+    return given()
+        .header("X-Okapi-Tenant", TENANT)
+        .header("content-type", APPLICATION_JSON)
+        .header("accept", APPLICATION_JSON)
+        .when()
+        .param("query", cql)
+        .get(BASE_URI);
   }
 }
