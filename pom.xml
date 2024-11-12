@@ -33,6 +33,8 @@
     <aspectj-maven-plugin.version>1.14</aspectj-maven-plugin.version>
     <log4j.version>2.23.0</log4j.version>
     <erm.usage.counter.version>4.1.0</erm.usage.counter.version>
+    <spotless.version>2.43.0</spotless.version>
+    <google-java-format.version>1.24.0</google-java-format.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
   </properties>
@@ -140,6 +142,22 @@
     </pluginManagement>
 
     <plugins>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless.version}</version>
+        <configuration>
+          <ratchetFrom>origin/master</ratchetFrom>
+          <java>
+            <googleJavaFormat>
+              <version>${google-java-format.version}</version>
+              <style>GOOGLE</style>
+              <reflowLongStrings>true</reflowLongStrings>
+              <formatJavadoc>true</formatJavadoc>
+            </googleJavaFormat>
+          </java>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.folio</groupId>
         <artifactId>folio-module-descriptor-validator</artifactId>
