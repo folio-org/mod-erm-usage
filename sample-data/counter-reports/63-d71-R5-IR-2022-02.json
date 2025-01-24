@@ -1,0 +1,145 @@
+{
+  "id" : "309e5241-8b0e-422e-9112-d994caf7a0fd",
+  "downloadTime" : 1738677797218,
+  "release" : "5",
+  "reportName" : "IR",
+  "yearMonth" : "2022-02",
+  "providerId" : "63c056c2-9e56-4148-8002-2a8649827d71",
+  "report" : {
+    "Report_Header" : {
+      "Created" : "2019-04-25T11:38:17Z",
+      "Created_By" : "Sample Institutional Repository",
+      "Customer_ID" : "demo-1234",
+      "Report_ID" : "IR",
+      "Release" : "5",
+      "Report_Name" : "Item Master Report",
+      "Institution_Name" : "Client Demo Site",
+      "Institution_ID" : [ {
+        "Type" : "ISNI",
+        "Value" : "1234123412341234"
+      } ],
+      "Report_Filters" : [ {
+        "Name" : "Begin_Date",
+        "Value" : "2022-02-01"
+      }, {
+        "Name" : "End_Date",
+        "Value" : "2022-02-28"
+      } ],
+      "Report_Attributes" : [ {
+        "Name" : "Attributes_To_Show",
+        "Value" : "Authors|Publication_Date|Article_Version|Data_Type|YOP|Access_Type|Access_Method"
+      }, {
+        "Name" : "Include_Parent_Details",
+        "Value" : "True"
+      } ]
+    },
+    "Report_Items" : [ {
+      "Item" : "Item 100026",
+      "Item_ID" : [ {
+        "Type" : "DOI",
+        "Value" : "10.1729/jhik.345"
+      }, {
+        "Type" : "Proprietary",
+        "Value" : "SampleIR:100026"
+      } ],
+      "Item_Contributors" : [ {
+        "Type" : "Author",
+        "Name" : "F Estelle",
+        "Identifier" : "ORCID:0000-0001-2345-6789"
+      } ],
+      "Item_Dates" : [ {
+        "Type" : "Publication_Date",
+        "Value" : "2015-03-20"
+      } ],
+      "Item_Attributes" : [ {
+        "Type" : "Article_Version",
+        "Value" : "VoR"
+      } ],
+      "Platform" : "Sample IR",
+      "Publisher" : "Publisher 36",
+      "Item_Parent" : {
+        "Item_Name" : "Journal 45",
+        "Item_ID" : [ {
+          "Type" : "DOI",
+          "Value" : "10.1729/jhik"
+        }, {
+          "Type" : "Proprietary",
+          "Value" : "SampleIR:45"
+        }, {
+          "Type" : "Print_ISSN",
+          "Value" : "2859-4118"
+        }, {
+          "Type" : "Online_ISSN",
+          "Value" : "2859-4231"
+        } ],
+        "Data_Type" : "Journal"
+      },
+      "Data_Type" : "Article",
+      "YOP" : "2015",
+      "Access_Type" : "OA_Gold",
+      "Access_Method" : "Regular",
+      "Performance" : [ {
+        "Period" : {
+          "Begin_Date" : "2022-02-01",
+          "End_Date" : "2022-02-28"
+        },
+        "Instance" : [ {
+          "Metric_Type" : "Total_Item_Investigations",
+          "Count" : 1
+        }, {
+          "Metric_Type" : "Total_Item_Requests",
+          "Count" : 1
+        }, {
+          "Metric_Type" : "Unique_Item_Investigations",
+          "Count" : 1
+        }, {
+          "Metric_Type" : "Unique_Item_Requests",
+          "Count" : 1
+        } ]
+      } ]
+    }, {
+      "Item" : "Item 100030",
+      "Item_ID" : [ {
+        "Type" : "DOI",
+        "Value" : "10.1729/abcd.434"
+      }, {
+        "Type" : "Proprietary",
+        "Value" : "SampleIR:100030"
+      } ],
+      "Item_Contributors" : [ {
+        "Type" : "Author",
+        "Name" : "A Green",
+        "Identifier" : "ORCID:0000-0001-2345-2787"
+      } ],
+      "Item_Dates" : [ {
+        "Type" : "Publication_Date",
+        "Value" : "2015-06-06"
+      } ],
+      "Platform" : "Sample IR",
+      "Publisher" : "Publisher 36",
+      "Data_Type" : "Multimedia",
+      "YOP" : "2014",
+      "Access_Type" : "Other_Free_To_Read",
+      "Access_Method" : "Regular",
+      "Performance" : [ {
+        "Period" : {
+          "Begin_Date" : "2022-02-01",
+          "End_Date" : "2022-02-28"
+        },
+        "Instance" : [ {
+          "Metric_Type" : "Total_Item_Investigations",
+          "Count" : 3
+        }, {
+          "Metric_Type" : "Total_Item_Requests",
+          "Count" : 2
+        }, {
+          "Metric_Type" : "Unique_Item_Investigations",
+          "Count" : 2
+        }, {
+          "Metric_Type" : "Unique_Item_Requests",
+          "Count" : 2
+        } ]
+      } ]
+    } ]
+  }
+}

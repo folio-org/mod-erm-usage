@@ -1,0 +1,719 @@
+{
+  "id" : "62a107e1-c988-4551-8f62-d3fb2fce2ea7",
+  "downloadTime" : "2025-02-04T14:03:25.448+00:00",
+  "release" : "5.1",
+  "reportName" : "DR",
+  "yearMonth" : "2022-08",
+  "providerId" : "63c056c2-9e56-4148-8002-2a8649827d71",
+  "report" : {
+    "Report_Header" : {
+      "Release" : "5.1",
+      "Report_ID" : "DR",
+      "Report_Name" : "Database Report",
+      "Created" : "2023-02-15T09:11:12Z",
+      "Created_By" : "Sample Publisher",
+      "Institution_ID" : {
+        "ISNI" : [ "1234123412341234" ]
+      },
+      "Institution_Name" : "Sample Institution",
+      "Registry_Record" : "https://registry.countermetrics.org/platform/99999999-9999-9999-9999-999999999999",
+      "Report_Attributes" : {
+        "Attributes_To_Show" : [ "Access_Method" ]
+      },
+      "Report_Filters" : {
+        "Begin_Date" : "2022-08-01",
+        "End_Date" : "2022-08-31"
+      }
+    },
+    "Report_Items" : [ {
+      "Database" : "Database 1",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "Proprietary" : "P1:DB1"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Book",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1593
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 956
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1195
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 717
+          },
+          "Unique_Title_Investigations" : {
+            "2022-08" : 797
+          },
+          "Unique_Title_Requests" : {
+            "2022-08" : 598
+          }
+        }
+      }, {
+        "Data_Type" : "Book",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1187
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 712
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 890
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 534
+          },
+          "Unique_Title_Investigations" : {
+            "2022-08" : 594
+          },
+          "Unique_Title_Requests" : {
+            "2022-08" : 446
+          }
+        }
+      }, {
+        "Data_Type" : "Conference",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1531
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 919
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1148
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 689
+          }
+        }
+      }, {
+        "Data_Type" : "Conference",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1250
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 750
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 938
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 563
+          }
+        }
+      }, {
+        "Data_Type" : "Database_Aggregated",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-08" : 67
+          },
+          "No_License" : {
+            "2022-08" : 31
+          },
+          "Searches_Automated" : {
+            "2022-08" : 16616
+          },
+          "Searches_Federated" : {
+            "2022-08" : 14521
+          },
+          "Searches_Regular" : {
+            "2022-08" : 13926
+          }
+        }
+      }, {
+        "Data_Type" : "Database_Aggregated",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-08" : 79
+          },
+          "No_License" : {
+            "2022-08" : 53
+          },
+          "Searches_Federated" : {
+            "2022-08" : 16528
+          }
+        }
+      }, {
+        "Data_Type" : "Journal",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1015
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 609
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 761
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 457
+          }
+        }
+      }, {
+        "Data_Type" : "Journal",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1900
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 1140
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1425
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 855
+          }
+        }
+      }, {
+        "Data_Type" : "Multimedia",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1327
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 796
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 995
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 597
+          }
+        }
+      }, {
+        "Data_Type" : "Multimedia",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1328
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 797
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 996
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 598
+          }
+        }
+      }, {
+        "Data_Type" : "Newspaper_or_Newsletter",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1685
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 1011
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1264
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 758
+          }
+        }
+      }, {
+        "Data_Type" : "Newspaper_or_Newsletter",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1085
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 651
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 814
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 488
+          }
+        }
+      }, {
+        "Data_Type" : "Other",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1735
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 1041
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1301
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 781
+          }
+        }
+      }, {
+        "Data_Type" : "Other",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1944
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 1166
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1458
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 875
+          }
+        }
+      }, {
+        "Data_Type" : "Patent",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1979
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 1187
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1484
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 890
+          }
+        }
+      }, {
+        "Data_Type" : "Patent",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1901
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 1141
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1426
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 856
+          }
+        }
+      }, {
+        "Data_Type" : "Reference_Work",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1322
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 793
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 992
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 595
+          },
+          "Unique_Title_Investigations" : {
+            "2022-08" : 198
+          },
+          "Unique_Title_Requests" : {
+            "2022-08" : 149
+          }
+        }
+      }, {
+        "Data_Type" : "Reference_Work",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1710
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 1026
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1135
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 923
+          },
+          "Unique_Title_Investigations" : {
+            "2022-08" : 795
+          },
+          "Unique_Title_Requests" : {
+            "2022-08" : 738
+          }
+        }
+      }, {
+        "Data_Type" : "Report",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1895
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 1137
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1421
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 853
+          }
+        }
+      }, {
+        "Data_Type" : "Report",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1360
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 816
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1020
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 612
+          }
+        }
+      }, {
+        "Data_Type" : "Standard",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1772
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 1063
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1329
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 797
+          }
+        }
+      }, {
+        "Data_Type" : "Standard",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1451
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 871
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1088
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 653
+          }
+        }
+      }, {
+        "Data_Type" : "Thesis_or_Dissertation",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1660
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 996
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1245
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 747
+          }
+        }
+      }, {
+        "Data_Type" : "Thesis_or_Dissertation",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1005
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 603
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 754
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 452
+          }
+        }
+      }, {
+        "Data_Type" : "Unspecified",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1249
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 749
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 937
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 562
+          }
+        }
+      }, {
+        "Data_Type" : "Unspecified",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1449
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 869
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1087
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 652
+          }
+        }
+      } ]
+    }, {
+      "Database" : "Database 2",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "Proprietary" : "P1:DB2"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Audiovisual",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1116
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 837
+          }
+        }
+      }, {
+        "Data_Type" : "Audiovisual",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1508
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1131
+          }
+        }
+      }, {
+        "Data_Type" : "Database_AI",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-08" : 29
+          },
+          "No_License" : {
+            "2022-08" : 36
+          },
+          "Searches_Automated" : {
+            "2022-08" : 16193
+          },
+          "Searches_Federated" : {
+            "2022-08" : 15133
+          },
+          "Searches_Regular" : {
+            "2022-08" : 14787
+          }
+        }
+      }, {
+        "Data_Type" : "Database_AI",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-08" : 63
+          },
+          "No_License" : {
+            "2022-08" : 66
+          },
+          "Searches_Federated" : {
+            "2022-08" : 19116
+          }
+        }
+      }, {
+        "Data_Type" : "Image",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1851
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1388
+          }
+        }
+      }, {
+        "Data_Type" : "Image",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1297
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 973
+          }
+        }
+      }, {
+        "Data_Type" : "Interactive_Resource",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1812
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1359
+          }
+        }
+      }, {
+        "Data_Type" : "Interactive_Resource",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1786
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1340
+          }
+        }
+      }, {
+        "Data_Type" : "Sound",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1337
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1003
+          }
+        }
+      }, {
+        "Data_Type" : "Sound",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1074
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 806
+          }
+        }
+      } ]
+    }, {
+      "Database" : "Database 3",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "Proprietary" : "P1:DB3"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Database_Full",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-08" : 20
+          },
+          "No_License" : {
+            "2022-08" : 43
+          },
+          "Searches_Automated" : {
+            "2022-08" : 14554
+          },
+          "Searches_Federated" : {
+            "2022-08" : 15282
+          },
+          "Searches_Regular" : {
+            "2022-08" : 16500
+          }
+        }
+      }, {
+        "Data_Type" : "Database_Full",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-08" : 55
+          },
+          "No_License" : {
+            "2022-08" : 19
+          },
+          "Searches_Federated" : {
+            "2022-08" : 18075
+          }
+        }
+      }, {
+        "Data_Type" : "Database_Full_Item",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1371
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 823
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1028
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 617
+          }
+        }
+      }, {
+        "Data_Type" : "Database_Full_Item",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-08" : 1430
+          },
+          "Total_Item_Requests" : {
+            "2022-08" : 858
+          },
+          "Unique_Item_Investigations" : {
+            "2022-08" : 1073
+          },
+          "Unique_Item_Requests" : {
+            "2022-08" : 644
+          }
+        }
+      } ]
+    } ]
+  }
+}

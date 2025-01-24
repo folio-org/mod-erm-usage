@@ -1,0 +1,10 @@
+{
+  "id" : "b9e554f6-b122-4a91-822b-ac7697455b92",
+  "downloadTime" : 1738677797218,
+  "failedAttempts" : 5,
+  "failedReason" : "{\"Code\":3030,\"Severity\":\"Error\",\"Message\":\"No Usage Available for Requested Dates\"}",
+  "release" : "5",
+  "reportName" : "IR",
+  "yearMonth" : "2022-07",
+  "providerId" : "63c056c2-9e56-4148-8002-2a8649827d71"
+}

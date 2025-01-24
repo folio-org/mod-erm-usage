@@ -1,0 +1,10 @@
+{
+  "id" : "7c9fa0ef-2f6e-4e4a-83ae-fdbfe051aa7a",
+  "downloadTime" : "2025-02-04T14:03:25.448+00:00",
+  "failedAttempts" : 5,
+  "failedReason" : "{\"Code\":3032,\"Message\":\"Usage no longer available for requested dates\",\"Help_URL\":\"http://example.com\",\"Data\":\"No usage data prior to Jan 2022 is available\"}",
+  "release" : "5.1",
+  "reportName" : "DR",
+  "yearMonth" : "2021-05",
+  "providerId" : "63c056c2-9e56-4148-8002-2a8649827d71"
+}

@@ -1,0 +1,10 @@
+{
+  "id" : "03274f49-c201-47f1-9415-365c11da4a91",
+  "downloadTime" : 1738677797218,
+  "failedAttempts" : 5,
+  "failedReason" : "{\"Code\":3030,\"Severity\":\"Error\",\"Message\":\"No Usage Available for Requested Dates\"}",
+  "release" : "5",
+  "reportName" : "PR",
+  "yearMonth" : "2021-04",
+  "providerId" : "63c056c2-9e56-4148-8002-2a8649827d71"
+}

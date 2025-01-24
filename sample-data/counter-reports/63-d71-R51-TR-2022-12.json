@@ -1,0 +1,842 @@
+{
+  "id" : "2f7ac9a5-e943-4d93-b9b2-ef501845d98a",
+  "downloadTime" : "2025-02-04T14:03:25.448+00:00",
+  "release" : "5.1",
+  "reportName" : "TR",
+  "yearMonth" : "2022-12",
+  "providerId" : "63c056c2-9e56-4148-8002-2a8649827d71",
+  "report" : {
+    "Report_Header" : {
+      "Release" : "5.1",
+      "Report_ID" : "TR",
+      "Report_Name" : "Title Report",
+      "Created" : "2023-02-15T09:11:12Z",
+      "Created_By" : "Sample Publisher",
+      "Institution_ID" : {
+        "ISNI" : [ "1234123412341234" ]
+      },
+      "Institution_Name" : "Sample Institution",
+      "Registry_Record" : "https://registry.countermetrics.org/platform/99999999-9999-9999-9999-999999999999",
+      "Report_Attributes" : {
+        "Attributes_To_Show" : [ "YOP", "Access_Type", "Access_Method" ]
+      },
+      "Report_Filters" : {
+        "Begin_Date" : "2022-12-01",
+        "End_Date" : "2022-12-31"
+      }
+    },
+    "Report_Items" : [ {
+      "Title" : "Title 1",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt01",
+        "Proprietary" : "P1:T01",
+        "ISBN" : "979-8-88888-888-8",
+        "URI" : "https://doi.org/10.9999/xxxxt01"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Book",
+        "YOP" : "2022",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 34
+          },
+          "No_License" : {
+            "2022-12" : 84
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1045
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 627
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 784
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 470
+          },
+          "Unique_Title_Investigations" : {
+            "2022-12" : 523
+          },
+          "Unique_Title_Requests" : {
+            "2022-12" : 392
+          }
+        }
+      }, {
+        "Data_Type" : "Book",
+        "YOP" : "2022",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 38
+          },
+          "No_License" : {
+            "2022-12" : 30
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1337
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 802
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1003
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 602
+          },
+          "Unique_Title_Investigations" : {
+            "2022-12" : 669
+          },
+          "Unique_Title_Requests" : {
+            "2022-12" : 502
+          }
+        }
+      } ]
+    }, {
+      "Title" : "Title 2",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt02",
+        "Proprietary" : "P1:T02",
+        "Online_ISSN" : "1234-1234",
+        "URI" : "https://doi.org/10.9999/xxxxt02"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Conference",
+        "YOP" : "2021",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 90
+          },
+          "No_License" : {
+            "2022-12" : 72
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1968
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 1181
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1476
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 886
+          }
+        }
+      }, {
+        "Data_Type" : "Conference",
+        "YOP" : "2021",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 36
+          },
+          "No_License" : {
+            "2022-12" : 38
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1456
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 874
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1092
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 656
+          }
+        }
+      } ]
+    }, {
+      "Title" : "Title 3",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt03",
+        "Proprietary" : "P1:T03",
+        "Online_ISSN" : "1234-4321",
+        "URI" : "https://doi.org/10.9999/xxxxt03"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Journal",
+        "YOP" : "2022",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 76
+          },
+          "No_License" : {
+            "2022-12" : 45
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 500
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 300
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 375
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 225
+          }
+        }
+      }, {
+        "Data_Type" : "Journal",
+        "YOP" : "2022",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 74
+          },
+          "No_License" : {
+            "2022-12" : 71
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 483
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 290
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 362
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 217
+          }
+        }
+      }, {
+        "Data_Type" : "Journal",
+        "YOP" : "2022",
+        "Access_Type" : "Open",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-12" : 1499
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 899
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1124
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 674
+          }
+        }
+      }, {
+        "Data_Type" : "Journal",
+        "YOP" : "2022",
+        "Access_Type" : "Open",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-12" : 1448
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 869
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1086
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 652
+          }
+        }
+      }, {
+        "Data_Type" : "Journal",
+        "YOP" : "2021",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 133
+          },
+          "No_License" : {
+            "2022-12" : 102
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 557
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 357
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 432
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 282
+          }
+        }
+      }, {
+        "Data_Type" : "Journal",
+        "YOP" : "2021",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 131
+          },
+          "No_License" : {
+            "2022-12" : 128
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 540
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 347
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 419
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 274
+          }
+        }
+      }, {
+        "Data_Type" : "Journal",
+        "YOP" : "2021",
+        "Access_Type" : "Open",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-12" : 1560
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 960
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1185
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 735
+          }
+        }
+      }, {
+        "Data_Type" : "Journal",
+        "YOP" : "2021",
+        "Access_Type" : "Open",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-12" : 1509
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 930
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1147
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 713
+          }
+        }
+      } ]
+    }, {
+      "Title" : "Title 4",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt04",
+        "Proprietary" : "P1:T04",
+        "Online_ISSN" : "4321-4321",
+        "URI" : "https://doi.org/10.9999/xxxxt04"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Newspaper_or_Newsletter",
+        "YOP" : "2020",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 43
+          },
+          "No_License" : {
+            "2022-12" : 46
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1341
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 805
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1006
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 604
+          }
+        }
+      }, {
+        "Data_Type" : "Newspaper_or_Newsletter",
+        "YOP" : "2020",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 54
+          },
+          "No_License" : {
+            "2022-12" : 68
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1262
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 757
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 947
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 568
+          }
+        }
+      } ]
+    }, {
+      "Title" : "Title 5",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt05",
+        "Proprietary" : "P1:T05",
+        "URI" : "https://doi.org/10.9999/xxxxt05"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Other",
+        "YOP" : "2019",
+        "Access_Type" : "Free_To_Read",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-12" : 1219
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 731
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 914
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 548
+          }
+        }
+      }, {
+        "Data_Type" : "Other",
+        "YOP" : "2019",
+        "Access_Type" : "Free_To_Read",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-12" : 1546
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 928
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1160
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 696
+          }
+        }
+      } ]
+    }, {
+      "Title" : "Title 6",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt06",
+        "Proprietary" : "P1:T06",
+        "URI" : "https://doi.org/10.9999/xxxxt06"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Patent",
+        "YOP" : "2022",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 81
+          },
+          "No_License" : {
+            "2022-12" : 70
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1231
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 739
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 923
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 554
+          }
+        }
+      }, {
+        "Data_Type" : "Patent",
+        "YOP" : "2022",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 73
+          },
+          "No_License" : {
+            "2022-12" : 81
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1470
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 882
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1103
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 662
+          }
+        }
+      } ]
+    }, {
+      "Title" : "Title 7",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt07",
+        "Proprietary" : "P1:T07",
+        "ISBN" : "979-8-88888-888-9",
+        "URI" : "https://doi.org/10.9999/xxxxt07"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Reference_Work",
+        "YOP" : "2019",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 90
+          },
+          "No_License" : {
+            "2022-12" : 38
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1074
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 644
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 806
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 594
+          },
+          "Unique_Title_Investigations" : {
+            "2022-12" : 483
+          },
+          "Unique_Title_Requests" : {
+            "2022-12" : 362
+          }
+        }
+      }, {
+        "Data_Type" : "Reference_Work",
+        "YOP" : "2019",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 89
+          },
+          "No_License" : {
+            "2022-12" : 84
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1322
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 793
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1155
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 714
+          },
+          "Unique_Title_Investigations" : {
+            "2022-12" : 809
+          },
+          "Unique_Title_Requests" : {
+            "2022-12" : 571
+          }
+        }
+      } ]
+    }, {
+      "Title" : "Title 8",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt08",
+        "Proprietary" : "P1:T08",
+        "URI" : "https://doi.org/10.9999/xxxxt08"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Report",
+        "YOP" : "2020",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 42
+          },
+          "No_License" : {
+            "2022-12" : 55
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1832
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 1099
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1374
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 824
+          }
+        }
+      }, {
+        "Data_Type" : "Report",
+        "YOP" : "2020",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 60
+          },
+          "No_License" : {
+            "2022-12" : 32
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1265
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 759
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 949
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 569
+          }
+        }
+      } ]
+    }, {
+      "Title" : "Title 9",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt09",
+        "Proprietary" : "P1:T09",
+        "URI" : "https://doi.org/10.9999/xxxxt09"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Standard",
+        "YOP" : "2022",
+        "Access_Type" : "Free_To_Read",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-12" : 1652
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 991
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1239
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 743
+          }
+        }
+      }, {
+        "Data_Type" : "Standard",
+        "YOP" : "2022",
+        "Access_Type" : "Free_To_Read",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-12" : 1468
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 881
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1101
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 661
+          }
+        }
+      } ]
+    }, {
+      "Title" : "Title 10",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt10",
+        "Proprietary" : "P1:T10",
+        "URI" : "https://doi.org/10.9999/xxxxt10"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Thesis_or_Dissertation",
+        "YOP" : "2021",
+        "Access_Type" : "Open",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-12" : 1806
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 1084
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1355
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 813
+          }
+        }
+      }, {
+        "Data_Type" : "Thesis_or_Dissertation",
+        "YOP" : "2021",
+        "Access_Type" : "Open",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Total_Item_Investigations" : {
+            "2022-12" : 1860
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 1116
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1395
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 837
+          }
+        }
+      } ]
+    }, {
+      "Title" : "Title 11",
+      "Publisher" : "Sample Publisher",
+      "Publisher_ID" : {
+        "ISNI" : [ "4321432143214321" ]
+      },
+      "Platform" : "Platform 1",
+      "Item_ID" : {
+        "DOI" : "10.9999/xxxxt11",
+        "Proprietary" : "P1:T11",
+        "URI" : "https://doi.org/10.9999/xxxxt11"
+      },
+      "Attribute_Performance" : [ {
+        "Data_Type" : "Unspecified",
+        "YOP" : "2018",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "Regular",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 69
+          },
+          "No_License" : {
+            "2022-12" : 37
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1225
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 735
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 919
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 551
+          }
+        }
+      }, {
+        "Data_Type" : "Unspecified",
+        "YOP" : "2018",
+        "Access_Type" : "Controlled",
+        "Access_Method" : "TDM",
+        "Performance" : {
+          "Limit_Exceeded" : {
+            "2022-12" : 82
+          },
+          "No_License" : {
+            "2022-12" : 40
+          },
+          "Total_Item_Investigations" : {
+            "2022-12" : 1851
+          },
+          "Total_Item_Requests" : {
+            "2022-12" : 1111
+          },
+          "Unique_Item_Investigations" : {
+            "2022-12" : 1388
+          },
+          "Unique_Item_Requests" : {
+            "2022-12" : 833
+          }
+        }
+      } ]
+    } ]
+  }
+}
