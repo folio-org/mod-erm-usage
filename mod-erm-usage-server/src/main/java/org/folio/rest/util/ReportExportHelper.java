@@ -12,6 +12,7 @@ import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Optional;
 import javax.ws.rs.core.Response;
@@ -28,6 +29,7 @@ import org.olf.erm.usage.counter.common.ExcelUtil;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
+import org.olf.erm.usage.counter51.Counter51Utils;
 
 public class ReportExportHelper {
 
@@ -104,15 +106,13 @@ public class ReportExportHelper {
         .orElse(null);
   }
 
-  private static Optional<String> csvMapper(CounterReport cr) {
-    return Optional.ofNullable(cr)
-        .map(CounterReport::getReport)
-        .map(
-            report -> {
-              if ("4".equals(cr.getRelease())) return counter4ReportToCsv(cr);
-              if ("5".equals(cr.getRelease())) return counter5ReportToCsv(cr);
-              return null;
-            });
+  private static String createCsvFromCounterReport(CounterReport cr) throws IOException {
+    return switch (cr.getRelease()) {
+      case "4" -> counter4ReportToCsv(cr);
+      case "5" -> counter5ReportToCsv(cr);
+      case "5.1" -> counter51ReportToCsv(cr);
+      default -> null;
+    };
   }
 
   private static Object internalReportToCOP5Report(CounterReport report) {
@@ -131,6 +131,12 @@ public class ReportExportHelper {
   private static String counter5ReportToCsv(CounterReport counterReport) {
     Object report = ReportExportHelper.internalReportToCOP5Report(counterReport);
     return report == null ? null : replaceCreatedBy(Counter5Utils.toCSV(report));
+  }
+
+  private static String counter51ReportToCsv(CounterReport counterReport) throws IOException {
+    StringWriter stringWriter = new StringWriter();
+    Counter51Utils.writeReportAsCsv(counterReport.getReport(), stringWriter);
+    return replaceCreatedBy(stringWriter.toString());
   }
 
   public static String replaceCreatedBy(String csvReport) {
@@ -217,12 +223,20 @@ public class ReportExportHelper {
       return GetCounterReportsExportByIdResponse.respond400WithTextPlain(
           String.format(UNSUPPORTED_FORMAT_MSG, format));
     }
-    return csvMapper(cr)
+
+    String csvString;
+    try {
+      csvString = createCsvFromCounterReport(cr);
+    } catch (Exception e) {
+      return GetCounterReportsExportByIdResponse.respond500WithTextPlain(e.getMessage());
+    }
+
+    return Optional.ofNullable(csvString)
         .map(
-            csvString -> {
+            s -> {
               if ("xlsx".equals(format)) {
                 try {
-                  InputStream in = ExcelUtil.fromCSV(csvString);
+                  InputStream in = ExcelUtil.fromCSV(s);
                   BinaryOutStream bos = new BinaryOutStream();
                   bos.setData(ByteStreams.toByteArray(in));
                   return GetCounterReportsExportByIdResponse
@@ -233,7 +247,7 @@ public class ReportExportHelper {
                       String.format(XLSX_ERR_MSG, e.getMessage()));
                 }
               }
-              return GetCounterReportsExportByIdResponse.respond200WithTextCsv(csvString);
+              return GetCounterReportsExportByIdResponse.respond200WithTextCsv(s);
             })
         .orElse(
             GetCounterReportsExportByIdResponse.respond500WithTextPlain(
