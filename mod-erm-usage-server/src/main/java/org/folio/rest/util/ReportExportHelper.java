@@ -51,9 +51,7 @@ public class ReportExportHelper {
       String beginMonth,
       String endMonth) {
     // fetch the master report if a view is requested
-    if ("5".equals(reportVersion) && SUPPORTED_VIEWS.contains(reportName.toUpperCase())) {
-      reportName = reportName.substring(0, 2);
-    }
+    reportName = reportName.split("_", 2)[0];
     Criteria providerCrit =
         new Criteria()
             .addField(Constants.FIELD_NAME_PROVIDER_ID)
@@ -176,6 +174,7 @@ public class ReportExportHelper {
               .respond400WithTextPlain(String.format(UNSUPPORTED_FORMAT_MSG, format)));
     }
 
+
     if ("4".equals(version)) {
       Promise<Report> mergedResult = Promise.promise();
       new RowStreamHandlerR4(vertxContext, mergedResult).handle(rowStream);
@@ -193,6 +192,15 @@ public class ReportExportHelper {
           .compose(str -> executeReplaceCreatedBy(vertxContext, str))
           .compose(
               csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
+    } else if ("5.1".equals(version)) {
+      Promise<Object> mergedResult = Promise.promise();
+      new RowStreamHandlerR51(vertxContext, reportName, mergedResult).handle(rowStream);
+      return mergedResult
+          .future()
+          .compose(obj -> executeCounter51ToCsv(vertxContext, obj))
+          .compose(str -> executeReplaceCreatedBy(vertxContext, str))
+          .compose(
+              csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
     } else {
       return succeededFuture(
           GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
@@ -206,6 +214,20 @@ public class ReportExportHelper {
 
   private static Future<String> executeCounter5ToCsv(Context vertxContext, Object obj) {
     return executeBlocking(vertxContext, () -> Counter5Utils.toCSV(obj));
+  }
+
+  private static Future<String> executeCounter51ToCsv(Context vertxContext, Object obj) {
+    return executeBlocking(
+        vertxContext,
+        () -> {
+          StringWriter stringWriter = new StringWriter();
+          try {
+            Counter51Utils.writeReportAsCsv(obj, stringWriter);
+            return stringWriter.toString();
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   private static Future<Response> executeCreateExportMultipleMonthsResponseByFormat(
