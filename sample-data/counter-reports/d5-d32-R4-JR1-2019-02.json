@@ -1,0 +1,82 @@
+{
+  "id": "13dac374-99e3-4f24-a2b9-7c5712fbda00",
+  "downloadTime": "2020-06-11T01:24:00.947+00:00",
+  "release": "4",
+  "reportName": "JR1",
+  "yearMonth": "2019-02",
+  "providerId": "d54f9d37-7759-44b6-a621-f950e6332d32",
+  "report": {
+    "vendor": {
+      "id": "https://www.inderscienceonline.com",
+      "name": "Inderscience Publishers",
+      "contact": [
+        {
+          "email": "jrb@inderscience.com",
+          "contact": "Inderscience Publishers"
+        }
+      ],
+      "webSiteUrl": "https://www.inderscienceonline.com"
+    },
+    "created": "2020-06-10T18:04:00.000Z",
+    "name": "JR1",
+    "id": "www.inderscienceonline.com_journal1",
+    "title": "Journal Report 1",
+    "version": "4",
+    "customer": [
+      {
+        "id": "123-45-678",
+        "name": "CustomerName",
+        "contact": [],
+        "reportItems": [
+          {
+            "itemDate": [],
+            "itemName": "Progress in Industrial Ecology, an International Journal",
+            "itemDataType": "JOURNAL",
+            "itemPlatform": "Inderscience Publishers",
+            "itemAttribute": [],
+            "itemPublisher": "Inderscience Publishers",
+            "itemIdentifier": [
+              {
+                "type": "DOI",
+                "value": "10.1504/pie"
+              },
+              {
+                "type": "PROPRIETARY",
+                "value": "pie"
+              },
+              {
+                "type": "PRINT_ISSN",
+                "value": "1476-8917"
+              },
+              {
+                "type": "ONLINE_ISSN",
+                "value": "1478-8764"
+              }
+            ],
+            "itemContributor": [],
+            "itemPerformance": [
+              {
+                "period": {
+                  "end": "2019-02-28",
+                  "begin": "2019-02-01"
+                },
+                "category": "REQUESTS",
+                "instance": [
+                  {
+                    "count": 1,
+                    "metricType": "FT_PDF"
+                  },
+                  {
+                    "count": 1,
+                    "metricType": "FT_TOTAL"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "institutionalIdentifier": []
+      }
+    ]
+  }
+}

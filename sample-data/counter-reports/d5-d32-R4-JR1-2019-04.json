@@ -1,0 +1,82 @@
+{
+  "id": "39434d0e-2462-4c15-9ce5-84f7be516a07",
+  "downloadTime": "2020-06-11T01:24:00.948+00:00",
+  "release": "4",
+  "reportName": "JR1",
+  "yearMonth": "2019-04",
+  "providerId": "d54f9d37-7759-44b6-a621-f950e6332d32",
+  "report": {
+    "vendor": {
+      "id": "https://www.inderscienceonline.com",
+      "name": "Inderscience Publishers",
+      "contact": [
+        {
+          "email": "jrb@inderscience.com",
+          "contact": "Inderscience Publishers"
+        }
+      ],
+      "webSiteUrl": "https://www.inderscienceonline.com"
+    },
+    "created": "2020-06-10T18:05:00.000Z",
+    "name": "JR1",
+    "id": "www.inderscienceonline.com_journal1",
+    "title": "Journal Report 1",
+    "version": "4",
+    "customer": [
+      {
+        "id": "123-45-678",
+        "name": "CustomerName",
+        "contact": [],
+        "reportItems": [
+          {
+            "itemDate": [],
+            "itemName": "International Journal of Web Based Communities",
+            "itemDataType": "JOURNAL",
+            "itemPlatform": "Inderscience Publishers",
+            "itemAttribute": [],
+            "itemPublisher": "Inderscience Publishers",
+            "itemIdentifier": [
+              {
+                "type": "DOI",
+                "value": "10.1504/ijwbc"
+              },
+              {
+                "type": "PROPRIETARY",
+                "value": "ijwbc"
+              },
+              {
+                "type": "PRINT_ISSN",
+                "value": "1477-8394"
+              },
+              {
+                "type": "ONLINE_ISSN",
+                "value": "1741-8216"
+              }
+            ],
+            "itemContributor": [],
+            "itemPerformance": [
+              {
+                "period": {
+                  "end": "2019-04-30",
+                  "begin": "2019-04-01"
+                },
+                "category": "REQUESTS",
+                "instance": [
+                  {
+                    "count": 1,
+                    "metricType": "FT_PDF"
+                  },
+                  {
+                    "count": 1,
+                    "metricType": "FT_TOTAL"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "institutionalIdentifier": []
+      }
+    ]
+  }
+}

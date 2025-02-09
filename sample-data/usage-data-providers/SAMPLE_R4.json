@@ -1,0 +1,23 @@
+{
+  "id": "d54f9d37-7759-44b6-a621-f950e6332d32",
+  "label": "Sample Provider R4",
+  "harvestingConfig": {
+    "harvestingStatus": "active",
+    "harvestVia": "sushi",
+    "sushiConfig": {
+      "serviceType": "cs41",
+      "serviceUrl": "http://localhost/SushiService"
+    },
+    "reportRelease": 4,
+    "requestedReports": [
+      "JR1"
+    ],
+    "harvestingStart": "2019-01",
+    "harvestingEnd": "2019-12"
+  },
+  "sushiCredentials": {
+    "customerId": "123-45-678",
+    "requestorId": "456789"
+  },
+  "notes": "Provider with sample data for COUNTER 4 reports."
+}
