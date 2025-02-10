@@ -36,10 +36,12 @@ public class ReportExportHelper {
   public static final String CREATED_BY_SUFFIX = "via FOLIO eUsage app";
   public static final List<String> SUPPORTED_VIEWS =
       List.of("DR_D1", "TR_B1", "TR_B3", "TR_J1", "TR_J3", "TR_J4");
-  private static final List<String> SUPPORTED_FORMATS = List.of("csv", "xlsx");
-  private static final String UNSUPPORTED_COUNTER_VERSION_MSG =
+  public static final String UNSUPPORTED_FORMAT_MSG = "Requested format \"%s\" is not supported.";
+  public static final String NO_REPORT_DATA = "Entity does not contain report data";
+  public static final String NO_CSV_MAPPER_AVAILABLE = "No csv mapper available";
+  public static final String UNSUPPORTED_COUNTER_VERSION_MSG =
       "Requested counter version \"%s\" is not supported.";
-  private static final String UNSUPPORTED_FORMAT_MSG = "Requested format \"%s\" is not supported.";
+  private static final List<String> SUPPORTED_FORMATS = List.of("csv", "xlsx");
   private static final String XLSX_ERR_MSG = "An error occured while creating xlsx data: %s";
 
   private ReportExportHelper() {}
@@ -174,7 +176,6 @@ public class ReportExportHelper {
               .respond400WithTextPlain(String.format(UNSUPPORTED_FORMAT_MSG, format)));
     }
 
-
     if ("4".equals(version)) {
       Promise<Report> mergedResult = Promise.promise();
       new RowStreamHandlerR4(vertxContext, mergedResult).handle(rowStream);
@@ -202,9 +203,15 @@ public class ReportExportHelper {
           .compose(
               csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
     } else {
-      return succeededFuture(
-          GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
-              .respond400WithTextPlain(String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version)));
+      Promise<Response> promise = Promise.promise();
+      rowStream.handler(row -> {});
+      rowStream.endHandler(
+          v ->
+              promise.complete(
+                  GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
+                      .respond400WithTextPlain(
+                          String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version))));
+      return promise.future();
     }
   }
 
@@ -246,6 +253,14 @@ public class ReportExportHelper {
           String.format(UNSUPPORTED_FORMAT_MSG, format));
     }
 
+    if (cr == null) {
+      return GetCounterReportsExportByIdResponse.respond404();
+    }
+
+    if (cr.getReport() == null) {
+      return GetCounterReportsExportByIdResponse.respond422WithTextPlain(NO_REPORT_DATA);
+    }
+
     String csvString;
     try {
       csvString = createCsvFromCounterReport(cr);
@@ -272,8 +287,7 @@ public class ReportExportHelper {
               return GetCounterReportsExportByIdResponse.respond200WithTextCsv(s);
             })
         .orElse(
-            GetCounterReportsExportByIdResponse.respond500WithTextPlain(
-                "No report data or no csv mapper available"));
+            GetCounterReportsExportByIdResponse.respond500WithTextPlain(NO_CSV_MAPPER_AVAILABLE));
   }
 
   private static class CounterReportAPIRuntimeException extends RuntimeException {
