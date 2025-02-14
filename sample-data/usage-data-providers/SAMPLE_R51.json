@@ -1,0 +1,25 @@
+{
+  "id": "63c056c2-9e56-4148-8002-2a8649827d71",
+  "label": "Sample Provider R5.1",
+  "harvestingConfig": {
+    "harvestingStatus": "active",
+    "harvestVia": "sushi",
+    "sushiConfig": {
+      "serviceType": "cs51",
+      "serviceUrl": "https://localhost/sample"
+    },
+    "reportRelease": "5.1",
+    "requestedReports": [
+      "TR",
+      "IR",
+      "PR",
+      "DR"
+    ],
+    "harvestingStart": "2021-01",
+    "harvestingEnd": "2022-12"
+  },
+  "sushiCredentials": {
+    "customerId": "abc123"
+  },
+  "notes": "Provider with sample data for COUNTER 5 and COUNTER 5.1 reports."
+}

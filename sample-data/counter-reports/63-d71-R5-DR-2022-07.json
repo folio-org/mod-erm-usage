@@ -1,0 +1,10 @@
+{
+  "id" : "ffb3b51a-d414-4f4e-acb0-2a30d1a42a80",
+  "downloadTime" : 1738677797218,
+  "failedAttempts" : 5,
+  "failedReason" : "{\"Code\":3030,\"Severity\":\"Error\",\"Message\":\"No Usage Available for Requested Dates\"}",
+  "release" : "5",
+  "reportName" : "DR",
+  "yearMonth" : "2022-07",
+  "providerId" : "63c056c2-9e56-4148-8002-2a8649827d71"
+}

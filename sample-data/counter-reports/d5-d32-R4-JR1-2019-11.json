@@ -1,0 +1,10 @@
+{
+  "id": "e75400fa-d6e0-48be-b083-2b11ab5a6e8a",
+  "downloadTime": "2020-07-09T01:08:05.231+00:00",
+  "failedAttempts": 5,
+  "failedReason": "Report not valid: Exception{Number=3030, Severity=ERROR, Message=No Usage Available for Requested Dates}",
+  "release": "4",
+  "reportName": "JR1",
+  "yearMonth": "2019-11",
+  "providerId": "d54f9d37-7759-44b6-a621-f950e6332d32"
+}
