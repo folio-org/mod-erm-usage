@@ -26,7 +26,6 @@ public class TenantReferenceAPI extends TenantAPI {
               TenantLoading tl = new TenantLoading();
               tl.withKey("loadSample")
                   .withLead("sample-data")
-                  .add("aggregator-settings")
                   .add("usage-data-providers")
                   .add("counter-reports")
                   .perform(attributes, headers, vertxContext.owner(), promise);
