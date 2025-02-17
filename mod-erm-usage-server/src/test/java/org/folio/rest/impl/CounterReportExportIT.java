@@ -351,10 +351,10 @@ class CounterReportExportIT {
     REPORT_4_JR1(
         "4",
         "JR1",
-        "6f75e408-b853-428e-85b4-38be91ab3ab4",
+        "1ad95437-4f1b-4f3b-9654-622ff28d271d",
         "c65805a8-dd3d-4740-82b9-54744fe4f3e5",
-        "The cats journal,Cats and Dogs Publishing,platform.com,10.10XX,XXX,1111-2222,3333-4444,"
-            + "6,6,0,6",
+        "International Journal of Internet of Things and Cyber-Assurance,Inderscience Publishers,"
+            + "Inderscience Publishers,10.1504/ijitca,ijitca,2059-7967,2059-7975,1,,1,1",
         "d54f9d37-7759-44b6-a621-f950e6332d32",
         "2019-01",
         "2019-12",
@@ -364,7 +364,7 @@ class CounterReportExportIT {
         "5",
         "TR",
         "f4e81505-cd81-4dda-946e-fcdda8b6059c",
-        "d0f11843-7f32-4c2c-bed8-cd97d0c8f0b8",
+        "c71fa962-587d-4443-910e-4ff2aa6525aa",
         "Book 1715,Publisher 109,,PPDelta,,"
             + "ppdelta:1715,978-0-300-94426-6,,,,Book,Book,2012,Controlled,Regular,No_License,1,"
             + "1",
