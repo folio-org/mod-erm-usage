@@ -12,6 +12,7 @@ import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.Optional;
 import javax.ws.rs.core.Response;
@@ -28,16 +29,19 @@ import org.olf.erm.usage.counter.common.ExcelUtil;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
+import org.olf.erm.usage.counter51.Counter51Utils;
 
 public class ReportExportHelper {
 
   public static final String CREATED_BY_SUFFIX = "via FOLIO eUsage app";
   public static final List<String> SUPPORTED_VIEWS =
       List.of("DR_D1", "TR_B1", "TR_B3", "TR_J1", "TR_J3", "TR_J4");
-  private static final List<String> SUPPORTED_FORMATS = List.of("csv", "xlsx");
-  private static final String UNSUPPORTED_COUNTER_VERSION_MSG =
+  public static final String UNSUPPORTED_FORMAT_MSG = "Requested format \"%s\" is not supported.";
+  public static final String NO_REPORT_DATA = "Entity does not contain report data";
+  public static final String NO_CSV_MAPPER_AVAILABLE = "No csv mapper available";
+  public static final String UNSUPPORTED_COUNTER_VERSION_MSG =
       "Requested counter version \"%s\" is not supported.";
-  private static final String UNSUPPORTED_FORMAT_MSG = "Requested format \"%s\" is not supported.";
+  private static final List<String> SUPPORTED_FORMATS = List.of("csv", "xlsx");
   private static final String XLSX_ERR_MSG = "An error occured while creating xlsx data: %s";
 
   private ReportExportHelper() {}
@@ -49,9 +53,7 @@ public class ReportExportHelper {
       String beginMonth,
       String endMonth) {
     // fetch the master report if a view is requested
-    if ("5".equals(reportVersion) && SUPPORTED_VIEWS.contains(reportName.toUpperCase())) {
-      reportName = reportName.substring(0, 2);
-    }
+    reportName = reportName.split("_", 2)[0];
     Criteria providerCrit =
         new Criteria()
             .addField(Constants.FIELD_NAME_PROVIDER_ID)
@@ -104,15 +106,13 @@ public class ReportExportHelper {
         .orElse(null);
   }
 
-  private static Optional<String> csvMapper(CounterReport cr) {
-    return Optional.ofNullable(cr)
-        .map(CounterReport::getReport)
-        .map(
-            report -> {
-              if ("4".equals(cr.getRelease())) return counter4ReportToCsv(cr);
-              if ("5".equals(cr.getRelease())) return counter5ReportToCsv(cr);
-              return null;
-            });
+  private static String createCsvFromCounterReport(CounterReport cr) throws IOException {
+    return switch (cr.getRelease()) {
+      case "4" -> counter4ReportToCsv(cr);
+      case "5" -> counter5ReportToCsv(cr);
+      case "5.1" -> counter51ReportToCsv(cr);
+      default -> null;
+    };
   }
 
   private static Object internalReportToCOP5Report(CounterReport report) {
@@ -131,6 +131,12 @@ public class ReportExportHelper {
   private static String counter5ReportToCsv(CounterReport counterReport) {
     Object report = ReportExportHelper.internalReportToCOP5Report(counterReport);
     return report == null ? null : replaceCreatedBy(Counter5Utils.toCSV(report));
+  }
+
+  private static String counter51ReportToCsv(CounterReport counterReport) throws IOException {
+    StringWriter stringWriter = new StringWriter();
+    Counter51Utils.writeReportAsCsv(counterReport.getReport(), stringWriter);
+    return replaceCreatedBy(stringWriter.toString());
   }
 
   public static String replaceCreatedBy(String csvReport) {
@@ -187,10 +193,25 @@ public class ReportExportHelper {
           .compose(str -> executeReplaceCreatedBy(vertxContext, str))
           .compose(
               csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
+    } else if ("5.1".equals(version)) {
+      Promise<Object> mergedResult = Promise.promise();
+      new RowStreamHandlerR51(vertxContext, reportName, mergedResult).handle(rowStream);
+      return mergedResult
+          .future()
+          .compose(obj -> executeCounter51ToCsv(vertxContext, obj))
+          .compose(str -> executeReplaceCreatedBy(vertxContext, str))
+          .compose(
+              csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
     } else {
-      return succeededFuture(
-          GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
-              .respond400WithTextPlain(String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version)));
+      Promise<Response> promise = Promise.promise();
+      rowStream.handler(row -> {});
+      rowStream.endHandler(
+          v ->
+              promise.complete(
+                  GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
+                      .respond400WithTextPlain(
+                          String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version))));
+      return promise.future();
     }
   }
 
@@ -200,6 +221,20 @@ public class ReportExportHelper {
 
   private static Future<String> executeCounter5ToCsv(Context vertxContext, Object obj) {
     return executeBlocking(vertxContext, () -> Counter5Utils.toCSV(obj));
+  }
+
+  private static Future<String> executeCounter51ToCsv(Context vertxContext, Object obj) {
+    return executeBlocking(
+        vertxContext,
+        () -> {
+          StringWriter stringWriter = new StringWriter();
+          try {
+            Counter51Utils.writeReportAsCsv(obj, stringWriter);
+            return stringWriter.toString();
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   private static Future<Response> executeCreateExportMultipleMonthsResponseByFormat(
@@ -217,12 +252,28 @@ public class ReportExportHelper {
       return GetCounterReportsExportByIdResponse.respond400WithTextPlain(
           String.format(UNSUPPORTED_FORMAT_MSG, format));
     }
-    return csvMapper(cr)
+
+    if (cr == null) {
+      return GetCounterReportsExportByIdResponse.respond404();
+    }
+
+    if (cr.getReport() == null) {
+      return GetCounterReportsExportByIdResponse.respond422WithTextPlain(NO_REPORT_DATA);
+    }
+
+    String csvString;
+    try {
+      csvString = createCsvFromCounterReport(cr);
+    } catch (Exception e) {
+      return GetCounterReportsExportByIdResponse.respond500WithTextPlain(e.getMessage());
+    }
+
+    return Optional.ofNullable(csvString)
         .map(
-            csvString -> {
+            s -> {
               if ("xlsx".equals(format)) {
                 try {
-                  InputStream in = ExcelUtil.fromCSV(csvString);
+                  InputStream in = ExcelUtil.fromCSV(s);
                   BinaryOutStream bos = new BinaryOutStream();
                   bos.setData(ByteStreams.toByteArray(in));
                   return GetCounterReportsExportByIdResponse
@@ -233,11 +284,10 @@ public class ReportExportHelper {
                       String.format(XLSX_ERR_MSG, e.getMessage()));
                 }
               }
-              return GetCounterReportsExportByIdResponse.respond200WithTextCsv(csvString);
+              return GetCounterReportsExportByIdResponse.respond200WithTextCsv(s);
             })
         .orElse(
-            GetCounterReportsExportByIdResponse.respond500WithTextPlain(
-                "No report data or no csv mapper available"));
+            GetCounterReportsExportByIdResponse.respond500WithTextPlain(NO_CSV_MAPPER_AVAILABLE));
   }
 
   private static class CounterReportAPIRuntimeException extends RuntimeException {
