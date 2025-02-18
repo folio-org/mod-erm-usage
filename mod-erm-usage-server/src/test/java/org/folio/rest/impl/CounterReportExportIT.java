@@ -4,11 +4,12 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.folio.rest.impl.CounterReportExportIT.ExportFormat.CSV;
 import static org.folio.rest.impl.CounterReportExportIT.ExportFormat.XLSX;
+import static org.folio.rest.util.ClockProvider.FIXED_CLOCK_STRING;
+import static org.folio.rest.util.ReportExportHelper.CREATED_BY_SUFFIX;
 import static org.folio.rest.util.ReportExportHelper.NO_CSV_MAPPER_AVAILABLE;
 import static org.folio.rest.util.ReportExportHelper.NO_REPORT_DATA;
 import static org.folio.rest.util.ReportExportHelper.UNSUPPORTED_COUNTER_VERSION_MSG;
 import static org.folio.rest.util.ReportExportHelper.UNSUPPORTED_FORMAT_MSG;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
 import com.google.common.net.HttpHeaders;
@@ -28,6 +29,7 @@ import io.vertx.junit5.VertxTestContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -43,6 +45,7 @@ import org.folio.rest.jaxrs.model.Report;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
+import org.folio.rest.util.ClockProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,6 +73,8 @@ class CounterReportExportIT {
 
   @BeforeAll
   static void beforeAll(VertxTestContext testContext) {
+    ClockProvider.setFixedClock();
+
     RestAssured.reset();
     RestAssured.baseURI = BASE_URI;
     RestAssured.basePath = BASE_PATH;
@@ -99,6 +104,7 @@ class CounterReportExportIT {
 
   @AfterAll
   static void afterAll() {
+    ClockProvider.resetClock();
     PostgresClient.stopPostgresTester();
     webClient.close();
     vertx.close();
@@ -110,6 +116,16 @@ class CounterReportExportIT {
             testData ->
                 Arrays.stream(ExportFormat.values())
                     .map(exportFormat -> Arguments.of(testData, exportFormat)));
+  }
+
+  private static List<String> getExpectedCsvStrings(
+      String release, String... additionalCsvStrings) {
+    ArrayList<String> strings = new ArrayList<>(Arrays.asList(additionalCsvStrings));
+    if (!"4".equals(release)) {
+      strings.add(CREATED_BY_SUFFIX);
+      strings.add("Created," + FIXED_CLOCK_STRING);
+    }
+    return strings;
   }
 
   private static void postCounterReport(CounterReport counterReport) {
@@ -194,7 +210,8 @@ class CounterReportExportIT {
             .contentType(CSV.contentType)
             .extract()
             .asString();
-    assertThat(csv).contains(testData.expectedByReportIdCsvLine);
+    assertThat(csv)
+        .contains(getExpectedCsvStrings(testData.release, testData.expectedByReportIdCsvLine));
   }
 
   @ParameterizedTest
@@ -207,7 +224,8 @@ class CounterReportExportIT {
             .contentType(CSV.contentType)
             .extract()
             .asString();
-    assertThat(csv).contains(testData.expectedByReportIdCsvLine);
+    assertThat(csv)
+        .contains(getExpectedCsvStrings(testData.release, testData.expectedByReportIdCsvLine));
   }
 
   @ParameterizedTest
@@ -221,7 +239,8 @@ class CounterReportExportIT {
             .extract()
             .asInputStream();
     String csv = ExcelUtil.toCSV(inputStream);
-    assertThat(csv).contains(testData.expectedByReportIdCsvLine);
+    assertThat(csv)
+        .contains(getExpectedCsvStrings(testData.release, testData.expectedByReportIdCsvLine));
   }
 
   @ParameterizedTest
@@ -280,21 +299,29 @@ class CounterReportExportIT {
   @ParameterizedTest
   @EnumSource(TestData.class)
   void testThatExportByProviderIdReturnsCsv(TestData testData) {
-    getExportByProviderId(testData, CSV)
-        .then()
-        .statusCode(200)
-        .contentType(CSV.contentType)
-        .body(containsString(testData.expectedByProviderIdCsvLine));
+    String csv =
+        getExportByProviderId(testData, CSV)
+            .then()
+            .statusCode(200)
+            .contentType(CSV.contentType)
+            .extract()
+            .asString();
+    assertThat(csv)
+        .contains(getExpectedCsvStrings(testData.release, testData.expectedByProviderIdCsvLine));
   }
 
   @ParameterizedTest
   @EnumSource(TestData.class)
   void testThatExportByProviderIdReturnsCsvByDefault(TestData testData) {
-    getExportByProviderId(testData, (String) null)
-        .then()
-        .statusCode(200)
-        .contentType(CSV.contentType)
-        .body(containsString(testData.expectedByProviderIdCsvLine));
+    String csv =
+        getExportByProviderId(testData, (String) null)
+            .then()
+            .statusCode(200)
+            .contentType(CSV.contentType)
+            .extract()
+            .asString();
+    assertThat(csv)
+        .contains(getExpectedCsvStrings(testData.release, testData.expectedByProviderIdCsvLine));
   }
 
   @ParameterizedTest
@@ -309,7 +336,8 @@ class CounterReportExportIT {
             .asInputStream();
 
     String csv = ExcelUtil.toCSV(inputStream);
-    assertThat(csv).contains(testData.expectedByProviderIdCsvLine);
+    assertThat(csv)
+        .contains(getExpectedCsvStrings(testData.release, testData.expectedByProviderIdCsvLine));
   }
 
   @ParameterizedTest

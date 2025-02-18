@@ -1,17 +1,25 @@
 package org.folio.rest.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.folio.rest.util.ClockProvider.FIXED_CLOCK_STRING;
 import static org.folio.rest.util.ReportExportHelper.CREATED_BY_SUFFIX;
 import static org.folio.rest.util.ReportExportHelper.createDownloadResponseByReportVersion;
+import static org.folio.rest.util.ReportExportHelper.replaceCreated;
 import static org.folio.rest.util.ReportExportHelper.replaceCreatedBy;
 
 import javax.ws.rs.core.MediaType;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.Report;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.olf.erm.usage.counter41.Counter4Utils;
 
 public class ReportExportHelperTest {
+
+  @AfterClass
+  public static void afterClass() {
+    ClockProvider.resetClock();
+  }
 
   @Test
   public void testReplaceCreatedBy() {
@@ -34,6 +42,16 @@ public class ReportExportHelperTest {
     assertThat(replaceCreatedBy("Created_By,")).isEqualTo("Created_By, " + CREATED_BY_SUFFIX);
     assertThat(replaceCreatedBy("Created_by,")).isEqualTo("Created_by,");
     assertThat(replaceCreatedBy(null)).isNull();
+  }
+
+  @Test
+  public void testReplaceCreated() {
+    ClockProvider.setFixedClock();
+    assertThat(replaceCreated("abc\nCreated,2021-01-02T14:24:34Z\nabc\n"))
+        .isEqualTo("abc\nCreated," + FIXED_CLOCK_STRING + "\nabc\n");
+    // only replace string if line starts with "Created,"
+    assertThat(replaceCreated("abc\nabcCreated,2021-01-02T14:24:34Z\nabc\n"))
+        .isEqualTo("abc\nabcCreated,2021-01-02T14:24:34Z\nabc\n");
   }
 
   @Test
