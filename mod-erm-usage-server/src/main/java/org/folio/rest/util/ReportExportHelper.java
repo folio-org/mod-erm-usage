@@ -130,13 +130,13 @@ public class ReportExportHelper {
 
   private static String counter5ReportToCsv(CounterReport counterReport) {
     Object report = ReportExportHelper.internalReportToCOP5Report(counterReport);
-    return report == null ? null : replaceCreatedBy(Counter5Utils.toCSV(report));
+    return report == null ? null : replaceCreated(replaceCreatedBy(Counter5Utils.toCSV(report)));
   }
 
   private static String counter51ReportToCsv(CounterReport counterReport) throws IOException {
     StringWriter stringWriter = new StringWriter();
     Counter51Utils.writeReportAsCsv(counterReport.getReport(), stringWriter);
-    return replaceCreatedBy(stringWriter.toString());
+    return replaceCreated(replaceCreatedBy(stringWriter.toString()));
   }
 
   public static String replaceCreatedBy(String csvReport) {
@@ -144,6 +144,11 @@ public class ReportExportHelper {
     return csvReport.replaceFirst(
         "(?!.*" + CREATED_BY_SUFFIX + ".*)(Created_By,)(\"?)(.*(?=\")|.*)(\"?)",
         "$1$2$3 " + CREATED_BY_SUFFIX + "$4");
+  }
+
+  public static String replaceCreated(String csvReport) {
+    if (csvReport == null) return null;
+    return csvReport.replaceFirst("(?m)^Created,.*$", "Created," + ClockProvider.nowFormatted());
   }
 
   private static Response createExportMultipleMonthsResponseByFormat(
@@ -190,7 +195,8 @@ public class ReportExportHelper {
       return mergedResult
           .future()
           .compose(obj -> executeCounter5ToCsv(vertxContext, obj))
-          .compose(str -> executeReplaceCreatedBy(vertxContext, str))
+          .compose(
+              str -> executeBlocking(vertxContext, () -> replaceCreated(replaceCreatedBy(str))))
           .compose(
               csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
     } else if ("5.1".equals(version)) {
@@ -199,7 +205,8 @@ public class ReportExportHelper {
       return mergedResult
           .future()
           .compose(obj -> executeCounter51ToCsv(vertxContext, obj))
-          .compose(str -> executeReplaceCreatedBy(vertxContext, str))
+          .compose(
+              str -> executeBlocking(vertxContext, () -> replaceCreated(replaceCreatedBy(str))))
           .compose(
               csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
     } else {
@@ -213,10 +220,6 @@ public class ReportExportHelper {
                           String.format(UNSUPPORTED_COUNTER_VERSION_MSG, version))));
       return promise.future();
     }
-  }
-
-  private static Future<String> executeReplaceCreatedBy(Context vertxContext, String str) {
-    return executeBlocking(vertxContext, () -> ReportExportHelper.replaceCreatedBy(str));
   }
 
   private static Future<String> executeCounter5ToCsv(Context vertxContext, Object obj) {
