@@ -103,7 +103,8 @@ public class UploadHelperTest {
   @Test
   public void testReportHeaders() {
     AbstractThrowableAssert<?, ? extends Throwable> abstractThrowableAssert =
-        assertThatCode(() -> UploadHelper.getCounterReportsFromString(reportStr));
+        assertThatCode(
+            () -> UploadHelper.getCounterReportsFromString(ReportFileFormat.JSON, reportStr));
     if (isValid) {
       abstractThrowableAssert.doesNotThrowAnyException();
     } else {
