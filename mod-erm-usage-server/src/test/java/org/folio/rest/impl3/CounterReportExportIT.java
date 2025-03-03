@@ -1,9 +1,9 @@
-package org.folio.rest.impl;
+package org.folio.rest.impl3;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.folio.rest.impl.CounterReportExportIT.ExportFormat.CSV;
-import static org.folio.rest.impl.CounterReportExportIT.ExportFormat.XLSX;
+import static org.folio.rest.impl3.CounterReportExportIT.ExportFormat.CSV;
+import static org.folio.rest.impl3.CounterReportExportIT.ExportFormat.XLSX;
 import static org.folio.rest.util.ClockProvider.FIXED_CLOCK_STRING;
 import static org.folio.rest.util.ReportExportHelper.CREATED_BY_SUFFIX;
 import static org.folio.rest.util.ReportExportHelper.NO_CSV_MAPPER_AVAILABLE;
@@ -14,18 +14,9 @@ import static org.hamcrest.Matchers.equalTo;
 
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
-import io.restassured.RestAssured;
-import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.WebClient;
-import io.vertx.junit5.VertxExtension;
-import io.vertx.junit5.VertxTestContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -35,79 +26,40 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.postgres.testing.PostgresTesterContainer;
-import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
+import org.folio.rest.Setup;
+import org.folio.rest.SetupTenant;
+import org.folio.rest.TestUtils;
 import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.Report;
-import org.folio.rest.jaxrs.model.TenantAttributes;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.ClockProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.olf.erm.usage.counter.common.ExcelUtil;
 
-@ExtendWith(VertxExtension.class)
+@Setup
+@SetupTenant(loadSample = true)
 class CounterReportExportIT {
-
-  static final String BASE_URI = "http://localhost";
   static final String BASE_PATH = "/counter-reports";
   static final String PATH_EXPORT_REPORT_ID = "/export/{id}";
   static final String PATH_EXPORT_PROVIDER_ID =
       "/export/provider/{id}/report/{name}/version/{version}/from/{begin}/to/{end}";
-  private static final String TENANT = "diku";
   private static final String NON_EXISTENT_REPORT_ID = "13aa6f47-509b-4fe2-affb-c5a58cce69b4";
-  private static final Vertx vertx = Vertx.vertx();
-  private static final WebClient webClient = WebClient.create(vertx);
-  private static final int port = NetworkUtils.nextFreePort();
   private static final Report INVALID_REPORT =
       Json.decodeValue("{ \"abc\": \"123\" }", Report.class);
 
   @BeforeAll
-  static void beforeAll(VertxTestContext testContext) {
+  static void beforeAll() {
     ClockProvider.setFixedClock();
-
-    RestAssured.reset();
-    RestAssured.baseURI = BASE_URI;
-    RestAssured.basePath = BASE_PATH;
-    RestAssured.port = port;
-    RestAssured.defaultParser = Parser.JSON;
-    // RestAssured.filters(new ResponseLoggingFilter(), new RequestLoggingFilter());
-    RestAssured.requestSpecification =
-        new RequestSpecBuilder()
-            .addHeader(XOkapiHeaders.TENANT, TENANT)
-            .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
-            .build();
-
-    PostgresClient.setPostgresTester(new PostgresTesterContainer());
-    PostgresClient.getInstance(vertx).startPostgresTester();
-
-    TenantClient tenantClient = new TenantClient(BASE_URI + ":" + port, TENANT, null, webClient);
-    TenantAttributes ta = new TenantAttributes();
-    ta.setParameters(List.of(new Parameter().withKey("loadSample").withValue("true")));
-
-    DeploymentOptions options =
-        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
-    vertx
-        .deployVerticle(RestVerticle.class.getName(), options)
-        .compose(v -> tenantClient.postTenant(ta))
-        .onComplete(testContext.succeedingThenComplete());
+    TestUtils.setupRestAssured(BASE_PATH, false);
   }
 
   @AfterAll
   static void afterAll() {
     ClockProvider.resetClock();
-    PostgresClient.stopPostgresTester();
-    webClient.close();
-    vertx.close();
   }
 
   public static Stream<Arguments> provideTestDataAndExportFormatCombinations() {
@@ -129,7 +81,12 @@ class CounterReportExportIT {
   }
 
   private static void postCounterReport(CounterReport counterReport) {
-    given().body(counterReport).post().then().statusCode(201);
+    given()
+        .header(HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
+        .body(counterReport)
+        .post()
+        .then()
+        .statusCode(201);
   }
 
   private static CounterReport createCounterReport(
