@@ -6,8 +6,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.folio.rest.impl.CounterReportAPI.FORM_ATTR_EDITED;
 import static org.folio.rest.impl.CounterReportAPI.FORM_ATTR_REASON;
-import static org.folio.rest.util.UploadHelper.MSG_UNSUPPORTED_REPORT;
-import static org.folio.rest.util.UploadHelper.MSG_WRONG_FORMAT;
 import static org.hamcrest.Matchers.containsString;
 
 import com.google.common.io.Files;
@@ -95,6 +93,9 @@ public class CounterReportMultipartuploadIT {
 
   private static final Map<String, String> FORM_PARAMS =
       Map.of(FORM_ATTR_EDITED, "true", FORM_ATTR_REASON, EDIT_REASON);
+  private static final String MSG_UNSUPPORTED_FILE_EXTENSION = "Unsupported file extension: %s";
+  private static final String MSG_WRONG_FORMAT = "Wrong format supplied";
+  private static final String MSG_UNSUPPORTED_REPORT = "Unsupported report";
   private static Vertx vertx;
 
   @BeforeClass
@@ -221,7 +222,10 @@ public class CounterReportMultipartuploadIT {
   @Test
   public void testLargeFile() {
     given()
-        .multiPart(new MultiPartSpecBuilder(createTitleReportWithSize(50).getBytes()).build())
+        .multiPart(
+            new MultiPartSpecBuilder(createTitleReportWithSize(50).getBytes())
+                .fileName("test.json")
+                .build())
         .post(PATH + PROVIDER_ID)
         .then()
         .statusCode(200)
@@ -233,7 +237,10 @@ public class CounterReportMultipartuploadIT {
   public void testTooLargeFile(TestContext context) {
     Async async = context.async();
     given()
-        .multiPart(new MultiPartSpecBuilder(createTitleReportWithSize(205).getBytes()).build())
+        .multiPart(
+            new MultiPartSpecBuilder(createTitleReportWithSize(205).getBytes())
+                .fileName("test.json")
+                .build())
         .post(PATH + PROVIDER_ID)
         .then()
         .statusCode(400)
@@ -489,11 +496,21 @@ public class CounterReportMultipartuploadIT {
   @Test
   public void testInvalidContent() {
     given()
-        .multiPart(FILE_NO_REPORT)
+        .multiPart(new MultiPartSpecBuilder(FILE_NO_REPORT).fileName("test.json").build())
         .post(PATH + PROVIDER_ID)
         .then()
         .statusCode(400)
         .body(containsString(MSG_WRONG_FORMAT));
+  }
+
+  @Test
+  public void testUnsupportedExtension() {
+    given()
+        .multiPart(FILE_NO_REPORT)
+        .post(PATH + PROVIDER_ID)
+        .then()
+        .statusCode(400)
+        .body(containsString(MSG_UNSUPPORTED_FILE_EXTENSION.formatted(".txt")));
   }
 
   @Test
@@ -534,7 +551,7 @@ public class CounterReportMultipartuploadIT {
 
     String createdIds =
         given()
-            .multiPart(new MultiPartSpecBuilder(csvString.getBytes()).build())
+            .multiPart(new MultiPartSpecBuilder(csvString.getBytes()).fileName("test.csv").build())
             .post(PATH + PROVIDER_ID)
             .then()
             .statusCode(200)
@@ -634,7 +651,7 @@ public class CounterReportMultipartuploadIT {
 
     String createdIds =
         given()
-            .multiPart(new MultiPartSpecBuilder(csvString.getBytes()).build())
+            .multiPart(new MultiPartSpecBuilder(csvString.getBytes()).fileName("test.csv").build())
             .post(PATH + PROVIDER_ID)
             .then()
             .statusCode(200)
@@ -694,7 +711,7 @@ public class CounterReportMultipartuploadIT {
     String createdIds =
         given()
             .formParams(FORM_PARAMS)
-            .multiPart(new MultiPartSpecBuilder(csvString.getBytes()).build())
+            .multiPart(new MultiPartSpecBuilder(csvString.getBytes()).fileName("test.csv").build())
             .post(PATH + PROVIDER_ID)
             .then()
             .statusCode(200)

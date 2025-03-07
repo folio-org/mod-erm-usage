@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,7 +51,9 @@ import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.PgHelper;
+import org.folio.rest.util.ReportFileFormat;
 import org.folio.rest.util.UploadHelper;
+import org.folio.rest.util.UploadHelper.FileUploadException;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
@@ -58,7 +61,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   public static final String FORM_ATTR_REASON = "editReason";
   private static final int MAX_FILES = 1;
   private static final int MAX_FILE_SIZE_IN_BYTES = 200 * 1024 * 1024; // 200 MB
-  private static final String ERR_MSG_SAVE_REPORT = "Error saving report: %s";
+  static final String CONTEXT_FILENAME_KEY = "uploadedFilename";
   private final Logger logger = LogManager.getLogger(CounterReportAPI.class);
   private final Comparator<CounterReportsPerYear> compareByYear =
       Comparator.comparing(CounterReportsPerYear::getYear);
@@ -296,15 +299,14 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Context vertxContext,
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler) {
-    executeBlocking(
-            vertxContext,
+    vertxContext
+        .executeBlocking(
             () -> {
-              try {
-                return UploadHelper.getCounterReportsFromString(buffer.toString());
-              } catch (Exception e) {
-                throw new ReportUploadException(e);
-              }
-            })
+              ReportFileFormat reportFileFormat =
+                  ReportFileFormat.fromFilename(routingContext.get(CONTEXT_FILENAME_KEY));
+              return UploadHelper.getCounterReportsFromString(reportFileFormat, buffer.toString());
+            },
+            true)
         .compose(
             counterReports ->
                 PgHelper.getUDPfromDbById(vertxContext, okapiHeaders, id)
@@ -337,15 +339,16 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                                     "Saved report with ids: %s", String.join(",", reportIds))))))
         .onFailure(
             throwable -> {
-              Response.ResponseBuilder response =
-                  Response.status(500)
-                      .header("Content-Type", "text/plain")
-                      .entity(String.format(ERR_MSG_SAVE_REPORT, throwable));
-              if (throwable instanceof ReportUploadException) {
-                asyncResultHandler.handle(succeededFuture(response.status(400).build()));
-              } else {
-                asyncResultHandler.handle(succeededFuture(response.build()));
-              }
+              Response response =
+                  Response.status(
+                          (throwable instanceof FileUploadException
+                                  || throwable instanceof IllegalArgumentException)
+                              ? 400
+                              : 500)
+                      .type(MediaType.TEXT_PLAIN)
+                      .entity(throwable.getMessage())
+                      .build();
+              asyncResultHandler.handle(succeededFuture(response));
             });
   }
 
@@ -393,6 +396,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 PostCounterReportsMultipartuploadProviderByIdResponse.respond400WithTextPlain(
                     "Multiple files are not supported")));
       } else {
+        routingContext.put(CONTEXT_FILENAME_KEY, fileUpload.filename());
         fileUpload.handler(
             buf -> {
               if (buffer.length() > MAX_FILE_SIZE_IN_BYTES) {
@@ -454,23 +458,26 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   }
 
   @Override
-  public void getCounterReportsReportsReleases(Map<String, String> okapiHeaders,
-    Handler<AsyncResult<Response>> asyncResultHandler, Context vertxContext) {
+  public void getCounterReportsReportsReleases(
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
     PgHelper.getReportReleases(vertxContext, okapiHeaders)
-      .onComplete(
-        ar -> {
-          if (ar.succeeded()) {
-            ReportReleases result = ar.result();
-            asyncResultHandler.handle(
-              succeededFuture(
-                GetCounterReportsReportsReleasesResponse.respond200WithApplicationJson(
-                  result)));
-          } else {
-            asyncResultHandler.handle(
-              succeededFuture(
-                GetCounterReportsReportsReleasesResponse.respond500WithTextPlain(ar.cause())));
-          }
-        });
+        .onComplete(
+            ar -> {
+              if (ar.succeeded()) {
+                ReportReleases result = ar.result();
+                asyncResultHandler.handle(
+                    succeededFuture(
+                        GetCounterReportsReportsReleasesResponse.respond200WithApplicationJson(
+                            result)));
+              } else {
+                asyncResultHandler.handle(
+                    succeededFuture(
+                        GetCounterReportsReportsReleasesResponse.respond500WithTextPlain(
+                            ar.cause())));
+              }
+            });
   }
 
   @Override
@@ -579,12 +586,5 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                         GetCounterReportsExportProviderReportVersionFromToByIdAndNameAndAversionAndBeginAndEndResponse
                             .respond500WithTextPlain(ar.cause().getMessage())))
         .onComplete(asyncResultHandler);
-  }
-
-  private static class ReportUploadException extends RuntimeException {
-
-    public ReportUploadException(Throwable cause) {
-      super(cause);
-    }
   }
 }
