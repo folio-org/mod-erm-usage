@@ -2,6 +2,9 @@ package org.folio.rest.util;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import java.io.IOException;
@@ -14,7 +17,6 @@ import java.util.Optional;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.lang3.NotImplementedException;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
@@ -22,6 +24,8 @@ import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
 import org.olf.erm.usage.counter41.csv.mapper.MapperException;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
+import org.olf.erm.usage.counter51.Counter51Utils;
+import org.olf.erm.usage.counter51.ReportType;
 import org.openapitools.client.model.SUSHIReportHeader;
 import org.openapitools.client.model.SUSHIReportHeaderReportAttributes;
 
@@ -111,7 +115,7 @@ public class UploadHelper {
     return switch (version) {
       case R4 -> throw new FileUploadException(MSG_UNSUPPORTED_REPORT_FORMAT);
       case R5 -> processR5JsonReport(content);
-      case R51 -> throw new NotImplementedException();
+      case R51 -> processR51JsonReport(content);
     };
   }
 
@@ -133,6 +137,19 @@ public class UploadHelper {
       throws Counter5UtilsException, ReportSplitException {
     Object report = Counter5Utils.fromJSON(content);
     return processR5Report(report);
+  }
+
+  private static List<CounterReport> processR51JsonReport(String content)
+      throws JsonProcessingException, ReportSplitException, Counter5UtilsException {
+    JsonNode jsonNode = Counter51Utils.getDefaultObjectMapper().readTree(content);
+    ReportType reportType = Counter51Utils.getReportType(jsonNode);
+
+    if (reportType.isMasterReport()) {
+      Counter51Utils.validate(jsonNode, reportType);
+      return createCounterReports(jsonNode, reportType.name(), ReportReleaseVersion.R51);
+    } else {
+      throw new FileUploadException(MSG_UNSUPPORTED_REPORT);
+    }
   }
 
   private static List<CounterReport> processR5CsvReport(String content)
@@ -193,7 +210,7 @@ public class UploadHelper {
     return switch (version) {
       case R4 -> Counter4Utils.split((Report) report);
       case R5 -> Counter5Utils.split(report);
-      case R51 -> throw new NotImplementedException();
+      case R51 -> Counter51Utils.splitReport((ObjectNode) report);
     };
   }
 
@@ -220,7 +237,7 @@ public class UploadHelper {
     return switch (version) {
       case R4 -> Counter4Utils.getYearMonthsFromReport((Report) report);
       case R5 -> Counter5Utils.getYearMonthFromReport(report);
-      case R51 -> throw new NotImplementedException();
+      case R51 -> Counter51Utils.getYearMonths((ObjectNode) report);
     };
   }
 
@@ -231,7 +248,9 @@ public class UploadHelper {
           Json.decodeValue(
               Counter4Utils.toJSON((Report) report), org.folio.rest.jaxrs.model.Report.class);
       case R5 -> Json.decodeValue(Json.encode(report), org.folio.rest.jaxrs.model.Report.class);
-      case R51 -> throw new NotImplementedException();
+      case R51 ->
+          Counter51Utils.getDefaultObjectMapper()
+              .convertValue(report, org.folio.rest.jaxrs.model.Report.class);
     };
   }
 

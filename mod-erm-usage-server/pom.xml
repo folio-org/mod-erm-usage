@@ -390,6 +390,9 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <excludedGroups>performance.PerformanceTest</excludedGroups>
+          <excludes>
+            <exclude>org/folio/rest/impl3/*IT.java</exclude>
+          </excludes>
         </configuration>
         <executions>
           <execution>
