@@ -25,16 +25,16 @@
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <maven.compiler.release>21</maven.compiler.release>
     <raml-module-builder.version>35.4.0</raml-module-builder.version>
-    <folio-module-descriptor-validator.version>1.0.0</folio-module-descriptor-validator.version>
+    <folio-module-descriptor-validator.version>1.0.1</folio-module-descriptor-validator.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
     <generate_routing_context>/counter-reports/multipartupload/provider/{id}</generate_routing_context>
     <vertx.version>4.5.13</vertx.version>
     <aspectj.version>1.9.22.1</aspectj.version>
     <aspectj-maven-plugin.version>1.14</aspectj-maven-plugin.version>
-    <log4j.version>2.23.0</log4j.version>
+    <log4j.version>2.24.3</log4j.version>
     <erm.usage.counter.version>5.0.0</erm.usage.counter.version>
-    <spotless.version>2.43.0</spotless.version>
-    <google-java-format.version>1.24.0</google-java-format.version>
+    <spotless.version>2.44.3</spotless.version>
+    <google-java-format.version>1.25.2</google-java-format.version>
 
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
   </properties>
@@ -73,7 +73,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.11.4</version>
+        <version>5.12.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -114,7 +114,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.25.3</version>
+      <version>3.27.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
