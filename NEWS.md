@@ -1,3 +1,17 @@
+# 5.1.0
+* [MODEUS-200](https://folio-org.atlassian.net/browse/MODEUS-200) Update `maven-surefire-plugin` and `maven-failsafe-plugin`
+* [MODEUS-199](https://folio-org.atlassian.net/browse/MODEUS-199) Upgrade to Java 21
+* [MODEUS-198](https://folio-org.atlassian.net/browse/MODEUS-198) Support R51 JSON upload
+* [MODEUS-197](https://folio-org.atlassian.net/browse/MODEUS-197) Refactor file upload
+* [MODEUS-196](https://folio-org.atlassian.net/browse/MODEUS-196) Update JAXB import
+* [MODEUS-194](https://folio-org.atlassian.net/browse/MODEUS-194) Set `Created` date when exporting reports as CSV/XLSX
+* [MODEUS-192](https://folio-org.atlassian.net/browse/MODEUS-192) Update export endpoints to support COUNTER 5.1 CSV/XSLX
+* [MODEUS-181](https://folio-org.atlassian.net/browse/MODEUS-181) Provide sample data for COUNTER 5.1 providers
+* Add `spotless-maven-plugin` and update `CONTRIBUTING.md`
+* [MODEUS-189](https://folio-org.atlassian.net/browse/MODEUS-189) Bump interface version for keywords
+* [MODEUS-189](https://folio-org.atlassian.net/browse/MODEUS-189) Add keywords search (label, description, aggregator name) for Usage Data Providers
+* [MODEUS-188](https://folio-org.atlassian.net/browse/MODEUS-188) Update `createDownloadResponseByReportVersion` in `ReportExportHelper`
+
 # 5.0.0
 * [APPDESCRIP-28](https://folio-org.atlassian.net/browse/APPDESCRIP-28) Update erm-usage/files interface id to be valid for Eureka platform
 * [MODEUS-178](https://folio-org.atlassian.net/browse/MODEUS-178) Review and cleanup Module Descriptor for mod-erm-usage
@@ -94,7 +108,7 @@
 * Update module to JDK 11 ([MODEUS-81])
 
 # 2.10.0
-* Add endpoint to manage custom-reports (MODEUS-58)
+Add endpoint to manage custom-reports (MODEUS-58)
 * Add property to UDP schema for storing last harvesting datetime (MODEUS-73)
 * mod-erm-usage crashes when manually uploading certain COUNTER reports (MODEUS-76)
 * Latest statistics sometimes has incorrect value (MODEUS-77)
