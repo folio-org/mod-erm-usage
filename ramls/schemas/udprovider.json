@@ -15,6 +15,15 @@
       "description": "Usage Data Provider description",
       "type": "string"
     },
+    "status": {
+      "description": "Status of the Usage Data Provider",
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
     "harvestingConfig": {
       "type": "object",
       "description": "Specifies harvesting configuration",
@@ -188,6 +197,7 @@
   },
   "required": [
     "label",
+    "status",
     "harvestingConfig"
   ],
   "additionalProperties": true
