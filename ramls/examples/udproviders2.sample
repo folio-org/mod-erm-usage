@@ -2,6 +2,7 @@
   "id": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd73",
   "label": "Data provider with aggregator",
   "description": "See meeting notes 2023-10-05",
+  "status": "active",
   "harvestingConfig": {
     "harvestingStatus": "active",
     "harvestVia": "aggregator",
