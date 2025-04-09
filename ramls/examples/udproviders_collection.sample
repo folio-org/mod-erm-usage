@@ -3,6 +3,7 @@
     {
       "id": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd73",
       "label": "Data provider with aggregator",
+      "status": "active",
       "harvestingConfig": {
         "harvestingStatus": "active",
         "harvestVia": "aggregator",
@@ -34,6 +35,7 @@
     {
       "id": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd72",
       "label": "Data provider without aggregator",
+      "status": "active",
       "harvestingConfig": {
         "harvestingStatus": "active",
         "harvestVia": "sushi",

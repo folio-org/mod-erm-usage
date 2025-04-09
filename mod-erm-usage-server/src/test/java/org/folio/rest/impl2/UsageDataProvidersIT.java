@@ -1,6 +1,7 @@
 package org.folio.rest.impl2;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -23,15 +24,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-
+import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
+import org.folio.rest.jaxrs.model.HarvestingConfig;
+import org.folio.rest.jaxrs.model.HarvestingConfig.HarvestingStatus;
 import org.folio.rest.jaxrs.model.SushiCredentials;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
+import org.folio.rest.jaxrs.model.UsageDataProvider.Status;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
@@ -48,6 +52,8 @@ public class UsageDataProvidersIT {
   private static final String BASE_URI = "/usage-data-providers";
   private static final String AGGREGATOR_PATH = "/aggregator-settings";
   private static final String TENANT = "diku";
+  private static final String CONSTRAINT_VIOLATION =
+      "violates check constraint \"usage_data_providers_harvestingstatus_constraint\"";
   private static Vertx vertx;
   private static UsageDataProvider udprovider;
   private static UsageDataProvider udprovider2;
@@ -339,6 +345,63 @@ public class UsageDataProvidersIT {
         .statusCode(204);
   }
 
+  @Test
+  public void checkThatWeCantPostInactiveProviderWithActiveHarvestingStatus() {
+    UsageDataProvider inactiveProvider =
+        new UsageDataProvider()
+            .withLabel("Inactive Provider")
+            .withStatus(Status.INACTIVE)
+            .withHarvestingConfig(
+                new HarvestingConfig().withHarvestingStatus(HarvestingStatus.ACTIVE));
+
+    String body = postEntity(inactiveProvider).then().statusCode(500).extract().asString();
+    assertThat(body).contains(CONSTRAINT_VIOLATION);
+  }
+
+  @Test
+  public void checkThatWeCantPutInactiveProviderWithActiveHarvestingStatus() {
+    UsageDataProvider provider =
+        postEntity(udprovider).then().statusCode(201).extract().as(UsageDataProvider.class);
+
+    String body =
+        putEntity(provider.withStatus(Status.INACTIVE)).then().statusCode(500).extract().asString();
+    assertThat(body).contains(CONSTRAINT_VIOLATION);
+
+    deleteEntity(provider).then().statusCode(204);
+  }
+
+  /** Tests backward compatibility with previous versions */
+  @Test
+  public void checkThatWeCanHandleProviderWithoutStatus() {
+    UsageDataProvider providerWithoutStatus =
+        new UsageDataProvider()
+            .withLabel("Provider without status")
+            .withHarvestingConfig(
+                new HarvestingConfig().withHarvestingStatus(HarvestingStatus.ACTIVE));
+
+    // POST without status
+    UsageDataProvider savedProvider =
+        postEntity(providerWithoutStatus)
+            .then()
+            .statusCode(201)
+            .extract()
+            .as(UsageDataProvider.class);
+    assertThat(savedProvider.getStatus()).isEqualTo(Status.ACTIVE);
+
+    // PUT without status
+    putEntity(savedProvider.withStatus(null)).then().statusCode(204);
+    UsageDataProvider changedProvider =
+        getEntityById(savedProvider.getId())
+            .then()
+            .statusCode(200)
+            .extract()
+            .as(UsageDataProvider.class);
+    assertThat(changedProvider.getStatus()).isEqualTo(Status.ACTIVE);
+
+    // DELETE
+    deleteEntity(savedProvider).then().statusCode(204);
+  }
+
   private UsageDataProvider postUdp(UsageDataProvider udprovider) {
     String mockedOkapiUrl = "http://localhost:" + wireMockRule.port();
 
@@ -367,5 +430,33 @@ public class UsageDataProvidersIT {
         .when()
         .param("query", cql)
         .get(BASE_URI);
+  }
+
+  private Response postEntity(Object entity) {
+    return given()
+        .body(entity)
+        .header(XOkapiHeaders.TENANT, TENANT)
+        .header(CONTENT_TYPE, APPLICATION_JSON)
+        .post(BASE_URI);
+  }
+
+  private Response putEntity(Object entity) {
+    JsonObject jsonObject = JsonObject.mapFrom(entity);
+    String id = jsonObject.getString("id");
+    return given()
+        .body(entity)
+        .header(XOkapiHeaders.TENANT, TENANT)
+        .header(CONTENT_TYPE, APPLICATION_JSON)
+        .put(BASE_URI + "/{id}", id);
+  }
+
+  private Response getEntityById(String id) {
+    return given().header(XOkapiHeaders.TENANT, TENANT).get(BASE_URI + "/{id}", id);
+  }
+
+  private Response deleteEntity(Object entity) {
+    JsonObject jsonObject = JsonObject.mapFrom(entity);
+    String id = jsonObject.getString("id");
+    return given().body(entity).header(XOkapiHeaders.TENANT, TENANT).delete(BASE_URI + "/{id}", id);
   }
 }

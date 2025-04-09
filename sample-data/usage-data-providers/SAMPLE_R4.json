@@ -1,6 +1,7 @@
 {
   "id": "d54f9d37-7759-44b6-a621-f950e6332d32",
   "label": "Sample Provider R4",
+  "status": "active",
   "harvestingConfig": {
     "harvestingStatus": "active",
     "harvestVia": "sushi",

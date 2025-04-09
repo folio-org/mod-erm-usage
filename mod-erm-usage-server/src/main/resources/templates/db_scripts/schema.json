@@ -2,6 +2,11 @@
   "scripts": [
     {
       "run": "after",
+      "snippetPath": "migration/5.2.0/migrate_udp_schema.sql",
+      "fromModuleVersion": "mod-erm-usage-5.2.0"
+    },
+    {
+      "run": "after",
       "snippetPath": "migration/5.0.0/migrate_udp_schema.sql",
       "fromModuleVersion": "mod-erm-usage-5.0.0"
     },
@@ -113,8 +118,9 @@
     },
     {
       "tableName": "usage_data_providers",
-      "fromModuleVersion": "mod-erm-usage-4.0.0",
+      "fromModuleVersion": "mod-erm-usage-5.2.0",
       "withMetadata": true,
+      "customSnippetPath": "usage_data_providers.sql",
       "fullTextIndex": [
         {
           "fieldName": "keywords",
