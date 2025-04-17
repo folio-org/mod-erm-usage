@@ -121,15 +121,13 @@
       "fromModuleVersion": "mod-erm-usage-5.2.0",
       "withMetadata": true,
       "customSnippetPath": "usage_data_providers.sql",
-      "likeIndex": [
-        {
-          "fieldName": "status"
-        }
-      ],
       "fullTextIndex": [
         {
           "fieldName": "keywords",
           "multiFieldNames": "label,description,harvestingConfig.aggregator.name"
+        },
+        {
+          "fieldName": "status"
         },
         {
           "fieldName": "harvestingConfig.harvestingStatus",
