@@ -15,6 +15,8 @@ import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.TenantAttributes;
+import org.folio.rest.persist.Criteria.Criterion;
+import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.tools.utils.VertxUtils;
 
@@ -58,6 +60,11 @@ public class TestUtils {
   public static Future<HttpResponse<Buffer>> deleteTenant(String tenantId, boolean purge) {
     TenantClient tenantClient = new TenantClient(BASE_URI + ":" + port, tenantId, null, webClient);
     return tenantClient.postTenant(new TenantAttributes().withModuleTo(null).withPurge(purge));
+  }
+
+  public static Future<Void> clearTable(String tenantId, String tableName) {
+    PostgresClient pgClient = PostgresClient.getInstance(vertx, tenantId);
+    return pgClient.delete(tableName, new Criterion()).mapEmpty();
   }
 
   public static void setupRestAssured(String basePath, boolean enableLogging) {

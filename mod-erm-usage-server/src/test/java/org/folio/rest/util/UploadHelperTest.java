@@ -2,6 +2,7 @@ package org.folio.rest.util;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 import java.util.Collection;
 import java.util.Collections;
@@ -104,7 +105,9 @@ public class UploadHelperTest {
   public void testReportHeaders() {
     AbstractThrowableAssert<?, ? extends Throwable> abstractThrowableAssert =
         assertThatCode(
-            () -> UploadHelper.getCounterReportsFromString(ReportFileFormat.JSON, reportStr));
+            () ->
+                UploadHelper.getCounterReportsFromBuffer(
+                    ReportFileFormat.JSON, Buffer.buffer(reportStr)));
     if (isValid) {
       abstractThrowableAssert.doesNotThrowAnyException();
     } else {

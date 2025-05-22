@@ -5,10 +5,13 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Serial;
+import java.io.StringReader;
 import java.time.YearMonth;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +22,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.niso.schemas.counter.Report;
+import org.olf.erm.usage.counter.common.ExcelUtil;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
 import org.olf.erm.usage.counter41.csv.mapper.MapperException;
@@ -75,26 +79,37 @@ public class UploadHelper {
   }
 
   /**
-   * Processes a string that represents a COUNTER report and converts it into a list of {@link
-   * CounterReport} objects. This method handles different report formats and COUNTER release
+   * Processes a {@link Buffer} that represents a COUNTER report and converts it into a list of
+   * {@link CounterReport} objects. This method handles different report formats and COUNTER release
    * versions.
    *
    * @param format the {@link ReportFileFormat} of the input content
-   * @param content the string content of the report
+   * @param buffer a {@link Buffer} containing the content of the report
    * @return a list of {@link CounterReport} objects parsed from the input
    * @throws FileUploadException if there's an error in processing the file content or if the format
    *     is unsupported
    */
-  public static List<CounterReport> getCounterReportsFromString(
-      ReportFileFormat format, String content) throws FileUploadException {
+  public static List<CounterReport> getCounterReportsFromBuffer(
+      ReportFileFormat format, Buffer buffer) throws FileUploadException {
     try {
+      String content = bufferToString(buffer, format);
       return switch (format) {
         case JSON -> processJsonReport(content);
-        case CSV -> processCsvReport(content);
+        case CSV, XSLX -> processCsvReport(content, ReportFileFormat.CSV);
+        case TSV -> processCsvReport(content, ReportFileFormat.TSV);
         case XML -> processXmlReport(content);
       };
     } catch (Exception e) {
       throw new FileUploadException(MSG_WRONG_FORMAT + ": " + e.getMessage(), e);
+    }
+  }
+
+  private static String bufferToString(Buffer buffer, ReportFileFormat reportFileFormat)
+      throws IOException {
+    if (ReportFileFormat.XSLX.equals(reportFileFormat)) {
+      return ExcelUtil.toCSV(new ByteArrayInputStream(buffer.getBytes()));
+    } else {
+      return buffer.toString();
     }
   }
 
@@ -119,17 +134,18 @@ public class UploadHelper {
     };
   }
 
-  private static List<CounterReport> processCsvReport(String content)
+  private static List<CounterReport> processCsvReport(
+      String content, ReportFileFormat reportFileFormat)
       throws MapperException,
           Counter5UtilsException,
           ReportSplitException,
           IOException,
           org.olf.erm.usage.counter50.csv.mapper.MapperException {
-    ReportReleaseVersion version = getCounterReleaseVersion(ReportFileFormat.CSV, content);
+    ReportReleaseVersion version = getCounterReleaseVersion(reportFileFormat, content);
     return switch (version) {
       case R4 -> processR4CsvReport(content);
       case R5 -> processR5CsvReport(content);
-      case R51 -> throw new FileUploadException(MSG_UNSUPPORTED_REPORT_FORMAT);
+      case R51 -> processR51CsvReport(content, reportFileFormat);
     };
   }
 
@@ -142,6 +158,12 @@ public class UploadHelper {
   private static List<CounterReport> processR51JsonReport(String content)
       throws JsonProcessingException, ReportSplitException, Counter5UtilsException {
     JsonNode jsonNode = Counter51Utils.getDefaultObjectMapper().readTree(content);
+    return processR51JsonReport(jsonNode);
+  }
+
+  private static List<CounterReport> processR51JsonReport(JsonNode jsonNode)
+      throws ReportSplitException, Counter5UtilsException {
+
     ReportType reportType = Counter51Utils.getReportType(jsonNode);
 
     if (reportType.isMasterReport()) {
@@ -158,6 +180,17 @@ public class UploadHelper {
           ReportSplitException {
     Object report = Counter5Utils.fromCSV(content);
     return processR5Report(report);
+  }
+
+  private static List<CounterReport> processR51CsvReport(
+      String content, ReportFileFormat reportFileFormat)
+      throws IOException, ReportSplitException, Counter5UtilsException {
+    CSVFormat csvFormat = CSVFormat.RFC4180;
+    if (ReportFileFormat.TSV.equals(reportFileFormat)) {
+      csvFormat = CSVFormat.TDF;
+    }
+    JsonNode report = Counter51Utils.createReportFromCsv(new StringReader(content), csvFormat);
+    return processR51JsonReport(report);
   }
 
   private static List<CounterReport> processR5Report(Object report)
@@ -257,8 +290,9 @@ public class UploadHelper {
   private static ReportReleaseVersion getCounterReleaseVersion(
       ReportFileFormat format, String content) throws IOException {
     return switch (format) {
-      case CSV -> getReportReleaseVersionFromCsv(content);
+      case CSV, XSLX -> getReportReleaseVersionFromCsv(content, CSVFormat.RFC4180);
       case JSON -> getReportReleaseVersionFromJson(content);
+      case TSV -> getReportReleaseVersionFromCsv(content, CSVFormat.TDF);
       case XML -> ReportReleaseVersion.R4;
     };
   }
@@ -268,10 +302,10 @@ public class UploadHelper {
         new JsonObject(content).getJsonObject(REPORT_HEADER_KEY).getString(RELEASE_KEY));
   }
 
-  private static ReportReleaseVersion getReportReleaseVersionFromCsv(String content)
-      throws IOException {
+  private static ReportReleaseVersion getReportReleaseVersionFromCsv(
+      String content, CSVFormat csvFormat) throws IOException {
     List<CSVRecord> firstRows;
-    try (CSVParser csvParser = CSVParser.parse(content, CSVFormat.DEFAULT)) {
+    try (CSVParser csvParser = CSVParser.parse(content, csvFormat)) {
       firstRows = csvParser.stream().limit(3).toList();
     }
 

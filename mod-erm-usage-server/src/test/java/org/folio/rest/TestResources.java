@@ -12,7 +12,9 @@ public enum TestResources {
   R51_SAMPLE_DR_INVALID_ATTRIBUTES("fileupload/DR_sample_r51_invalid_attributes.json"),
   R51_SAMPLE_DR_INVALID_DATA("fileupload/DR_sample_r51_invalid_data.json"),
   R51_SAMPLE_DRD2_OK("fileupload/DRD2_sample_r51.json"),
-  ;
+  R51_SAMPLE_TR_TSV("fileupload/TR_sample_r51.tsv"),
+  R51_SAMPLE_TR_XLSX("fileupload/TR_sample_r51.xlsx"),
+  R51_SAMPLE_TR_XLSX_INVALID_ATTRIBUTES("fileupload/TR_sample_r51_invalid_attributes.xlsx");
 
   private final URL url;
 
