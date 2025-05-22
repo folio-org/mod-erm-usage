@@ -304,7 +304,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             () -> {
               ReportFileFormat reportFileFormat =
                   ReportFileFormat.fromFilename(routingContext.get(CONTEXT_FILENAME_KEY));
-              return UploadHelper.getCounterReportsFromString(reportFileFormat, buffer.toString());
+              return UploadHelper.getCounterReportsFromBuffer(reportFileFormat, buffer);
             },
             true)
         .compose(

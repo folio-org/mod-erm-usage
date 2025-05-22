@@ -32,7 +32,7 @@
     <aspectj.version>1.9.22.1</aspectj.version>
     <aspectj-maven-plugin.version>1.14</aspectj-maven-plugin.version>
     <log4j.version>2.24.3</log4j.version>
-    <erm.usage.counter.version>5.0.0</erm.usage.counter.version>
+    <erm.usage.counter.version>5.1.0-SNAPSHOT</erm.usage.counter.version>
     <spotless.version>2.44.3</spotless.version>
     <google-java-format.version>1.25.2</google-java-format.version>
 

@@ -7,7 +7,9 @@ import java.util.Optional;
 public enum ReportFileFormat {
   CSV(".csv"),
   JSON(".json"),
-  XML(".xml");
+  TSV(".tsv"),
+  XML(".xml"),
+  XSLX(".xlsx");
 
   private final String extension;
 
