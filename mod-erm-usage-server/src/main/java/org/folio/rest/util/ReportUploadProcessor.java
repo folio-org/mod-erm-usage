@@ -11,7 +11,7 @@ public interface ReportUploadProcessor {
   static ReportUploadProcessor of(ReportFileFormat reportFileFormat) {
     return switch (reportFileFormat) {
       case JSON -> new ReportUploadJsonProcessor();
-      case CSV, XSLX -> new ReportUploadCsvProcessor(CSVFormat.RFC4180);
+      case CSV, XLSX -> new ReportUploadCsvProcessor(CSVFormat.RFC4180);
       case TSV -> new ReportUploadCsvProcessor(CSVFormat.TDF);
       case XML -> new ReportUploadXmlProcessor();
       default ->

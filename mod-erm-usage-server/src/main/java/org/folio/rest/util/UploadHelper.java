@@ -92,7 +92,7 @@ public class UploadHelper {
 
   private static String bufferToString(Buffer buffer, ReportFileFormat reportFileFormat)
       throws IOException {
-    if (ReportFileFormat.XSLX.equals(reportFileFormat)) {
+    if (ReportFileFormat.XLSX.equals(reportFileFormat)) {
       return ExcelUtil.toCSV(new ByteArrayInputStream(buffer.getBytes()));
     } else {
       return buffer.toString();

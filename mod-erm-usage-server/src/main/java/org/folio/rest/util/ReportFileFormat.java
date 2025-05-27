@@ -9,7 +9,7 @@ public enum ReportFileFormat {
   JSON(".json"),
   TSV(".tsv"),
   XML(".xml"),
-  XSLX(".xlsx");
+  XLSX(".xlsx");
 
   private final String extension;
 
