@@ -1,15 +1,34 @@
 package org.folio.rest.util;
 
-import java.io.Serial;
+import org.folio.rest.jaxrs.model.ReportUploadError;
 
 public class ReportUploadException extends RuntimeException {
-  @Serial private static final long serialVersionUID = -3795351043189447151L;
 
-  public ReportUploadException(String message) {
-    super(message);
+  private final transient ReportUploadError reportUploadError;
+
+  public ReportUploadException(ReportUploadErrorCode errorCode) {
+    this(ReportUploadErrorFactory.create(errorCode));
   }
 
-  public ReportUploadException(String message, Throwable cause) {
-    super(message, cause);
+  public ReportUploadException(ReportUploadErrorCode errorCode, Throwable cause) {
+    this(ReportUploadErrorFactory.create(errorCode, cause), cause);
+  }
+
+  public ReportUploadException(ReportUploadErrorCode errorCode, String details) {
+    this(ReportUploadErrorFactory.create(errorCode, details));
+  }
+
+  private ReportUploadException(ReportUploadError reportUploadError) {
+    super(reportUploadError.getMessage());
+    this.reportUploadError = reportUploadError;
+  }
+
+  private ReportUploadException(ReportUploadError reportUploadError, Throwable cause) {
+    super(reportUploadError.getMessage(), cause);
+    this.reportUploadError = reportUploadError;
+  }
+
+  public ReportUploadError getReportUploadError() {
+    return reportUploadError;
   }
 }

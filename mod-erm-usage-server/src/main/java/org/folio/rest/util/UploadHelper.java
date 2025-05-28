@@ -1,6 +1,8 @@
 package org.folio.rest.util;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.folio.rest.util.ReportUploadErrorCode.INVALID_REPORT_CONTENT;
+import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_REPORT_TYPE;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -31,9 +33,6 @@ import org.openapitools.client.model.SUSHIReportHeaderReportAttributes;
  */
 public class UploadHelper {
 
-  public static final String MSG_WRONG_FORMAT = "Wrong format supplied";
-  public static final String MSG_UNSUPPORTED_REPORT = "Unsupported report";
-  public static final String MSG_UNSUPPORTED_REPORT_FORMAT = "Unsupported report format";
   private static final String ATTRIBUTES_TO_SHOW = "Attributes_To_Show";
   private static final Map<String, List<SUSHIReportHeaderReportAttributes>> SUPPORTED_REPORTS =
       initSupportedReports();
@@ -84,8 +83,10 @@ public class UploadHelper {
     try {
       String content = bufferToString(buffer, format);
       return ReportUploadProcessor.of(format).process(content);
+    } catch (ReportUploadException e) {
+      throw e;
     } catch (Exception e) {
-      throw new ReportUploadException(MSG_WRONG_FORMAT + ": " + e.getMessage(), e);
+      throw new ReportUploadException(INVALID_REPORT_CONTENT, e);
     }
   }
 
@@ -107,7 +108,10 @@ public class UploadHelper {
       Counter51Utils.validate(jsonNode, reportType);
       return createCounterReports(jsonNode, reportType.name(), ReportReleaseVersion.R51);
     } else {
-      throw new ReportUploadException(MSG_UNSUPPORTED_REPORT);
+      throw new ReportUploadException(
+          UNSUPPORTED_REPORT_TYPE,
+          "Supported report types for COUNTER Release 5 and 5.1 are: "
+              + ReportType.getMasterReports());
     }
   }
 
@@ -115,7 +119,7 @@ public class UploadHelper {
       throws ReportUploadException {
     String reportName = header.getReportName();
     if (!SUPPORTED_REPORTS.containsKey(reportName)) {
-      throw new ReportUploadException(MSG_UNSUPPORTED_REPORT);
+      throw new ReportUploadException(UNSUPPORTED_REPORT_TYPE);
     }
 
     List<SUSHIReportHeaderReportAttributes> expectedAttributes = SUPPORTED_REPORTS.get(reportName);
@@ -123,7 +127,7 @@ public class UploadHelper {
     if (!(actualAttributes != null
         && actualAttributes.size() == expectedAttributes.size()
         && new HashSet<>(actualAttributes).containsAll(expectedAttributes))) {
-      throw new ReportUploadException(MSG_UNSUPPORTED_REPORT);
+      throw new ReportUploadException(INVALID_REPORT_CONTENT, "Unsupported report attributes.");
     }
   }
 
@@ -131,7 +135,7 @@ public class UploadHelper {
       Object report, String reportName, ReportReleaseVersion version)
       throws ReportSplitException, Counter5UtilsException {
     if (isEmpty(reportName)) {
-      throw new ReportUploadException(MSG_UNSUPPORTED_REPORT);
+      throw new IllegalArgumentException("reportName must not be empty or null.");
     }
 
     List<?> splitReports = splitReport(report, version);

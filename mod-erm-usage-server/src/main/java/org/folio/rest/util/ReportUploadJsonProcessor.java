@@ -1,6 +1,7 @@
 package org.folio.rest.util;
 
-import static org.folio.rest.util.UploadHelper.MSG_UNSUPPORTED_REPORT_FORMAT;
+import static org.folio.rest.util.ReportUploadErrorCode.INVALID_REPORT_CONTENT;
+import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_REPORT_RELEASE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,24 +18,35 @@ public class ReportUploadJsonProcessor implements ReportUploadProcessor {
 
   private static final String RELEASE_KEY = "Release";
   private static final String REPORT_HEADER_KEY = "Report_Header";
+  public static final String UNSUPPORTED_REPORT_RELEASE_DETAILS =
+      "COUNTER Release 4 is not supported for JSON file format.";
 
   @Override
-  public List<CounterReport> process(String reportData) throws Exception {
+  public List<CounterReport> process(String reportData) throws ReportUploadException {
     try {
       ReportReleaseVersion reportReleaseVersion = getReportReleaseVersionFromJson(reportData);
       return switch (reportReleaseVersion) {
-        case R4 -> throw new ReportUploadException(MSG_UNSUPPORTED_REPORT_FORMAT);
+        case R4 ->
+            throw new ReportUploadException(
+                UNSUPPORTED_REPORT_RELEASE, UNSUPPORTED_REPORT_RELEASE_DETAILS);
         case R5 -> processR5JsonReport(reportData);
         case R51 -> processR51JsonReport(reportData);
       };
-    } catch (Exception e) {
+    } catch (ReportUploadException e) {
       throw e;
+    } catch (Exception e) {
+      throw new ReportUploadException(INVALID_REPORT_CONTENT, e);
     }
   }
 
-  public static ReportReleaseVersion getReportReleaseVersionFromJson(String content) {
-    return ReportReleaseVersion.fromVersion(
-        new JsonObject(content).getJsonObject(REPORT_HEADER_KEY).getString(RELEASE_KEY));
+  private static ReportReleaseVersion getReportReleaseVersionFromJson(String content) {
+    String releaseVersion =
+        new JsonObject(content).getJsonObject(REPORT_HEADER_KEY).getString(RELEASE_KEY);
+    try {
+      return ReportReleaseVersion.fromVersion(releaseVersion);
+    } catch (IllegalArgumentException e) {
+      throw new ReportUploadException(UNSUPPORTED_REPORT_RELEASE, e);
+    }
   }
 
   private List<CounterReport> processR5JsonReport(String content)

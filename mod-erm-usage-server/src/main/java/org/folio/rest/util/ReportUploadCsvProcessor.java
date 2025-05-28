@@ -1,6 +1,7 @@
 package org.folio.rest.util;
 
-import static org.folio.rest.util.UploadHelper.MSG_WRONG_FORMAT;
+import static org.folio.rest.util.ReportUploadErrorCode.INVALID_REPORT_CONTENT;
+import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_REPORT_RELEASE;
 import static org.folio.rest.util.UploadHelper.checkThatReportIsSupported;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,6 +24,8 @@ import org.openapitools.client.model.SUSHIReportHeader;
 public class ReportUploadCsvProcessor implements ReportUploadProcessor {
 
   private static final String RELEASE_KEY = "Release";
+  public static final String UNABLE_TO_DETERMINE_RELEASE_VERSION =
+      "Unable to determine the report release version.";
 
   private final CSVFormat csvFormat;
 
@@ -31,7 +34,7 @@ public class ReportUploadCsvProcessor implements ReportUploadProcessor {
   }
 
   @Override
-  public List<CounterReport> process(String reportData) throws Exception {
+  public List<CounterReport> process(String reportData) throws ReportUploadException {
     try {
       ReportReleaseVersion reportReleaseVersion =
           getReportReleaseVersionFromCsv(reportData, csvFormat);
@@ -40,8 +43,10 @@ public class ReportUploadCsvProcessor implements ReportUploadProcessor {
         case R5 -> processR5CsvReport(reportData);
         case R51 -> processR51CsvReport(reportData, csvFormat);
       };
-    } catch (Exception e) {
+    } catch (ReportUploadException e) {
       throw e;
+    } catch (Exception e) {
+      throw new ReportUploadException(INVALID_REPORT_CONTENT, e);
     }
   }
 
@@ -61,10 +66,14 @@ public class ReportUploadCsvProcessor implements ReportUploadProcessor {
 
       CSVRecord thirdRecord = firstRows.get(2);
       if (thirdRecord.size() > 1 && thirdRecord.get(0).equals(RELEASE_KEY)) {
-        return ReportReleaseVersion.fromVersion(thirdRecord.get(1));
+        try {
+          return ReportReleaseVersion.fromVersion(thirdRecord.get(1));
+        } catch (IllegalArgumentException e) {
+          throw new ReportUploadException(UNSUPPORTED_REPORT_RELEASE, e);
+        }
       }
     }
-    throw new ReportUploadException(MSG_WRONG_FORMAT);
+    throw new ReportUploadException(INVALID_REPORT_CONTENT, UNABLE_TO_DETERMINE_RELEASE_VERSION);
   }
 
   private static List<CounterReport> processR51CsvReport(String content, CSVFormat csvFormat)
