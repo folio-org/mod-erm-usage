@@ -1,0 +1,5 @@
+{
+  "code" : "MAXIMUM_FILESIZE_EXCEEDED",
+  "message" : "The file size exceeds the maximum allowed size.",
+  "details" : "The maximum file size is 209715200 bytes."
+}
