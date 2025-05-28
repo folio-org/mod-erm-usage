@@ -1,0 +1,99 @@
+package org.folio.rest.util;
+
+import static org.folio.rest.util.UploadHelper.MSG_WRONG_FORMAT;
+import static org.folio.rest.util.UploadHelper.checkThatReportIsSupported;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.List;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.folio.rest.jaxrs.model.CounterReport;
+import org.folio.rest.util.UploadHelper.FileUploadException;
+import org.niso.schemas.counter.Report;
+import org.olf.erm.usage.counter41.Counter4Utils;
+import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
+import org.olf.erm.usage.counter41.csv.mapper.MapperException;
+import org.olf.erm.usage.counter50.Counter5Utils;
+import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
+import org.olf.erm.usage.counter51.Counter51Utils;
+import org.openapitools.client.model.SUSHIReportHeader;
+
+public class ReportUploadCsvProcessor implements ReportUploadProcessor {
+
+  private static final String RELEASE_KEY = "Release";
+
+  private final CSVFormat csvFormat;
+
+  public ReportUploadCsvProcessor(CSVFormat csvFormat) {
+    this.csvFormat = csvFormat;
+  }
+
+  @Override
+  public List<CounterReport> process(String reportData) throws Exception {
+    try {
+      ReportReleaseVersion reportReleaseVersion =
+          getReportReleaseVersionFromCsv(reportData, csvFormat);
+      return switch (reportReleaseVersion) {
+        case R4 -> processR4CsvReport(reportData);
+        case R5 -> processR5CsvReport(reportData);
+        case R51 -> processR51CsvReport(reportData, csvFormat);
+      };
+    } catch (Exception e) {
+      throw e;
+    }
+  }
+
+  public static ReportReleaseVersion getReportReleaseVersionFromCsv(
+      String content, CSVFormat csvFormat) throws IOException, FileUploadException {
+    List<CSVRecord> firstRows;
+    try (CSVParser csvParser = CSVParser.parse(content, csvFormat)) {
+      firstRows = csvParser.stream().limit(3).toList();
+    }
+
+    if (firstRows.size() == 3) {
+      CSVRecord firstRecord = firstRows.get(0);
+      if (firstRecord.size() > 0
+          && Counter4Utils.getNameForReportTitle(firstRecord.get(0)) != null) {
+        return ReportReleaseVersion.R4;
+      }
+
+      CSVRecord thirdRecord = firstRows.get(2);
+      if (thirdRecord.size() > 1 && thirdRecord.get(0).equals(RELEASE_KEY)) {
+        return ReportReleaseVersion.fromVersion(thirdRecord.get(1));
+      }
+    }
+    throw new FileUploadException(MSG_WRONG_FORMAT);
+  }
+
+  private static List<CounterReport> processR51CsvReport(String content, CSVFormat csvFormat)
+      throws IOException, ReportSplitException, Counter5UtilsException, FileUploadException {
+    JsonNode report = Counter51Utils.createReportFromCsv(new StringReader(content), csvFormat);
+    return UploadHelper.processR51JsonReport(report);
+  }
+
+  private static List<CounterReport> processR5CsvReport(String content)
+      throws Counter5UtilsException,
+          org.olf.erm.usage.counter50.csv.mapper.MapperException,
+          ReportSplitException {
+    Object report = Counter5Utils.fromCSV(content);
+    return processR5Report(report);
+  }
+
+  private List<CounterReport> processR4CsvReport(String content)
+      throws ReportSplitException, MapperException, IOException, Counter5UtilsException {
+    Report report = Counter4Utils.fromCsvString(content);
+    String reportName = Counter4Utils.getNameForReportTitle(report.getName());
+    return UploadHelper.createCounterReports(report, reportName, ReportReleaseVersion.R4);
+  }
+
+  private static List<CounterReport> processR5Report(Object report)
+      throws Counter5UtilsException, ReportSplitException {
+    SUSHIReportHeader header = Counter5Utils.getSushiReportHeaderFromReportObject(report);
+    checkThatReportIsSupported(header);
+    String reportName = header.getReportID();
+    return UploadHelper.createCounterReports(report, reportName, ReportReleaseVersion.R5);
+  }
+}
