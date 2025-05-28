@@ -8,7 +8,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.Serial;
 import java.time.YearMonth;
 import java.util.HashSet;
 import java.util.List;
@@ -77,16 +76,16 @@ public class UploadHelper {
    * @param format the {@link ReportFileFormat} of the input content
    * @param buffer a {@link Buffer} containing the content of the report
    * @return a list of {@link CounterReport} objects parsed from the input
-   * @throws FileUploadException if there's an error in processing the file content or if the format
-   *     is unsupported
+   * @throws ReportUploadException if there's an error in processing the file content or if the
+   *     format is unsupported
    */
   public static List<CounterReport> getCounterReportsFromBuffer(
-      ReportFileFormat format, Buffer buffer) throws FileUploadException {
+      ReportFileFormat format, Buffer buffer) throws ReportUploadException {
     try {
       String content = bufferToString(buffer, format);
       return ReportUploadProcessor.of(format).process(content);
     } catch (Exception e) {
-      throw new FileUploadException(MSG_WRONG_FORMAT + ": " + e.getMessage(), e);
+      throw new ReportUploadException(MSG_WRONG_FORMAT + ": " + e.getMessage(), e);
     }
   }
 
@@ -100,7 +99,7 @@ public class UploadHelper {
   }
 
   public static List<CounterReport> processR51JsonReport(JsonNode jsonNode)
-      throws ReportSplitException, Counter5UtilsException, FileUploadException {
+      throws ReportSplitException, Counter5UtilsException, ReportUploadException {
 
     ReportType reportType = Counter51Utils.getReportType(jsonNode);
 
@@ -108,15 +107,15 @@ public class UploadHelper {
       Counter51Utils.validate(jsonNode, reportType);
       return createCounterReports(jsonNode, reportType.name(), ReportReleaseVersion.R51);
     } else {
-      throw new FileUploadException(MSG_UNSUPPORTED_REPORT);
+      throw new ReportUploadException(MSG_UNSUPPORTED_REPORT);
     }
   }
 
   public static void checkThatReportIsSupported(SUSHIReportHeader header)
-      throws FileUploadException {
+      throws ReportUploadException {
     String reportName = header.getReportName();
     if (!SUPPORTED_REPORTS.containsKey(reportName)) {
-      throw new FileUploadException(MSG_UNSUPPORTED_REPORT);
+      throw new ReportUploadException(MSG_UNSUPPORTED_REPORT);
     }
 
     List<SUSHIReportHeaderReportAttributes> expectedAttributes = SUPPORTED_REPORTS.get(reportName);
@@ -124,7 +123,7 @@ public class UploadHelper {
     if (!(actualAttributes != null
         && actualAttributes.size() == expectedAttributes.size()
         && new HashSet<>(actualAttributes).containsAll(expectedAttributes))) {
-      throw new FileUploadException(MSG_UNSUPPORTED_REPORT);
+      throw new ReportUploadException(MSG_UNSUPPORTED_REPORT);
     }
   }
 
@@ -132,7 +131,7 @@ public class UploadHelper {
       Object report, String reportName, ReportReleaseVersion version)
       throws ReportSplitException, Counter5UtilsException {
     if (isEmpty(reportName)) {
-      throw new FileUploadException(MSG_UNSUPPORTED_REPORT);
+      throw new ReportUploadException(MSG_UNSUPPORTED_REPORT);
     }
 
     List<?> splitReports = splitReport(report, version);
@@ -189,17 +188,5 @@ public class UploadHelper {
           Counter51Utils.getDefaultObjectMapper()
               .convertValue(report, org.folio.rest.jaxrs.model.Report.class);
     };
-  }
-
-  public static class FileUploadException extends RuntimeException {
-    @Serial private static final long serialVersionUID = -3795351043189447151L;
-
-    public FileUploadException(String message) {
-      super(message);
-    }
-
-    public FileUploadException(String message, Throwable cause) {
-      super(message, cause);
-    }
   }
 }

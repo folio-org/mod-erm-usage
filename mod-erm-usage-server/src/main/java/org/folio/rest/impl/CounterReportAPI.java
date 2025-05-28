@@ -52,8 +52,8 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.PgHelper;
 import org.folio.rest.util.ReportFileFormat;
+import org.folio.rest.util.ReportUploadException;
 import org.folio.rest.util.UploadHelper;
-import org.folio.rest.util.UploadHelper.FileUploadException;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
@@ -341,7 +341,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             throwable -> {
               Response response =
                   Response.status(
-                          (throwable instanceof FileUploadException
+                          (throwable instanceof ReportUploadException
                                   || throwable instanceof IllegalArgumentException)
                               ? 400
                               : 500)

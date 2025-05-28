@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.vertx.core.json.JsonObject;
 import java.util.List;
 import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.util.UploadHelper.FileUploadException;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
@@ -24,7 +23,7 @@ public class ReportUploadJsonProcessor implements ReportUploadProcessor {
     try {
       ReportReleaseVersion reportReleaseVersion = getReportReleaseVersionFromJson(reportData);
       return switch (reportReleaseVersion) {
-        case R4 -> throw new FileUploadException(MSG_UNSUPPORTED_REPORT_FORMAT);
+        case R4 -> throw new ReportUploadException(MSG_UNSUPPORTED_REPORT_FORMAT);
         case R5 -> processR5JsonReport(reportData);
         case R51 -> processR51JsonReport(reportData);
       };
@@ -48,7 +47,7 @@ public class ReportUploadJsonProcessor implements ReportUploadProcessor {
       throws JsonProcessingException,
           ReportSplitException,
           Counter5UtilsException,
-          FileUploadException {
+          ReportUploadException {
     JsonNode jsonNode = Counter51Utils.getDefaultObjectMapper().readTree(content);
     return UploadHelper.processR51JsonReport(jsonNode);
   }

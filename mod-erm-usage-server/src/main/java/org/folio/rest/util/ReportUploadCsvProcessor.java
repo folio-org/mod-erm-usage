@@ -11,7 +11,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.util.UploadHelper.FileUploadException;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
@@ -47,7 +46,7 @@ public class ReportUploadCsvProcessor implements ReportUploadProcessor {
   }
 
   public static ReportReleaseVersion getReportReleaseVersionFromCsv(
-      String content, CSVFormat csvFormat) throws IOException, FileUploadException {
+      String content, CSVFormat csvFormat) throws IOException, ReportUploadException {
     List<CSVRecord> firstRows;
     try (CSVParser csvParser = CSVParser.parse(content, csvFormat)) {
       firstRows = csvParser.stream().limit(3).toList();
@@ -65,11 +64,11 @@ public class ReportUploadCsvProcessor implements ReportUploadProcessor {
         return ReportReleaseVersion.fromVersion(thirdRecord.get(1));
       }
     }
-    throw new FileUploadException(MSG_WRONG_FORMAT);
+    throw new ReportUploadException(MSG_WRONG_FORMAT);
   }
 
   private static List<CounterReport> processR51CsvReport(String content, CSVFormat csvFormat)
-      throws IOException, ReportSplitException, Counter5UtilsException, FileUploadException {
+      throws IOException, ReportSplitException, Counter5UtilsException, ReportUploadException {
     JsonNode report = Counter51Utils.createReportFromCsv(new StringReader(content), csvFormat);
     return UploadHelper.processR51JsonReport(report);
   }

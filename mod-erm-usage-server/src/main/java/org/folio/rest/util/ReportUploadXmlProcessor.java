@@ -4,7 +4,6 @@ import static org.folio.rest.util.UploadHelper.MSG_WRONG_FORMAT;
 
 import java.util.List;
 import org.folio.rest.jaxrs.model.CounterReport;
-import org.folio.rest.util.UploadHelper.FileUploadException;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
 import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
@@ -26,7 +25,7 @@ public class ReportUploadXmlProcessor implements ReportUploadProcessor {
     Report report = Counter4Utils.fromString(content);
     if (report == null
         || ReportReleaseVersion.fromVersion(report.getVersion()) != ReportReleaseVersion.R4) {
-      throw new FileUploadException(MSG_WRONG_FORMAT);
+      throw new ReportUploadException(MSG_WRONG_FORMAT);
     }
     String reportName = Counter4Utils.getNameForReportTitle(report.getName());
     return UploadHelper.createCounterReports(report, reportName, ReportReleaseVersion.R4);
