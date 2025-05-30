@@ -9,8 +9,12 @@ import static org.folio.rest.TestResources.R51_SAMPLE_DR_INVALID_DATA;
 import static org.folio.rest.TestResources.R51_SAMPLE_DR_OK;
 import static org.folio.rest.TestResources.R51_SAMPLE_TR_TSV;
 import static org.folio.rest.TestResources.R51_SAMPLE_TR_XLSX;
+import static org.folio.rest.TestUtils.assertReportUploadErrorResponse;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+import static org.folio.rest.util.ReportUploadErrorCode.INVALID_REPORT_CONTENT;
+import static org.folio.rest.util.ReportUploadErrorCode.REPORTS_ALREADY_PRESENT;
+import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_REPORT_TYPE;
 import static org.hamcrest.Matchers.containsString;
 
 import io.restassured.response.Response;
@@ -29,6 +33,7 @@ import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
+import org.folio.rest.util.ReportUploadErrorCode;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -36,6 +41,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.olf.erm.usage.counter51.ReportType;
 
 @Setup
 @SetupTenant
@@ -50,7 +56,8 @@ class CounterReportR5UploadIT {
   static final String MSG_EXPECTED_ATTRIBUTES =
       "Expected 'reportAttributes' to be: {\"Attributes_To_Show\":[\"Access_Method\"]";
   static final String MSG_UNRECOGNIZED_FIELD = "Unrecognized field \"foo\"";
-  static final String MSG_UNSUPPORTED_REPORT = "Unsupported report";
+  static final String MSG_UNSUPPORTED_REPORT =
+      "Supported report types for COUNTER Release 5 and 5.1 are: " + ReportType.getMasterReports();
   static final String MSG_REPORT_ALREADY_EXISTING = "Report already existing";
   private static final String BASE_PATH = "/counter-reports";
   private static final String TENANT = TestUtils.getTenant();
@@ -117,37 +124,55 @@ class CounterReportR5UploadIT {
     assertThat(getYearMonths(reports)).containsExactlyInAnyOrder(EXPECTED_MONTHS);
     assertThat(getIds(reports)).containsExactlyInAnyOrderElementsOf(createdIds);
 
-    String postResult = postFile(resource).then().statusCode(500).extract().asString();
-    assertThat(postResult).contains(MSG_REPORT_ALREADY_EXISTING).contains(EXPECTED_MONTHS);
+    Response response = postFile(resource);
+    assertReportUploadErrorResponse(
+        response,
+        REPORTS_ALREADY_PRESENT,
+        MSG_REPORT_ALREADY_EXISTING,
+        String.join(", ", EXPECTED_MONTHS));
   }
 
   @ParameterizedTest(name = "{0}")
   @ArgumentsSource(InvalidReportsArgumentsProvider.class)
   void testUploadOfInvalidReports(
-      String testName, TestResources resource, String expectedErrorMessage) {
-    postFile(resource).then().statusCode(400).body(containsString(expectedErrorMessage));
+      String testName,
+      TestResources resource,
+      ReportUploadErrorCode expectedErrorCode,
+      String expectedDetails) {
+    Response response = postFile(resource);
+    assertReportUploadErrorResponse(response, expectedErrorCode, expectedDetails);
   }
 
   static class InvalidReportsArgumentsProvider implements ArgumentsProvider {
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
       return Stream.of(
-          Arguments.of("Unsupported Report - JSON", R51_SAMPLE_DRD2_OK, MSG_UNSUPPORTED_REPORT),
-          Arguments.of("Invalid Data - JSON", R51_SAMPLE_DR_INVALID_DATA, MSG_UNRECOGNIZED_FIELD),
+          Arguments.of(
+              "Unsupported Report - JSON",
+              R51_SAMPLE_DRD2_OK,
+              UNSUPPORTED_REPORT_TYPE,
+              MSG_UNSUPPORTED_REPORT),
+          Arguments.of(
+              "Invalid Data - JSON",
+              R51_SAMPLE_DR_INVALID_DATA,
+              INVALID_REPORT_CONTENT,
+              MSG_UNRECOGNIZED_FIELD),
           Arguments.of(
               "Invalid Attributes - JSON",
               R51_SAMPLE_DR_INVALID_ATTRIBUTES,
+              INVALID_REPORT_CONTENT,
               MSG_EXPECTED_ATTRIBUTES),
           Arguments.of(
               "Invalid Attributes - XLSX",
               R51_SAMPLE_DR_INVALID_ATTRIBUTES,
+              INVALID_REPORT_CONTENT,
               MSG_EXPECTED_ATTRIBUTES));
     }
   }
 
   static class ValidReportsArgumentsProvider implements ArgumentsProvider {
     @Override
-    public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception {
+    public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
       return Stream.of(
           Arguments.of("DR - JSON", R51_SAMPLE_DR_OK),
           Arguments.of("TR - TSV", R51_SAMPLE_TR_TSV),
