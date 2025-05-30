@@ -156,10 +156,14 @@ resourceTypes:
               text/plain:
           400:
             body:
-              text/plain:
+              application/json:
+                example: !include examples/reportuploaderror.sample
+                schema: reportUploadError
           500:
             body:
-              text/plain:
+              application/json:
+                example: !include examples/reportuploaderror.sample
+                schema: reportUploadError
   /errors/codes:
     get:
       description: Get counter/sushi error codes existent in counter reports

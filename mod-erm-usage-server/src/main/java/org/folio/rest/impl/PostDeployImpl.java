@@ -11,6 +11,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.impl.HttpServerImpl;
 import io.vertx.core.impl.VertxImpl;
+import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.impl.RouterImpl;
 import java.util.List;
@@ -21,6 +22,7 @@ import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.jaxrs.model.ReportUploadError;
 import org.folio.rest.resource.interfaces.PostDeployVerticle;
 
 public class PostDeployImpl implements PostDeployVerticle {
@@ -97,8 +99,11 @@ public class PostDeployImpl implements PostDeployVerticle {
   private void endResponse(RoutingContext rctx, Response response) {
     rctx.response().setStatusCode(response.getStatus());
     response.getStringHeaders().forEach((k, v) -> rctx.response().putHeader(k, v));
-    if (response.getEntity() instanceof String entity) {
+    Object responseEntity = response.getEntity();
+    if (responseEntity instanceof String entity) {
       rctx.response().end(entity);
+    } else if (responseEntity instanceof ReportUploadError entity) {
+      rctx.response().end(Json.encode(entity));
     } else {
       rctx.response().end();
     }

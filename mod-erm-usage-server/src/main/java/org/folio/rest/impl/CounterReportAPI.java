@@ -1,5 +1,6 @@
 package org.folio.rest.impl;
 
+import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.persist.PostgresClient.DEFAULT_JSONB_FIELD_NAME;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
@@ -7,6 +8,9 @@ import static org.folio.rest.util.ReportExportHelper.createDownloadResponseByRep
 import static org.folio.rest.util.ReportExportHelper.createExportMultipleMonthsResponseByReportVersion;
 import static org.folio.rest.util.ReportExportHelper.createExportResponseByFormat;
 import static org.folio.rest.util.ReportExportHelper.createGetMultipleReportsCQL;
+import static org.folio.rest.util.ReportUploadErrorCode.MAXIMUM_FILESIZE_EXCEEDED;
+import static org.folio.rest.util.ReportUploadErrorCode.MULTIPLE_FILES_NOT_SUPPORTED;
+import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_FILE_FORMAT;
 import static org.folio.rest.util.VertxUtil.executeBlocking;
 
 import io.vertx.core.AsyncResult;
@@ -29,7 +33,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,6 +55,8 @@ import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.ValidationHelper;
 import org.folio.rest.util.PgHelper;
 import org.folio.rest.util.ReportFileFormat;
+import org.folio.rest.util.ReportUploadErrorCode;
+import org.folio.rest.util.ReportUploadErrorFactory;
 import org.folio.rest.util.ReportUploadException;
 import org.folio.rest.util.UploadHelper;
 
@@ -61,6 +66,8 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
   public static final String FORM_ATTR_REASON = "editReason";
   private static final int MAX_FILES = 1;
   private static final int MAX_FILE_SIZE_IN_BYTES = 200 * 1024 * 1024; // 200 MB
+  private static final String MAXIMUM_FILESIZE_DETAILS =
+      "The maximum file size is " + MAX_FILE_SIZE_IN_BYTES + " bytes.";
   static final String CONTEXT_FILENAME_KEY = "uploadedFilename";
   private final Logger logger = LogManager.getLogger(CounterReportAPI.class);
   private final Comparator<CounterReportsPerYear> compareByYear =
@@ -302,8 +309,13 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
     vertxContext
         .executeBlocking(
             () -> {
-              ReportFileFormat reportFileFormat =
-                  ReportFileFormat.fromFilename(routingContext.get(CONTEXT_FILENAME_KEY));
+              ReportFileFormat reportFileFormat;
+              try {
+                reportFileFormat =
+                    ReportFileFormat.fromFilename(routingContext.get(CONTEXT_FILENAME_KEY));
+              } catch (Exception e) {
+                throw new ReportUploadException(UNSUPPORTED_FILE_FORMAT, e);
+              }
               return UploadHelper.getCounterReportsFromBuffer(reportFileFormat, buffer);
             },
             true)
@@ -328,28 +340,38 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                               });
                           return counterReports;
                         }))
-        .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, okapiHeaders, crs, overwrite))
-        .onSuccess(
-            reportIds ->
-                asyncResultHandler.handle(
-                    succeededFuture(
-                        PostCounterReportsMultipartuploadProviderByIdResponse
-                            .respond200WithTextPlain(
-                                String.format(
-                                    "Saved report with ids: %s", String.join(",", reportIds))))))
-        .onFailure(
-            throwable -> {
-              Response response =
-                  Response.status(
-                          (throwable instanceof ReportUploadException
-                                  || throwable instanceof IllegalArgumentException)
-                              ? 400
-                              : 500)
-                      .type(MediaType.TEXT_PLAIN)
-                      .entity(throwable.getMessage())
-                      .build();
-              asyncResultHandler.handle(succeededFuture(response));
-            });
+        .compose(
+            crs ->
+                PgHelper.saveCounterReportsToDb(vertxContext, okapiHeaders, crs, overwrite)
+                    .recover(
+                        throwable ->
+                            failedFuture(
+                                new ReportUploadException(ReportUploadErrorCode.OTHER, throwable))))
+        .onSuccess(reportIds -> handleReportUploadSuccess(reportIds, asyncResultHandler))
+        .onFailure(throwable -> handleReportUploadFailure(throwable, asyncResultHandler));
+  }
+
+  private void handleReportUploadSuccess(
+      List<String> reportIds, Handler<AsyncResult<Response>> asyncResultHandler) {
+    asyncResultHandler.handle(
+        succeededFuture(
+            PostCounterReportsMultipartuploadProviderByIdResponse.respond200WithTextPlain(
+                String.format("Saved report with ids: %s", String.join(",", reportIds)))));
+  }
+
+  private void handleReportUploadFailure(
+      Throwable throwable, Handler<AsyncResult<Response>> asyncResultHandler) {
+    Response response;
+    if (throwable instanceof ReportUploadException e) {
+      response =
+          PostCounterReportsMultipartuploadProviderByIdResponse.respond400WithApplicationJson(
+              e.getReportUploadError());
+    } else {
+      response =
+          PostCounterReportsMultipartuploadProviderByIdResponse.respond500WithApplicationJson(
+              ReportUploadErrorFactory.create(ReportUploadErrorCode.OTHER, throwable));
+    }
+    asyncResultHandler.handle(succeededFuture(response));
   }
 
   /** Method gets called by the route/handler that is set up in PostDeployImpl */
@@ -393,8 +415,8 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         routingContext.cancelAndCleanupFileUploads();
         asyncResultHandler.handle(
             succeededFuture(
-                PostCounterReportsMultipartuploadProviderByIdResponse.respond400WithTextPlain(
-                    "Multiple files are not supported")));
+                PostCounterReportsMultipartuploadProviderByIdResponse.respond400WithApplicationJson(
+                    ReportUploadErrorFactory.create(MULTIPLE_FILES_NOT_SUPPORTED))));
       } else {
         routingContext.put(CONTEXT_FILENAME_KEY, fileUpload.filename());
         fileUpload.handler(
@@ -404,7 +426,9 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                 asyncResultHandler.handle(
                     succeededFuture(
                         PostCounterReportsMultipartuploadProviderByIdResponse
-                            .respond400WithTextPlain("File size exceeds the limit")));
+                            .respond400WithApplicationJson(
+                                ReportUploadErrorFactory.create(
+                                    MAXIMUM_FILESIZE_EXCEEDED, MAXIMUM_FILESIZE_DETAILS))));
               } else {
                 buffer.appendBuffer(buf);
               }
