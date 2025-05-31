@@ -10,6 +10,7 @@ import static org.folio.rest.util.ReportExportHelper.createExportResponseByForma
 import static org.folio.rest.util.ReportExportHelper.createGetMultipleReportsCQL;
 import static org.folio.rest.util.ReportUploadErrorCode.MAXIMUM_FILESIZE_EXCEEDED;
 import static org.folio.rest.util.ReportUploadErrorCode.MULTIPLE_FILES_NOT_SUPPORTED;
+import static org.folio.rest.util.ReportUploadErrorCode.REPORTS_ALREADY_PRESENT;
 import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_FILE_FORMAT;
 import static org.folio.rest.util.VertxUtil.executeBlocking;
 
@@ -346,7 +347,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                     .recover(
                         throwable ->
                             failedFuture(
-                                new ReportUploadException(ReportUploadErrorCode.OTHER, throwable))))
+                                new ReportUploadException(REPORTS_ALREADY_PRESENT, throwable))))
         .onSuccess(reportIds -> handleReportUploadSuccess(reportIds, asyncResultHandler))
         .onFailure(throwable -> handleReportUploadFailure(throwable, asyncResultHandler));
   }
