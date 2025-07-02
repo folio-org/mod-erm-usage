@@ -23,7 +23,6 @@ import io.restassured.builder.MultiPartSpecBuilder;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
-import io.restassured.specification.RequestSpecification;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -53,6 +52,7 @@ import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
+import org.folio.rest.util.ReportUploadErrorCode;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -98,6 +98,8 @@ public class CounterReportMultipartuploadIT {
       new File(Resources.getResource("fileupload/hwire_trj1.json").getFile());
   private static final String PATH = "/counter-reports/multipartupload/provider/";
   private static final String EDIT_REASON = "Edit Reason";
+  private static final String MSG_TENANT_HEADER_MISSING =
+      "Request is missing the %s header.".formatted(XOkapiHeaders.TENANT);
 
   private static final Map<String, String> FORM_PARAMS =
       Map.of(FORM_ATTR_EDITED, "true", FORM_ATTR_REASON, EDIT_REASON);
@@ -466,20 +468,17 @@ public class CounterReportMultipartuploadIT {
 
   @Test
   public void testNoTenant() {
-    RequestSpecification requestSpecification = RestAssured.requestSpecification;
-    try {
-      RestAssured.requestSpecification = null;
-      given()
-          .multiPart(FILE_REPORT5_OK)
-          .post(PATH + PROVIDER_ID)
-          .then()
-          .statusCode(400)
-          .log()
-          .all()
-          .body(containsString("Tenant must be set"));
-    } finally {
-      RestAssured.requestSpecification = requestSpecification;
-    }
+    Response response =
+        given()
+            .multiPart(FILE_REPORT5_OK)
+            .filter(
+                (requestSpec, responseSpec, ctx) -> {
+                  requestSpec.removeHeader(XOkapiHeaders.TENANT);
+                  return ctx.next(requestSpec, responseSpec);
+                })
+            .post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(
+        response, ReportUploadErrorCode.OTHER, MSG_TENANT_HEADER_MISSING);
   }
 
   @Test

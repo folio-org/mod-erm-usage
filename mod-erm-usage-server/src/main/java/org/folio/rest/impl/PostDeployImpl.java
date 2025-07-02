@@ -23,7 +23,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.jaxrs.model.ReportUploadError;
+import org.folio.rest.jaxrs.resource.CounterReports.PostCounterReportsMultipartuploadProviderByIdResponse;
 import org.folio.rest.resource.interfaces.PostDeployVerticle;
+import org.folio.rest.util.ReportUploadErrorCode;
+import org.folio.rest.util.ReportUploadErrorFactory;
 
 public class PostDeployImpl implements PostDeployVerticle {
 
@@ -72,7 +75,10 @@ public class PostDeployImpl implements PostDeployVerticle {
                   getOkapiHeadersFromRoutingContext(rctx);
 
               if (okapiHeaders.get(XOkapiHeaders.TENANT) == null) {
-                endResponse(rctx, Response.status(400).entity("Tenant must be set").build());
+                endResponseWithReportUploadError(
+                    rctx,
+                    ReportUploadErrorCode.OTHER,
+                    "Request is missing the %s header.".formatted(XOkapiHeaders.TENANT));
                 return;
               }
 
@@ -90,7 +96,9 @@ public class PostDeployImpl implements PostDeployVerticle {
                   .future()
                   .onSuccess(resp -> endResponse(rctx, resp))
                   .onFailure(
-                      t -> endResponse(rctx, Response.serverError().entity(t.toString()).build()));
+                      t ->
+                          endResponseWithReportUploadError(
+                              rctx, ReportUploadErrorCode.OTHER, t.toString()));
             });
 
     resultHandler.handle(succeededFuture(true));
@@ -107,5 +115,14 @@ public class PostDeployImpl implements PostDeployVerticle {
     } else {
       rctx.response().end();
     }
+  }
+
+  private void endResponseWithReportUploadError(
+      RoutingContext rctx, ReportUploadErrorCode errorCode, String errorDetails) {
+    ReportUploadError error = ReportUploadErrorFactory.create(errorCode, errorDetails);
+    PostCounterReportsMultipartuploadProviderByIdResponse response =
+        PostCounterReportsMultipartuploadProviderByIdResponse.respond400WithApplicationJson(error);
+
+    endResponse(rctx, response);
   }
 }
