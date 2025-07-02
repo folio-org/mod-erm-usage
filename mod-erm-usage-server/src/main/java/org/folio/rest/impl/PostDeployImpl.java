@@ -104,6 +104,9 @@ public class PostDeployImpl implements PostDeployVerticle {
     resultHandler.handle(succeededFuture(true));
   }
 
+  @SuppressWarnings(
+      "java:S6880") // can't replace if with a switch statement because aspectj-maven-plugin:1.14
+  // does not support java21 features
   private void endResponse(RoutingContext rctx, Response response) {
     rctx.response().setStatusCode(response.getStatus());
     response.getStringHeaders().forEach((k, v) -> rctx.response().putHeader(k, v));

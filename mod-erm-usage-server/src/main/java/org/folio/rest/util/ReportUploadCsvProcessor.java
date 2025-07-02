@@ -2,7 +2,6 @@ package org.folio.rest.util;
 
 import static org.folio.rest.util.ReportUploadErrorCode.INVALID_REPORT_CONTENT;
 import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_REPORT_RELEASE;
-import static org.folio.rest.util.UploadHelper.checkThatReportIsSupported;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
@@ -79,7 +78,7 @@ public class ReportUploadCsvProcessor implements ReportUploadProcessor {
   private static List<CounterReport> processR51CsvReport(String content, CSVFormat csvFormat)
       throws IOException, ReportSplitException, Counter5UtilsException, ReportUploadException {
     JsonNode report = Counter51Utils.createReportFromCsv(new StringReader(content), csvFormat);
-    return UploadHelper.processR51JsonReport(report);
+    return ProcessorHelper.processR51JsonReport(report);
   }
 
   private static List<CounterReport> processR5CsvReport(String content)
@@ -94,14 +93,14 @@ public class ReportUploadCsvProcessor implements ReportUploadProcessor {
       throws ReportSplitException, MapperException, IOException, Counter5UtilsException {
     Report report = Counter4Utils.fromCsvString(content);
     String reportName = Counter4Utils.getNameForReportTitle(report.getName());
-    return UploadHelper.createCounterReports(report, reportName, ReportReleaseVersion.R4);
+    return ProcessorHelper.createCounterReports(report, reportName, ReportReleaseVersion.R4);
   }
 
   private static List<CounterReport> processR5Report(Object report)
       throws Counter5UtilsException, ReportSplitException {
     SUSHIReportHeader header = Counter5Utils.getSushiReportHeaderFromReportObject(report);
-    checkThatReportIsSupported(header);
+    ProcessorHelper.checkThatReportIsSupported(header);
     String reportName = header.getReportID();
-    return UploadHelper.createCounterReports(report, reportName, ReportReleaseVersion.R5);
+    return ProcessorHelper.createCounterReports(report, reportName, ReportReleaseVersion.R5);
   }
 }

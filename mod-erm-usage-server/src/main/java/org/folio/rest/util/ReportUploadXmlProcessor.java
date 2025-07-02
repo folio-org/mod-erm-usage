@@ -42,6 +42,6 @@ public class ReportUploadXmlProcessor implements ReportUploadProcessor {
     if (reportName == null) {
       throw new ReportUploadException(UNSUPPORTED_REPORT_TYPE);
     }
-    return UploadHelper.createCounterReports(report, reportName, ReportReleaseVersion.R4);
+    return ProcessorHelper.createCounterReports(report, reportName, ReportReleaseVersion.R4);
   }
 }

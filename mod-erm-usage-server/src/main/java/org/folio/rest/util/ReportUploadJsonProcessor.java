@@ -61,14 +61,14 @@ public class ReportUploadJsonProcessor implements ReportUploadProcessor {
           Counter5UtilsException,
           ReportUploadException {
     JsonNode jsonNode = Counter51Utils.getDefaultObjectMapper().readTree(content);
-    return UploadHelper.processR51JsonReport(jsonNode);
+    return ProcessorHelper.processR51JsonReport(jsonNode);
   }
 
   private List<CounterReport> processR5Report(Object report)
       throws Counter5UtilsException, ReportSplitException {
     SUSHIReportHeader header = Counter5Utils.getSushiReportHeaderFromReportObject(report);
-    UploadHelper.checkThatReportIsSupported(header);
+    ProcessorHelper.checkThatReportIsSupported(header);
     String reportName = header.getReportID();
-    return UploadHelper.createCounterReports(report, reportName, ReportReleaseVersion.R5);
+    return ProcessorHelper.createCounterReports(report, reportName, ReportReleaseVersion.R5);
   }
 }
