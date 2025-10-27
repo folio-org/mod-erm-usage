@@ -173,6 +173,7 @@ public class PgHelper {
                 "Report already existing for months: "
                     + existingList.stream()
                         .map(CounterReport::getYearMonth)
+                        .sorted()
                         .collect(Collectors.joining(", ")));
           } else {
             List<Future<String>> saveFutures = new ArrayList<>();

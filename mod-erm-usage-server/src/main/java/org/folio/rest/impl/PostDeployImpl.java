@@ -11,6 +11,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.impl.HttpServerImpl;
 import io.vertx.core.impl.VertxImpl;
+import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.impl.RouterImpl;
 import java.util.List;
@@ -21,7 +22,11 @@ import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.folio.okapi.common.XOkapiHeaders;
+import org.folio.rest.jaxrs.model.ReportUploadError;
+import org.folio.rest.jaxrs.resource.CounterReports.PostCounterReportsMultipartuploadProviderByIdResponse;
 import org.folio.rest.resource.interfaces.PostDeployVerticle;
+import org.folio.rest.util.ReportUploadErrorCode;
+import org.folio.rest.util.ReportUploadErrorFactory;
 
 public class PostDeployImpl implements PostDeployVerticle {
 
@@ -70,7 +75,10 @@ public class PostDeployImpl implements PostDeployVerticle {
                   getOkapiHeadersFromRoutingContext(rctx);
 
               if (okapiHeaders.get(XOkapiHeaders.TENANT) == null) {
-                endResponse(rctx, Response.status(400).entity("Tenant must be set").build());
+                endResponseWithReportUploadError(
+                    rctx,
+                    ReportUploadErrorCode.OTHER,
+                    "Request is missing the %s header.".formatted(XOkapiHeaders.TENANT));
                 return;
               }
 
@@ -88,19 +96,36 @@ public class PostDeployImpl implements PostDeployVerticle {
                   .future()
                   .onSuccess(resp -> endResponse(rctx, resp))
                   .onFailure(
-                      t -> endResponse(rctx, Response.serverError().entity(t.toString()).build()));
+                      t ->
+                          endResponseWithReportUploadError(
+                              rctx, ReportUploadErrorCode.OTHER, t.toString()));
             });
 
     resultHandler.handle(succeededFuture(true));
   }
 
+  @SuppressWarnings(
+      "java:S6880") // can't replace if with a switch statement because aspectj-maven-plugin:1.14
+  // does not support java21 features
   private void endResponse(RoutingContext rctx, Response response) {
     rctx.response().setStatusCode(response.getStatus());
     response.getStringHeaders().forEach((k, v) -> rctx.response().putHeader(k, v));
-    if (response.getEntity() instanceof String entity) {
+    Object responseEntity = response.getEntity();
+    if (responseEntity instanceof String entity) {
       rctx.response().end(entity);
+    } else if (responseEntity instanceof ReportUploadError entity) {
+      rctx.response().end(Json.encode(entity));
     } else {
       rctx.response().end();
     }
+  }
+
+  private void endResponseWithReportUploadError(
+      RoutingContext rctx, ReportUploadErrorCode errorCode, String errorDetails) {
+    ReportUploadError error = ReportUploadErrorFactory.create(errorCode, errorDetails);
+    PostCounterReportsMultipartuploadProviderByIdResponse response =
+        PostCounterReportsMultipartuploadProviderByIdResponse.respond400WithApplicationJson(error);
+
+    endResponse(rctx, response);
   }
 }

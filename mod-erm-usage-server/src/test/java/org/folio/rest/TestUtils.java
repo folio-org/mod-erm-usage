@@ -1,10 +1,13 @@
 package org.folio.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
+import io.restassured.response.Response;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -14,11 +17,13 @@ import java.util.List;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.Parameter;
+import org.folio.rest.jaxrs.model.ReportUploadError;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.tools.utils.VertxUtils;
+import org.folio.rest.util.ReportUploadErrorCode;
 
 public class TestUtils {
   private static final String BASE_URI = "http://localhost";
@@ -83,5 +88,20 @@ public class TestUtils {
 
   public static void resetRestAssured() {
     RestAssured.reset();
+  }
+
+  public static void assertReportUploadErrorResponse(
+      Response response, ReportUploadErrorCode expectedErrorCode, String... expectedDetails) {
+    ReportUploadError reportUploadError =
+        response.then().statusCode(400).extract().as(ReportUploadError.class);
+    assertThat(reportUploadError)
+        .satisfies(
+            error -> {
+              assertThat(error.getCode()).isEqualTo(expectedErrorCode.name());
+              assertThat(error.getMessage()).isEqualTo(expectedErrorCode.getMessage());
+              if (expectedDetails.length > 0) {
+                assertThat(error.getDetails()).contains(expectedDetails);
+              }
+            });
   }
 }

@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractThrowableAssert;
-import org.folio.rest.util.UploadHelper.FileUploadException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -111,7 +110,7 @@ public class UploadHelperTest {
     if (isValid) {
       abstractThrowableAssert.doesNotThrowAnyException();
     } else {
-      abstractThrowableAssert.isInstanceOf(FileUploadException.class);
+      abstractThrowableAssert.isInstanceOf(ReportUploadException.class);
     }
   }
 }

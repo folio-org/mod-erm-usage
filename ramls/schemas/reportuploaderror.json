@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "description": "A schema for report upload errors containing code, message, and details",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "A code representing the upload error code"
+    },
+    "message": {
+      "type": "string",
+      "description": "A message describing the error"
+    },
+    "details": {
+      "type": "string",
+      "description": "Additional information or context about the error"
+    }
+  },
+  "required": [
+    "code",
+    "message"
+  ]
+}

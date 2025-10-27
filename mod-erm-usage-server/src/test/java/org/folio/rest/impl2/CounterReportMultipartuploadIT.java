@@ -4,8 +4,15 @@ import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.folio.rest.TestUtils.assertReportUploadErrorResponse;
 import static org.folio.rest.impl.CounterReportAPI.FORM_ATTR_EDITED;
 import static org.folio.rest.impl.CounterReportAPI.FORM_ATTR_REASON;
+import static org.folio.rest.util.ReportUploadErrorCode.INVALID_REPORT_CONTENT;
+import static org.folio.rest.util.ReportUploadErrorCode.MAXIMUM_FILESIZE_EXCEEDED;
+import static org.folio.rest.util.ReportUploadErrorCode.MULTIPLE_FILES_NOT_SUPPORTED;
+import static org.folio.rest.util.ReportUploadErrorCode.REPORTS_ALREADY_PRESENT;
+import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_FILE_FORMAT;
+import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_REPORT_TYPE;
 import static org.hamcrest.Matchers.containsString;
 
 import com.google.common.io.Files;
@@ -15,7 +22,7 @@ import io.restassured.RestAssured;
 import io.restassured.builder.MultiPartSpecBuilder;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.parsing.Parser;
-import io.restassured.specification.RequestSpecification;
+import io.restassured.response.Response;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -45,6 +52,7 @@ import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
+import org.folio.rest.util.ReportUploadErrorCode;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -90,12 +98,12 @@ public class CounterReportMultipartuploadIT {
       new File(Resources.getResource("fileupload/hwire_trj1.json").getFile());
   private static final String PATH = "/counter-reports/multipartupload/provider/";
   private static final String EDIT_REASON = "Edit Reason";
+  private static final String MSG_TENANT_HEADER_MISSING =
+      "Request is missing the %s header.".formatted(XOkapiHeaders.TENANT);
 
   private static final Map<String, String> FORM_PARAMS =
       Map.of(FORM_ATTR_EDITED, "true", FORM_ATTR_REASON, EDIT_REASON);
   private static final String MSG_UNSUPPORTED_FILE_EXTENSION = "Unsupported file extension: %s";
-  private static final String MSG_WRONG_FORMAT = "Wrong format supplied";
-  private static final String MSG_UNSUPPORTED_REPORT = "Unsupported report";
   private static Vertx vertx;
 
   @BeforeClass
@@ -236,15 +244,15 @@ public class CounterReportMultipartuploadIT {
   @Test
   public void testTooLargeFile(TestContext context) {
     Async async = context.async();
-    given()
-        .multiPart(
-            new MultiPartSpecBuilder(createTitleReportWithSize(205).getBytes())
-                .fileName("test.json")
-                .build())
-        .post(PATH + PROVIDER_ID)
-        .then()
-        .statusCode(400)
-        .body(containsString("File size exceeds the limit"));
+    Response response =
+        given()
+            .multiPart(
+                new MultiPartSpecBuilder(createTitleReportWithSize(205).getBytes())
+                    .fileName("test.json")
+                    .build())
+            .post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(
+        response, MAXIMUM_FILESIZE_EXCEEDED, "The maximum file size is");
 
     vertx.setTimer(
         2000,
@@ -257,15 +265,14 @@ public class CounterReportMultipartuploadIT {
   @Test
   public void testMultipleFiles(TestContext context) {
     Async async = context.async();
-    given()
-        .header(HttpHeaders.CONTENT_TYPE, "multipart/form-data")
-        .formParams(FORM_PARAMS)
-        .multiPart(FILE_REPORT5_OK)
-        .multiPart(FILE_REPORT_OK)
-        .post("/counter-reports/multipartupload/provider/" + PROVIDER_ID)
-        .then()
-        .statusCode(400)
-        .body(containsString("Multiple files are not supported"));
+    Response response =
+        given()
+            .header(HttpHeaders.CONTENT_TYPE, "multipart/form-data")
+            .formParams(FORM_PARAMS)
+            .multiPart(FILE_REPORT5_OK)
+            .multiPart(FILE_REPORT_OK)
+            .post("/counter-reports/multipartupload/provider/" + PROVIDER_ID);
+    assertReportUploadErrorResponse(response, MULTIPLE_FILES_NOT_SUPPORTED);
 
     vertx.setTimer(
         2000,
@@ -355,12 +362,8 @@ public class CounterReportMultipartuploadIT {
 
   @Test
   public void testR4UnsupportedReport() {
-    given()
-        .multiPart(FILE_REPORT_UNSUPPORTED)
-        .post(PATH + PROVIDER_ID)
-        .then()
-        .statusCode(400)
-        .body(containsString("Unsupported report"));
+    Response response = given().multiPart(FILE_REPORT_UNSUPPORTED).post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(response, UNSUPPORTED_REPORT_TYPE);
   }
 
   @Test
@@ -399,14 +402,10 @@ public class CounterReportMultipartuploadIT {
         .then()
         .statusCode(200);
 
-    given()
-        .multiPart(FILE_REPORT_OK)
-        .queryParam("overwrite", false)
-        .post(PATH + PROVIDER_ID)
-        .then()
-        .statusCode(500)
-        .body(containsString("Report already existing"))
-        .body(containsString("2018-03"));
+    Response response =
+        given().multiPart(FILE_REPORT_OK).queryParam("overwrite", false).post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(
+        response, REPORTS_ALREADY_PRESENT, "Report already existing", "2018-03");
   }
 
   @Test
@@ -469,48 +468,39 @@ public class CounterReportMultipartuploadIT {
 
   @Test
   public void testNoTenant() {
-    RequestSpecification requestSpecification = RestAssured.requestSpecification;
-    try {
-      RestAssured.requestSpecification = null;
-      given()
-          .multiPart(FILE_REPORT5_OK)
-          .post(PATH + PROVIDER_ID)
-          .then()
-          .statusCode(400)
-          .body(containsString("Tenant must be set"));
-    } finally {
-      RestAssured.requestSpecification = requestSpecification;
-    }
+    Response response =
+        given()
+            .multiPart(FILE_REPORT5_OK)
+            .filter(
+                (requestSpec, responseSpec, ctx) -> {
+                  requestSpec.removeHeader(XOkapiHeaders.TENANT);
+                  return ctx.next(requestSpec, responseSpec);
+                })
+            .post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(
+        response, ReportUploadErrorCode.OTHER, MSG_TENANT_HEADER_MISSING);
   }
 
   @Test
   public void testR5NotOk() {
-    given()
-        .multiPart(FILE_REPORT5_NOT_OK)
-        .post(PATH + PROVIDER_ID)
-        .then()
-        .statusCode(400)
-        .body(containsString(MSG_UNSUPPORTED_REPORT));
+    Response response = given().multiPart(FILE_REPORT5_NOT_OK).post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(response, UNSUPPORTED_REPORT_TYPE);
   }
 
   @Test
   public void testInvalidContent() {
-    given()
-        .multiPart(new MultiPartSpecBuilder(FILE_NO_REPORT).fileName("test.json").build())
-        .post(PATH + PROVIDER_ID)
-        .then()
-        .statusCode(400)
-        .body(containsString(MSG_WRONG_FORMAT));
+    Response response =
+        given()
+            .multiPart(new MultiPartSpecBuilder(FILE_NO_REPORT).fileName("test.json").build())
+            .post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(response, INVALID_REPORT_CONTENT);
   }
 
   @Test
   public void testUnsupportedExtension() {
-    given()
-        .multiPart(FILE_NO_REPORT)
-        .post(PATH + PROVIDER_ID)
-        .then()
-        .statusCode(400)
-        .body(containsString(MSG_UNSUPPORTED_FILE_EXTENSION.formatted(".txt")));
+    Response response = given().multiPart(FILE_NO_REPORT).post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(
+        response, UNSUPPORTED_FILE_FORMAT, MSG_UNSUPPORTED_FILE_EXTENSION.formatted(".txt"));
   }
 
   @Test
@@ -534,14 +524,9 @@ public class CounterReportMultipartuploadIT {
     assertThat(reports.getCounterReports().stream().map(CounterReport::getId))
         .containsExactlyInAnyOrder(createdIds.split(","));
 
-    given()
-        .multiPart(FILE_REPORT_MULTI_COP4)
-        .post(PATH + PROVIDER_ID)
-        .then()
-        .statusCode(500)
-        .body(containsString("Report already existing"))
-        .body(containsString("2018-03"))
-        .body(containsString("2018-04"));
+    Response response = given().multiPart(FILE_REPORT_MULTI_COP4).post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(
+        response, REPORTS_ALREADY_PRESENT, "Report already existing", "2018-03", "2018-04");
   }
 
   @Test
@@ -597,14 +582,9 @@ public class CounterReportMultipartuploadIT {
         .ignoringCollectionOrder()
         .isEqualTo(expectedReports.get(1));
 
-    given()
-        .multiPart(FILE_REPORT_MULTI_COP4)
-        .post(PATH + PROVIDER_ID)
-        .then()
-        .statusCode(500)
-        .body(containsString("Report already existing"))
-        .body(containsString("2018-03"))
-        .body(containsString("2018-04"));
+    Response response = given().multiPart(FILE_REPORT_MULTI_COP4).post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(
+        response, REPORTS_ALREADY_PRESENT, "Report already existing", "2018-03", "2018-04");
   }
 
   @Test
@@ -628,15 +608,14 @@ public class CounterReportMultipartuploadIT {
     assertThat(reports.getCounterReports().stream().map(CounterReport::getId))
         .containsExactlyInAnyOrder(createdIds.split(","));
 
-    given()
-        .multiPart(FILE_REPORT_MULTI_COP5)
-        .post(PATH + PROVIDER_ID)
-        .then()
-        .statusCode(500)
-        .body(containsString("Report already existing"))
-        .body(containsString("2019-09"))
-        .body(containsString("2019-10"))
-        .body(containsString("2019-11"));
+    Response response = given().multiPart(FILE_REPORT_MULTI_COP5).post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(
+        response,
+        REPORTS_ALREADY_PRESENT,
+        "Report already existing",
+        "2019-09",
+        "2019-10",
+        "2019-11");
   }
 
   @Test
@@ -686,15 +665,14 @@ public class CounterReportMultipartuploadIT {
     compareCOP5Reports(actualReports, expectedReports, 1);
     compareCOP5Reports(actualReports, expectedReports, 2);
 
-    given()
-        .multiPart(FILE_REPORT_MULTI_COP5)
-        .post(PATH + PROVIDER_ID)
-        .then()
-        .statusCode(500)
-        .body(containsString("Report already existing"))
-        .body(containsString("2019-09"))
-        .body(containsString("2019-10"))
-        .body(containsString("2019-11"));
+    Response response = given().multiPart(FILE_REPORT_MULTI_COP5).post(PATH + PROVIDER_ID);
+    assertReportUploadErrorResponse(
+        response,
+        REPORTS_ALREADY_PRESENT,
+        "Report already existing",
+        "2019-09",
+        "2019-10",
+        "2019-11");
   }
 
   @Test
