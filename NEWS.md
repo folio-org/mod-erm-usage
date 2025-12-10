@@ -1,3 +1,6 @@
+# 5.0.1
+* [MODEUS-214](https://folio-org.atlassian.net/browse/MODEUS-214) RMB Logging release - RMB 35.3.1, Vert.x 4.5.22
+
 # 5.0.0
 * [APPDESCRIP-28](https://folio-org.atlassian.net/browse/APPDESCRIP-28) Update erm-usage/files interface id to be valid for Eureka platform
 * [MODEUS-178](https://folio-org.atlassian.net/browse/MODEUS-178) Review and cleanup Module Descriptor for mod-erm-usage
