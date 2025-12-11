@@ -1,3 +1,6 @@
+# 5.1.1
+* [MODEUS-215](https://folio-org.atlassian.net/browse/MODEUS-215) RMB Logging release - RMB 35.4.1, Vert.x 4.5.22
+
 # 5.1.0
 * [MODEUS-200](https://folio-org.atlassian.net/browse/MODEUS-200) Update `maven-surefire-plugin` and `maven-failsafe-plugin`
 * [MODEUS-199](https://folio-org.atlassian.net/browse/MODEUS-199) Upgrade to Java 21
