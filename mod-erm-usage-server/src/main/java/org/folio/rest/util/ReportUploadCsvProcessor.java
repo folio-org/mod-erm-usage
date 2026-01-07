@@ -18,7 +18,7 @@ import org.olf.erm.usage.counter41.csv.mapper.MapperException;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.olf.erm.usage.counter51.Counter51Utils;
-import org.openapitools.client.model.SUSHIReportHeader;
+import org.openapitools.counter50.model.SUSHIReportHeader;
 
 public class ReportUploadCsvProcessor implements ReportUploadProcessor {
 

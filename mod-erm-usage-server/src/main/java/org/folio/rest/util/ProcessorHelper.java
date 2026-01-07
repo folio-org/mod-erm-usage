@@ -1,4 +1,3 @@
-
 package org.folio.rest.util;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -21,12 +20,12 @@ import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.olf.erm.usage.counter51.Counter51Utils;
 import org.olf.erm.usage.counter51.ReportType;
-import org.openapitools.client.model.SUSHIReportHeader;
-import org.openapitools.client.model.SUSHIReportHeaderReportAttributes;
+import org.openapitools.counter50.model.SUSHIReportHeader;
+import org.openapitools.counter50.model.SUSHIReportHeaderReportAttributes;
 
 /**
- * Utility class for processing COUNTER reports. This class provides methods to validate,
- * process, and convert various report objects into {@link CounterReport} objects.
+ * Utility class for processing COUNTER reports. This class provides methods to validate, process,
+ * and convert various report objects into {@link CounterReport} objects.
  */
 public class ProcessorHelper {
 
@@ -65,7 +64,8 @@ public class ProcessorHelper {
   }
 
   /**
-   * Processes a COUNTER 5.1 JSON report and converts it into a list of {@link CounterReport} objects.
+   * Processes a COUNTER 5.1 JSON report and converts it into a list of {@link CounterReport}
+   * objects.
    *
    * @param jsonNode the JSON representation of the report
    * @return a list of {@link CounterReport} objects

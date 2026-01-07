@@ -12,7 +12,7 @@ import org.olf.erm.usage.counter41.Counter4Utils.ReportSplitException;
 import org.olf.erm.usage.counter50.Counter5Utils;
 import org.olf.erm.usage.counter50.Counter5Utils.Counter5UtilsException;
 import org.olf.erm.usage.counter51.Counter51Utils;
-import org.openapitools.client.model.SUSHIReportHeader;
+import org.openapitools.counter50.model.SUSHIReportHeader;
 
 public class ReportUploadJsonProcessor implements ReportUploadProcessor {
 
