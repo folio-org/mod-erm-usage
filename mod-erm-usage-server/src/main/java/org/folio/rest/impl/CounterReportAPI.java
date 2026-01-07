@@ -60,6 +60,7 @@ import org.folio.rest.util.ReportUploadErrorCode;
 import org.folio.rest.util.ReportUploadErrorFactory;
 import org.folio.rest.util.ReportUploadException;
 import org.folio.rest.util.UploadHelper;
+import org.folio.rest.util.VertxUtil;
 
 public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterReports {
 
@@ -207,11 +208,8 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
 
-    Promise<Response> promise = Promise.promise();
-    getCounterReportsById(id, okapiHeaders, promise, vertxContext);
-
-    promise
-        .future()
+    VertxUtil.<Response>toFuture(
+            handler -> getCounterReportsById(id, okapiHeaders, handler, vertxContext))
         .compose(
             resp -> {
               Object entity = resp.getEntity();

@@ -129,10 +129,8 @@ public class PgHelper {
                 return Future.failedFuture("Report already exists");
               }
 
-              Promise<String> upsertPromise = Promise.promise();
-              PgUtil.postgresClient(vertxContext, okapiHeaders)
-                  .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport, upsertPromise);
-              return upsertPromise.future();
+              return PgUtil.postgresClient(vertxContext, okapiHeaders)
+                  .upsert(TABLE_NAME_COUNTER_REPORTS, id, counterReport);
             });
   }
 

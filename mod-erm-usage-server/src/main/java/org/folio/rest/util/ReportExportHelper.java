@@ -182,28 +182,22 @@ public class ReportExportHelper {
     }
 
     if ("4".equals(version)) {
-      Promise<Report> mergedResult = Promise.promise();
-      new RowStreamHandlerR4(vertxContext, mergedResult).handle(rowStream);
-      return mergedResult
-          .future()
+      return new RowStreamHandlerR4(vertxContext)
+          .handle(rowStream)
           .compose(report -> executeCounter4ToCsv(vertxContext, report))
           .compose(
               csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
     } else if ("5".equals(version)) {
-      Promise<Object> mergedResult = Promise.promise();
-      new RowStreamHandlerR5(vertxContext, reportName, mergedResult).handle(rowStream);
-      return mergedResult
-          .future()
+      return new RowStreamHandlerR5(vertxContext, reportName)
+          .handle(rowStream)
           .compose(obj -> executeCounter5ToCsv(vertxContext, obj))
           .compose(
               str -> executeBlocking(vertxContext, () -> replaceCreated(replaceCreatedBy(str))))
           .compose(
               csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
     } else if ("5.1".equals(version)) {
-      Promise<Object> mergedResult = Promise.promise();
-      new RowStreamHandlerR51(vertxContext, reportName, mergedResult).handle(rowStream);
-      return mergedResult
-          .future()
+      return new RowStreamHandlerR51(vertxContext, reportName)
+          .handle(rowStream)
           .compose(obj -> executeCounter51ToCsv(vertxContext, obj))
           .compose(
               str -> executeBlocking(vertxContext, () -> replaceCreated(replaceCreatedBy(str))))
