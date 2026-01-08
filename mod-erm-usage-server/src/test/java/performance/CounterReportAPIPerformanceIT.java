@@ -4,35 +4,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
-import io.reactivex.Single;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.ext.web.client.HttpResponse;
-import io.vertx.reactivex.ext.web.client.WebClient;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowSet;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.Year;
 import java.time.YearMonth;
-import java.util.Arrays;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.ws.rs.core.MediaType;
 import org.apache.commons.lang3.StringUtils;
@@ -57,16 +54,13 @@ public class CounterReportAPIPerformanceIT {
   private static final int PORT = NetworkUtils.nextFreePort();
   private static final String TENANT = "diku";
   private static final List<String> PROVIDER_IDS =
-      IntStream.rangeClosed(1, 20)
-          .mapToObj(i -> UUID.randomUUID().toString())
-          .collect(Collectors.toList());
+      IntStream.rangeClosed(1, 20).mapToObj(i -> UUID.randomUUID().toString()).toList();
   private static final Logger log = LoggerFactory.getLogger(CounterReportAPIPerformanceIT.class);
 
   private static Vertx vertx = Vertx.vertx();
 
   @ClassRule
-  public static PostgresContainerRule postgresRule =
-      new PostgresContainerRule(vertx.getDelegate(), TENANT);
+  public static PostgresContainerRule postgresRule = new PostgresContainerRule(vertx, TENANT);
 
   private static WebClient wc = WebClient.create(vertx);
   private static Report[] reports = new Report[12];
@@ -95,50 +89,34 @@ public class CounterReportAPIPerformanceIT {
       context.fail(e);
     }
 
-    Async async = context.async();
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", PORT));
+
     vertx
-        .rxDeployVerticle(RestVerticle.class.getName(), options)
-        .flatMap(resp -> saveBatch2())
-        .flatMap(r -> executeSQL("REINDEX TABLE " + TENANT + "_mod_erm_usage.counter_reports;"))
-        .flatMap(r -> executeSQL("VACUUM ANALYZE " + TENANT + "_mod_erm_usage.counter_reports;"))
-        .flatMap(resultSet -> getCounterReports())
-        .subscribe(
-            resp -> {
-              context.verify(
-                  v ->
-                      assertThat(resp.bodyAsJsonObject().getInteger("totalRecords"))
-                          .isEqualTo(PROVIDER_IDS.size() * 12 * 10));
-              async.complete();
-            },
-            context::fail);
+        .deployVerticle(RestVerticle.class.getName(), options)
+        .compose(resp -> saveBatch2())
+        .compose(r -> executeSQL("REINDEX TABLE " + TENANT + "_mod_erm_usage.counter_reports;"))
+        .compose(r -> executeSQL("VACUUM ANALYZE " + TENANT + "_mod_erm_usage.counter_reports;"))
+        .compose(resultSet -> getCounterReports())
+        .onComplete(
+            context.asyncAssertSuccess(
+                resp -> {
+                  assertThat(resp.bodyAsJsonObject().getInteger("totalRecords"))
+                      .isEqualTo(PROVIDER_IDS.size() * 12 * 10);
+                }));
   }
 
-  private static Single<RowSet<Row>> executeSQL(String sql) {
-    return vertx
-        .<RowSet<Row>>rxExecuteBlocking(
-            promise ->
-                PostgresClient.getInstance(vertx.getDelegate())
-                    .execute(
-                        sql,
-                        ar -> {
-                          if (ar.succeeded()) {
-                            promise.complete(ar.result());
-                          } else {
-                            promise.fail(ar.cause());
-                          }
-                        }))
-        .toSingle();
+  private static Future<RowSet<Row>> executeSQL(String sql) {
+    return PostgresClient.getInstance(vertx).execute(sql);
   }
 
-  private static Single<HttpResponse<Buffer>> getCounterReports() {
+  private static Future<HttpResponse<Buffer>> getCounterReports() {
     return wc.get("/counter-reports")
         .putHeader("X-Okapi-Tenant", TENANT)
         .putHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON)
         .addQueryParam("tiny", "true")
         .port(PORT)
-        .rxSend();
+        .send();
   }
 
   private static CounterReport createSampleCounterReport(
@@ -173,127 +151,113 @@ public class CounterReportAPIPerformanceIT {
                                             id,
                                             reports[m - 1],
                                             start.plusYears(y - 1).plusMonths(m - 1)))
-                                .collect(Collectors.toList())))
+                                .toList()))
         .flatMap(Collection::stream)
-        .collect(Collectors.toList());
+        .toList();
   }
 
-  /** saveBatch method is actually slower than multiple single saves */
-  /*private static Single<ResultSet> saveBatch() {
-    PostgresClient pgClient = PostgresClient.getInstance(vertx.getDelegate(), TENANT);
-    List<CounterReport> sampleReports = createSampleReports();
-    log.info("batch saving {} sample reports", sampleReports.size());
-    return vertx
-        .<ResultSet>rxExecuteBlocking(
-            promise ->
-                pgClient.saveBatch(
-                    TABLE_NAME_COUNTER_REPORTS,
-                    sampleReports,
-                    ar -> {
-                      if (ar.succeeded()) {
-                        promise.complete(ar.result());
-                      } else {
-                        promise.fail(ar.cause());
-                      }
-                    }))
-        .toSingle();
-  }*/
-
-  private static Single<List<String>> saveBatch2() {
-    PostgresClient pgClient = PostgresClient.getInstance(vertx.getDelegate(), TENANT);
+  private static Future<List<String>> saveBatch2() {
+    PostgresClient pgClient = PostgresClient.getInstance(vertx, TENANT);
     List<CounterReport> sampleReports = createSampleReports();
     log.info("saving {} sample reports to postgres", sampleReports.size());
 
-    List<Single<String>> singles =
-        sampleReports.stream()
-            .map(
-                cr ->
-                    vertx
-                        .<String>rxExecuteBlocking(
-                            promise ->
-                                pgClient.save(
-                                    TABLE_NAME_COUNTER_REPORTS,
-                                    cr,
-                                    ar -> {
-                                      if (ar.succeeded()) {
-                                        promise.complete(ar.result());
-                                      } else {
-                                        promise.fail(ar.cause());
-                                      }
-                                    }))
-                        .toSingle())
-            .collect(Collectors.toList());
+    int batchSize = 50;
+    List<List<CounterReport>> batches = new java.util.ArrayList<>();
+    for (int i = 0; i < sampleReports.size(); i += batchSize) {
+      batches.add(sampleReports.subList(i, Math.min(i + batchSize, sampleReports.size())));
+    }
 
-    return Single.merge(singles).toList();
+    Future<List<String>> result = Future.succeededFuture(new java.util.ArrayList<>());
+    for (List<CounterReport> batch : batches) {
+      result =
+          result.compose(
+              accumulatedResults -> {
+                List<Future<String>> batchFutures =
+                    batch.stream()
+                        .map(cr -> pgClient.save(TABLE_NAME_COUNTER_REPORTS, cr))
+                        .toList();
+                return Future.all(batchFutures)
+                    .map(
+                        cf -> {
+                          List<String> batchResults =
+                              batchFutures.stream().map(Future::result).toList();
+                          accumulatedResults.addAll(batchResults);
+                          return accumulatedResults;
+                        });
+              });
+    }
+    return result;
   }
 
-  private Single<Entry<HttpResponse<Buffer>, Double>> getCsvReport(String providerId, Year year) {
+  private Future<Entry<HttpResponse<Buffer>, Double>> getCsvReport(String providerId, Year year) {
     String url =
         String.format(
-            "/counter-reports/csv/provider/%s/report/JR1/version/4/from/%s/to/%s",
+            "/counter-reports/export/provider/%s/report/JR1/version/4/from/%s/to/%s",
             providerId, year.atMonth(1).toString(), year.atMonth(12).toString());
-    Stopwatch stopwatch = Stopwatch.createUnstarted();
+    Stopwatch stopwatch = Stopwatch.createStarted();
     return wc.get(url)
+        .setQueryParam("format", "csv")
         .putHeader("X-Okapi-Tenant", TENANT)
         .putHeader(HttpHeaders.ACCEPT, "text/csv")
         .port(PORT)
-        .rxSend()
-        .doOnSubscribe(d -> stopwatch.start())
-        .doAfterTerminate(stopwatch::stop)
-        .map(resp -> Maps.immutableEntry(resp, stopwatch.elapsed(TimeUnit.MILLISECONDS) / 1000.0));
+        .send()
+        .map(
+            resp -> {
+              stopwatch.stop();
+              return new SimpleImmutableEntry<>(
+                  resp, stopwatch.elapsed(TimeUnit.MILLISECONDS) / 1000.0);
+            });
   }
 
-  private Single<Entry<HttpResponse<Buffer>, Double>> getErrorCodes() {
+  private Future<Entry<HttpResponse<Buffer>, Double>> getErrorCodes() {
     String url = "/counter-reports/errors/codes";
-    Stopwatch stopwatch = Stopwatch.createUnstarted();
+    Stopwatch stopwatch = Stopwatch.createStarted();
     return wc.get(url)
         .putHeader("X-Okapi-Tenant", TENANT)
         .putHeader(HttpHeaders.ACCEPT, "application/json")
         .port(PORT)
-        .rxSend()
-        .doOnSubscribe(d -> stopwatch.start())
-        .doAfterTerminate(stopwatch::stop)
-        .map(resp -> Maps.immutableEntry(resp, stopwatch.elapsed(TimeUnit.MILLISECONDS) / 1000.0));
+        .send()
+        .map(
+            resp -> {
+              stopwatch.stop();
+              return new SimpleImmutableEntry<>(
+                  resp, stopwatch.elapsed(TimeUnit.MILLISECONDS) / 1000.0);
+            });
   }
 
   @Test
   public void testGetCsvReportMultipleMonthsPerformance(TestContext context) {
-    Async async = context.async();
-
-    List<Single<Entry<HttpResponse<Buffer>, Double>>> singles =
-        Arrays.asList(
+    List<Future<Entry<HttpResponse<Buffer>, Double>>> futures =
+        List.of(
             getCsvReport(PROVIDER_IDS.get(0), Year.of(2019)),
             getCsvReport(PROVIDER_IDS.get(PROVIDER_IDS.size() - 1), Year.of(2019)),
             getCsvReport(PROVIDER_IDS.get(PROVIDER_IDS.size() - 1), Year.of(2028)));
 
-    Single.merge(singles)
-        .toList()
-        .subscribe(
-            list -> {
-              list.forEach(
-                  e ->
-                      System.out.println(
-                          String.format(
-                              "Received csv response in %ss: %s",
-                              e.getValue(),
-                              StringUtils.abbreviate(e.getKey().bodyAsString(), 30))));
-              async.complete();
-            },
-            context::fail);
+    Future.all(futures)
+        .map(cf -> futures.stream().map(Future::result).toList())
+        .onComplete(
+            context.asyncAssertSuccess(
+                list -> {
+                  list.forEach(
+                      e ->
+                          System.out.println(
+                              String.format(
+                                  "Received csv response in %ss: %s",
+                                  e.getValue(),
+                                  StringUtils.abbreviate(e.getKey().bodyAsString(), 30))));
+                }));
   }
 
   @Test
   public void testGetErrorCodesPerformance(TestContext context) {
-    Async async = context.async();
     getErrorCodes()
-        .subscribe(
-            e -> {
-              System.out.println(
-                  String.format(
-                      "Received error codes response in %ss: %s",
-                      e.getValue(), e.getKey().bodyAsJsonObject().encode()));
-              async.complete();
-            },
-            context::fail);
+        .onComplete(
+            context.asyncAssertSuccess(
+                e -> {
+                  System.out.println(
+                      String.format(
+                          "Received error codes response in %ss: %s",
+                          e.getValue(), e.getKey().bodyAsJsonObject().encode()));
+                }));
   }
 }
