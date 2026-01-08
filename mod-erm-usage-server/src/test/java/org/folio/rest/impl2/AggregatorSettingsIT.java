@@ -2,6 +2,7 @@ package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.folio.rest.TestUtils.postTenantSync;
 
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -12,7 +13,6 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -23,12 +23,9 @@ import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguratio
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.AggregatorSettings;
-import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -69,7 +66,6 @@ public class AggregatorSettingsIT {
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
     PostgresClient.getInstance(vertx);
 
-    Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 
     RestAssured.reset();
@@ -84,22 +80,13 @@ public class AggregatorSettingsIT {
             .addHeader(HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
             .build();
 
-    TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
 
-    vertx.deployVerticle(
-        RestVerticle.class.getName(),
-        options,
-        res -> {
-          try {
-            tenantClient.postTenant(
-                new TenantAttributes().withModuleTo(ModuleName.getModuleVersion()),
-                res2 -> async.complete());
-          } catch (Exception e) {
-            context.fail(e);
-          }
-        });
+    vertx
+        .deployVerticle(RestVerticle.class.getName(), options)
+        .compose(s -> postTenantSync(vertx, TENANT))
+        .onComplete(context.asyncAssertSuccess());
 
     comparisonConfiguration = new RecursiveComparisonConfiguration();
     comparisonConfiguration.ignoreFields("metadata");
@@ -108,13 +95,7 @@ public class AggregatorSettingsIT {
   @AfterClass
   public static void teardown(TestContext context) {
     RestAssured.reset();
-    Async async = context.async();
-    vertx.close(
-        context.asyncAssertSuccess(
-            res -> {
-              PostgresClient.stopPostgresTester();
-              async.complete();
-            }));
+    vertx.close();
   }
 
   @Test

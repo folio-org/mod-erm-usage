@@ -99,7 +99,9 @@ public class CounterReportIT {
 
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
-    vertx.deployVerticle(RestVerticle.class.getName(), options, context.asyncAssertSuccess());
+    vertx
+        .deployVerticle(RestVerticle.class.getName(), options)
+        .onComplete(context.asyncAssertSuccess());
 
     defaultHeaderSpec = new RequestSpecBuilder().addHeaders(defaultHeaders).build();
 
@@ -116,6 +118,7 @@ public class CounterReportIT {
   @AfterClass
   public static void afterClass() {
     RestAssured.reset();
+    vertx.close();
   }
 
   @Before
@@ -483,7 +486,8 @@ public class CounterReportIT {
     YearMonth startMonth = YearMonth.of(2019, 1);
     AtomicLong counter = new AtomicLong(0);
     return Stream.of(
-            "Report not valid: Exception{Number=3000, Severity=ERROR, Message=Report Not Supported}",
+            "Report not valid: Exception{Number=3000, Severity=ERROR, Message=Report Not"
+                + " Supported}",
             "Number=3031",
             "Some other error message 4040",
             "\"Code\": 3060",

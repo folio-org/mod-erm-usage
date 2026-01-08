@@ -5,6 +5,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.folio.rest.TestUtils.assertReportUploadErrorResponse;
+import static org.folio.rest.TestUtils.postTenantSync;
 import static org.folio.rest.impl.CounterReportAPI.FORM_ATTR_EDITED;
 import static org.folio.rest.impl.CounterReportAPI.FORM_ATTR_REASON;
 import static org.folio.rest.util.ReportUploadErrorCode.INVALID_REPORT_CONTENT;
@@ -24,6 +25,7 @@ import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
@@ -42,14 +44,11 @@ import java.util.stream.Collectors;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.impl.TenantAPI;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
-import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
 import org.folio.rest.util.ReportUploadErrorCode;
@@ -127,66 +126,34 @@ public class CounterReportMultipartuploadIT {
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
 
-    Async async = context.async();
-    vertx.deployVerticle(
-        RestVerticle.class.getName(),
-        options,
-        res -> {
-          try {
-            new TenantAPI()
-                .postTenantSync(
-                    new TenantAttributes().withModuleTo(ModuleName.getModuleVersion()),
-                    Map.of(XOkapiHeaders.TENANT, TENANT),
-                    res2 -> {
-                      context.verify(v -> assertThat(res2.result().getStatus()).isEqualTo(204));
-                      async.complete();
-                    },
-                    vertx.getOrCreateContext());
-          } catch (Exception e) {
-            context.fail(e);
-          }
-        });
-    async.await();
-    postProvider(context);
+    vertx
+        .deployVerticle(RestVerticle.class.getName(), options)
+        .compose(s -> postTenantSync(vertx, TENANT))
+        .compose(v -> postProvider())
+        .onComplete(context.asyncAssertSuccess());
   }
 
   @AfterClass
   public static void teardown(TestContext context) {
     RestAssured.reset();
-    Async async = context.async();
-    vertx.close(
-        context.asyncAssertSuccess(
-            res -> {
-              PostgresClient.stopPostgresTester();
-              async.complete();
-            }));
+    vertx.close();
   }
 
-  private static void postProvider(TestContext ctx) {
+  private static Future<String> postProvider() {
     String str;
     try {
       str =
           Resources.toString(
               Resources.getResource("fileupload/provider.json"), StandardCharsets.UTF_8);
     } catch (Exception e) {
-      ctx.fail(e);
-      return;
+      return Future.failedFuture(e);
     }
 
-    Async async = ctx.async();
-    PostgresClient.getInstance(vertx, TENANT)
+    return PostgresClient.getInstance(vertx, TENANT)
         .save(
             Constants.TABLE_NAME_UDP,
             PROVIDER_ID,
-            Json.decodeValue(str, UsageDataProvider.class).withId(null),
-            ar -> {
-              if (ar.succeeded()) {
-                async.complete();
-              } else {
-                ctx.fail(ar.cause());
-              }
-            });
-    async.await();
+            Json.decodeValue(str, UsageDataProvider.class).withId(null));
   }
 
   public static String createTitleReportWithSize(int sizeInMB) {
