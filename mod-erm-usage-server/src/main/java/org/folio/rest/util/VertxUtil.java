@@ -1,7 +1,6 @@
 package org.folio.rest.util;
 
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
@@ -10,16 +9,10 @@ import io.vertx.core.net.impl.NetServerInternal;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public class VertxUtil {
 
   private VertxUtil() {}
-
-  // TODO: useless now, refactor usages to use vertxContext directly
-  public static <T> Future<T> executeBlocking(Context vertxContext, Supplier<T> supplier) {
-    return vertxContext.executeBlocking(supplier::get);
-  }
 
   /**
    * Converts a callback-based method to a Future-based method.

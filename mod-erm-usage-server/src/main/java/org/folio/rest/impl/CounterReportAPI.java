@@ -12,7 +12,6 @@ import static org.folio.rest.util.ReportUploadErrorCode.MAXIMUM_FILESIZE_EXCEEDE
 import static org.folio.rest.util.ReportUploadErrorCode.MULTIPLE_FILES_NOT_SUPPORTED;
 import static org.folio.rest.util.ReportUploadErrorCode.REPORTS_ALREADY_PRESENT;
 import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_FILE_FORMAT;
-import static org.folio.rest.util.VertxUtil.executeBlocking;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -214,8 +213,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             resp -> {
               Object entity = resp.getEntity();
               if (entity instanceof CounterReport report) {
-                return executeBlocking(
-                    vertxContext,
+                return vertxContext.executeBlocking(
                     () ->
                         Optional.ofNullable(createDownloadResponseByReportVersion(report))
                             .orElse(
@@ -559,8 +557,8 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
             CounterReport.class,
             ar -> {
               if (ar.succeeded()) {
-                executeBlocking(
-                        vertxContext, () -> createExportResponseByFormat(ar.result(), format))
+                vertxContext
+                    .executeBlocking(() -> createExportResponseByFormat(ar.result(), format))
                     .onSuccess(resp -> asyncResultHandler.handle(succeededFuture(resp)))
                     .onFailure(
                         t ->
