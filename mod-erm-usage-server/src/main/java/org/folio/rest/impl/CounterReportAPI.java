@@ -420,16 +420,23 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
         routingContext.put(CONTEXT_FILENAME_KEY, fileUpload.filename());
         fileUpload.handler(
             buf -> {
-              if (buffer.length() > MAX_FILE_SIZE_IN_BYTES) {
-                routingContext.cancelAndCleanupFileUploads();
-                asyncResultHandler.handle(
-                    succeededFuture(
-                        PostCounterReportsMultipartuploadProviderByIdResponse
-                            .respond400WithApplicationJson(
-                                ReportUploadErrorFactory.create(
-                                    MAXIMUM_FILESIZE_EXCEEDED, MAXIMUM_FILESIZE_DETAILS))));
-              } else {
-                buffer.appendBuffer(buf);
+              // Check if response is already ended to prevent multiple handler invocations.
+              // cancelAndCleanupFileUploads() is asynchronous, so buffered chunks may still
+              // arrive after an error response is sent. This prevents completing the Promise
+              // multiple times, which would cause "Result is already complete" errors.
+              if (!routingContext.response().ended()) {
+                // Check size before appending to prevent buffer from ever exceeding the limit
+                if (buffer.length() + buf.length() > MAX_FILE_SIZE_IN_BYTES) {
+                  routingContext.cancelAndCleanupFileUploads();
+                  asyncResultHandler.handle(
+                      succeededFuture(
+                          PostCounterReportsMultipartuploadProviderByIdResponse
+                              .respond400WithApplicationJson(
+                                  ReportUploadErrorFactory.create(
+                                      MAXIMUM_FILESIZE_EXCEEDED, MAXIMUM_FILESIZE_DETAILS))));
+                } else {
+                  buffer.appendBuffer(buf);
+                }
               }
             });
       }
