@@ -8,24 +8,20 @@ import static io.restassured.http.ContentType.TEXT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-import io.reactivex.Single;
-import io.reactivex.schedulers.Schedulers;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.parsing.Parser;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.ext.web.client.HttpResponse;
-import io.vertx.reactivex.ext.web.client.WebClient;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomUtils;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
@@ -52,8 +48,7 @@ public class ErmUsageFilesIT {
   @BeforeClass
   public static void setUp(TestContext context) {
     vertx = Vertx.vertx();
-    io.vertx.reactivex.core.Vertx vertxRx = io.vertx.reactivex.core.Vertx.newInstance(vertx);
-    webClient = WebClient.create(vertxRx);
+    webClient = WebClient.create(vertx);
 
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
     PostgresClient.getInstance(vertx);
@@ -71,92 +66,85 @@ public class ErmUsageFilesIT {
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
 
-    Async async = context.async();
-    vertx.deployVerticle(
-        RestVerticle.class.getName(),
-        options,
-        res -> {
-          try {
-            new TenantAPI()
-                .postTenantSync(
-                    new TenantAttributes().withModuleTo(ModuleName.getModuleVersion()),
-                    Map.of(XOkapiHeaders.TENANT, TENANT),
-                    res2 -> {
-                      context.verify(v -> assertThat(res2.result().getStatus()).isEqualTo(204));
-                      async.complete();
-                    },
-                    vertx.getOrCreateContext());
-          } catch (Exception e) {
-            context.fail(e);
-          }
-        });
-    async.await();
+    String moduleId = ModuleName.getModuleName() + "-" + ModuleName.getModuleVersion();
+    vertx
+        .deployVerticle(RestVerticle.class.getName(), options)
+        .compose(
+            s ->
+                new TenantAPI()
+                    .postTenantSync(
+                        new TenantAttributes().withModuleTo(moduleId),
+                        Map.of(XOkapiHeaders.TENANT, TENANT),
+                        vertx.getOrCreateContext()))
+        .onComplete(
+            context.asyncAssertSuccess(resp -> assertThat(resp.getStatus()).isEqualTo(204)));
   }
 
   @AfterClass
   public static void teardown(TestContext context) {
     RestAssured.reset();
-    Async async = context.async();
-    vertx.close(
-        context.asyncAssertSuccess(
-            res -> {
-              PostgresClient.stopPostgresTester();
-              async.complete();
-            }));
+    vertx
+        .close()
+        .onComplete(context.asyncAssertSuccess(res -> PostgresClient.stopPostgresTester()));
   }
 
-  private Single<HttpResponse<Buffer>> upload(byte[] bytes) {
+  private Future<HttpResponse<Buffer>> upload(byte[] bytes) {
     return webClient
         .post(RestAssured.port, "localhost", ERM_USAGE_FILES_ENDPOINT)
         .putHeader(XOkapiHeaders.TENANT, TENANT)
         .putHeader(CONTENT_TYPE, BINARY.toString())
-        .rxSendBuffer(Buffer.buffer(bytes));
+        .sendBuffer(Buffer.buffer(bytes));
   }
 
-  private Single<HttpResponse<Buffer>> get(String id) {
+  private Future<HttpResponse<Buffer>> get(String id) {
     return webClient
         .get(RestAssured.port, "localhost", ERM_USAGE_FILES_ENDPOINT + "/" + id)
         .putHeader(XOkapiHeaders.TENANT, TENANT)
         .putHeader(ACCEPT, BINARY.toString())
-        .rxSend();
+        .send();
   }
 
   @Test
   public void testConcurrentUpload(TestContext context) {
-    Async async = context.async();
-
     List<Integer> byteSizes = List.of(25000, 50000, 75000, 125000, 250000);
-    List<byte[]> bytesList =
-        byteSizes.stream().map(RandomUtils::nextBytes).collect(Collectors.toList());
-    List<Single<HttpResponse<Buffer>>> uploadSingles =
-        bytesList.stream().map(this::upload).collect(Collectors.toList());
+    List<byte[]> bytesList = byteSizes.stream().map(RandomUtils::nextBytes).toList();
+    List<Future<HttpResponse<Buffer>>> uploadFutures =
+        bytesList.stream().map(this::upload).toList();
 
-    Single.merge(uploadSingles)
-        .subscribeOn(Schedulers.io())
-        .toList()
-        .flattenAsFlowable(
-            respList -> {
-              Stream<Float> sizes =
-                  respList.stream()
+    Future.all(uploadFutures)
+        .compose(
+            compositeFuture -> {
+              List<HttpResponse<Buffer>> uploadResponses =
+                  uploadFutures.stream().map(Future::result).toList();
+
+              // Test for correct size attribute of POST responses
+              List<Float> sizes =
+                  uploadResponses.stream()
                       .map(resp -> resp.bodyAsJsonObject().getString("size"))
-                      .map(Float::valueOf);
-              // test for correct size attribute of POST responses
+                      .map(Float::valueOf)
+                      .toList();
               assertThat(sizes)
                   .containsExactlyInAnyOrder(
                       byteSizes.stream().map(i -> i / 1000f).toArray(Float[]::new));
-              return respList;
+
+              // Get all uploaded files
+              List<Future<HttpResponse<Buffer>>> getFutures =
+                  uploadResponses.stream()
+                      .map(resp -> resp.bodyAsJsonObject().getString("id"))
+                      .map(this::get)
+                      .toList();
+              return Future.all(getFutures)
+                  .map(cf2 -> getFutures.stream().map(Future::result).toList());
             })
-        .map(resp -> resp.bodyAsJsonObject().getString("id"))
-        .flatMapSingle(this::get)
-        .toList()
-        .subscribe(
-            list -> {
-              Stream<byte[]> bytes = list.stream().map(resp -> resp.body().getBytes());
-              // test for correct body of GET responses
-              assertThat(bytes).containsExactlyInAnyOrder(bytesList.toArray(byte[][]::new));
-              async.complete();
-            },
-            context::fail);
+        .onComplete(
+            context.asyncAssertSuccess(
+                getResponses -> {
+                  // Test for correct body of GET responses
+                  List<byte[]> downloadedBytes =
+                      getResponses.stream().map(resp -> resp.body().getBytes()).toList();
+                  assertThat(downloadedBytes)
+                      .containsExactlyInAnyOrder(bytesList.toArray(byte[][]::new));
+                }));
   }
 
   @Test

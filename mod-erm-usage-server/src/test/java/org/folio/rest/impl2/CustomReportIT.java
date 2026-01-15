@@ -2,6 +2,7 @@ package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.folio.rest.TestUtils.postTenantSync;
 
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
@@ -11,24 +12,18 @@ import io.restassured.specification.RequestSpecification;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
-import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.impl.TenantAPI;
 import org.folio.rest.jaxrs.model.CustomReport;
 import org.folio.rest.jaxrs.model.CustomReports;
-import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
 import org.junit.AfterClass;
@@ -96,7 +91,6 @@ public class CustomReportIT {
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
     PostgresClient.getInstance(vertx);
 
-    Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 
     RestAssured.reset();
@@ -106,36 +100,16 @@ public class CustomReportIT {
 
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
-    vertx.deployVerticle(
-        RestVerticle.class.getName(),
-        options,
-        res -> {
-          try {
-            new TenantAPI()
-                .postTenantSync(
-                    new TenantAttributes().withModuleTo(ModuleName.getModuleVersion()),
-                    Map.of(XOkapiHeaders.TENANT, TENANT),
-                    res2 -> {
-                      context.verify(v -> assertThat(res2.result().getStatus()).isEqualTo(204));
-                      async.complete();
-                    },
-                    vertx.getOrCreateContext());
-          } catch (Exception e) {
-            context.fail(e);
-          }
-        });
+    vertx
+        .deployVerticle(RestVerticle.class.getName(), options)
+        .compose(s -> postTenantSync(vertx, TENANT))
+        .onComplete(context.asyncAssertSuccess());
   }
 
   @AfterClass
   public static void afterClass(TestContext context) {
     RestAssured.reset();
-    Async async = context.async();
-    vertx.close(
-        context.asyncAssertSuccess(
-            res -> {
-              PostgresClient.stopPostgresTester();
-              async.complete();
-            }));
+    vertx.close();
   }
 
   @Before

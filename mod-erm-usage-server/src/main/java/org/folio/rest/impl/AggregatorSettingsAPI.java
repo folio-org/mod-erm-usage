@@ -2,7 +2,6 @@ package org.folio.rest.impl;
 
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
-import static org.folio.rest.util.VertxUtil.executeBlocking;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
@@ -229,8 +228,8 @@ public class AggregatorSettingsAPI implements org.folio.rest.jaxrs.resource.Aggr
               false,
               ar -> {
                 if (ar.succeeded()) {
-                  executeBlocking(
-                          vertxContext,
+                  vertxContext
+                      .executeBlocking(
                           () -> createExportcredialsResponse(ar.result().getResults(), format))
                       .onSuccess(resp -> asyncResultHandler.handle(succeededFuture(resp)))
                       .onFailure(

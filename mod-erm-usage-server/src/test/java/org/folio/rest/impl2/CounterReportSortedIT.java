@@ -22,19 +22,16 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.impl.TenantAPI;
+import org.folio.rest.TestUtils;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.CounterReportsSorted;
-import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.folio.rest.util.Constants;
 import org.junit.AfterClass;
@@ -71,7 +68,6 @@ public class CounterReportSortedIT {
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
     PostgresClient.getInstance(vertx);
 
-    Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 
     RestAssured.reset();
@@ -88,36 +84,16 @@ public class CounterReportSortedIT {
 
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
-    vertx.deployVerticle(
-        RestVerticle.class.getName(),
-        options,
-        res -> {
-          try {
-            new TenantAPI()
-                .postTenantSync(
-                    new TenantAttributes().withModuleTo(ModuleName.getModuleVersion()),
-                    Map.of(XOkapiHeaders.TENANT, TENANT),
-                    res2 -> {
-                      context.verify(v -> assertThat(res2.result().getStatus()).isEqualTo(204));
-                      async.complete();
-                    },
-                    vertx.getOrCreateContext());
-          } catch (Exception e) {
-            context.fail(e);
-          }
-        });
+    vertx
+        .deployVerticle(RestVerticle.class.getName(), options)
+        .compose(s -> TestUtils.postTenantSync(vertx, TENANT))
+        .onComplete(context.asyncAssertSuccess());
   }
 
   @AfterClass
   public static void teardown(TestContext context) {
     RestAssured.reset();
-    Async async = context.async();
-    vertx.close(
-        context.asyncAssertSuccess(
-            res -> {
-              PostgresClient.stopPostgresTester();
-              async.complete();
-            }));
+    vertx.close();
   }
 
   private static List<CounterReport> createReportsForYearsFrom(CounterReport base) {

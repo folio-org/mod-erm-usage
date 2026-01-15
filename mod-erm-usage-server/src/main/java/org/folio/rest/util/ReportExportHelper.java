@@ -1,7 +1,6 @@
 package org.folio.rest.util;
 
 import static io.vertx.core.Future.succeededFuture;
-import static org.folio.rest.util.VertxUtil.executeBlocking;
 
 import com.google.common.io.ByteStreams;
 import io.vertx.core.Context;
@@ -182,31 +181,23 @@ public class ReportExportHelper {
     }
 
     if ("4".equals(version)) {
-      Promise<Report> mergedResult = Promise.promise();
-      new RowStreamHandlerR4(vertxContext, mergedResult).handle(rowStream);
-      return mergedResult
-          .future()
+      return new RowStreamHandlerR4(vertxContext)
+          .handle(rowStream)
           .compose(report -> executeCounter4ToCsv(vertxContext, report))
           .compose(
               csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
     } else if ("5".equals(version)) {
-      Promise<Object> mergedResult = Promise.promise();
-      new RowStreamHandlerR5(vertxContext, reportName, mergedResult).handle(rowStream);
-      return mergedResult
-          .future()
+      return new RowStreamHandlerR5(vertxContext, reportName)
+          .handle(rowStream)
           .compose(obj -> executeCounter5ToCsv(vertxContext, obj))
-          .compose(
-              str -> executeBlocking(vertxContext, () -> replaceCreated(replaceCreatedBy(str))))
+          .compose(str -> vertxContext.executeBlocking(() -> replaceCreated(replaceCreatedBy(str))))
           .compose(
               csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
     } else if ("5.1".equals(version)) {
-      Promise<Object> mergedResult = Promise.promise();
-      new RowStreamHandlerR51(vertxContext, reportName, mergedResult).handle(rowStream);
-      return mergedResult
-          .future()
+      return new RowStreamHandlerR51(vertxContext, reportName)
+          .handle(rowStream)
           .compose(obj -> executeCounter51ToCsv(vertxContext, obj))
-          .compose(
-              str -> executeBlocking(vertxContext, () -> replaceCreated(replaceCreatedBy(str))))
+          .compose(str -> vertxContext.executeBlocking(() -> replaceCreated(replaceCreatedBy(str))))
           .compose(
               csv -> executeCreateExportMultipleMonthsResponseByFormat(vertxContext, format, csv));
     } else {
@@ -223,12 +214,11 @@ public class ReportExportHelper {
   }
 
   private static Future<String> executeCounter5ToCsv(Context vertxContext, Object obj) {
-    return executeBlocking(vertxContext, () -> Counter5Utils.toCSV(obj));
+    return vertxContext.executeBlocking(() -> Counter5Utils.toCSV(obj));
   }
 
   private static Future<String> executeCounter51ToCsv(Context vertxContext, Object obj) {
-    return executeBlocking(
-        vertxContext,
+    return vertxContext.executeBlocking(
         () -> {
           StringWriter stringWriter = new StringWriter();
           try {
@@ -242,12 +232,12 @@ public class ReportExportHelper {
 
   private static Future<Response> executeCreateExportMultipleMonthsResponseByFormat(
       Context vertxContext, String format, String csv) {
-    return executeBlocking(
-        vertxContext, () -> createExportMultipleMonthsResponseByFormat(csv, format));
+    return vertxContext.executeBlocking(
+        () -> createExportMultipleMonthsResponseByFormat(csv, format));
   }
 
   private static Future<String> executeCounter4ToCsv(Context vertxContext, Report report) {
-    return executeBlocking(vertxContext, () -> Counter4Utils.toCSV(report));
+    return vertxContext.executeBlocking(() -> Counter4Utils.toCSV(report));
   }
 
   public static Response createExportResponseByFormat(CounterReport cr, String format) {

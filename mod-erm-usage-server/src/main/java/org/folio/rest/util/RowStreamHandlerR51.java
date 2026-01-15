@@ -4,9 +4,9 @@ import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowStream;
 import java.util.List;
@@ -19,58 +19,66 @@ import org.olf.erm.usage.counter51.ReportType;
  * column of each {@code Row} represents a COUNTER 5.1 report, and merging them into a single
  * COUNTER 5.1 report. Optionally converts Master Reports into Standard Views.
  */
-public class RowStreamHandlerR51 implements Handler<RowStream<Row>> {
+public class RowStreamHandlerR51 {
 
   private final Context vertxContext;
-  private final Handler<AsyncResult<Object>> resultHandler;
   private final ReportType reportType;
   private ObjectNode mergedReport = null;
 
-  public RowStreamHandlerR51(
-      Context vertxContext, String reportName, Handler<AsyncResult<Object>> resultHandler) {
+  /**
+   * Constructor for RowStreamHandlerR51.
+   *
+   * @param vertxContext The Vert.x context for handling blocking operations.
+   * @param reportName The name of the COUNTER 5.1 report
+   */
+  public RowStreamHandlerR51(Context vertxContext, String reportName) {
     this.vertxContext = vertxContext;
     this.reportType = ReportType.valueOf(reportName);
-    this.resultHandler = resultHandler;
   }
 
-  @Override
-  public void handle(RowStream<Row> event) {
-    event
+  /**
+   * Handles incoming rows from a {@code RowStream<Row>} event, where the first column of each
+   * {@code Row} represents a COUNTER 5.1 report. These reports are converted and merged.
+   *
+   * @param rowStream The {@code RowStream<Row>} to process.
+   * @return A Future that completes with the merged report
+   */
+  public Future<Object> handle(RowStream<Row> rowStream) {
+    Promise<Object> promise = Promise.promise();
+
+    rowStream
         .handler(
             r -> {
-              event.pause();
+              rowStream.pause();
               vertxContext
                   .executeBlocking(
-                      promise -> {
-                        try {
-                          CounterReport counterReport =
-                              r.getJsonObject(0).mapTo(CounterReport.class);
-                          ObjectNode report =
-                              Counter51Utils.getDefaultObjectMapper()
-                                  .valueToTree(counterReport.getReport());
+                      () -> {
+                        CounterReport counterReport = r.getJsonObject(0).mapTo(CounterReport.class);
+                        ObjectNode report =
+                            Counter51Utils.getDefaultObjectMapper()
+                                .valueToTree(counterReport.getReport());
 
-                          if (reportType.isStandardView()) {
-                            report = Counter51Utils.convertReport(report, reportType);
-                          }
-
-                          mergedReport =
-                              mergedReport == null
-                                  ? report
-                                  : Counter51Utils.mergeReports(List.of(mergedReport, report));
-                          promise.complete();
-                        } catch (Exception e) {
-                          promise.fail(e);
+                        if (reportType.isStandardView()) {
+                          report = Counter51Utils.convertReport(report, reportType);
                         }
+
+                        mergedReport =
+                            mergedReport == null
+                                ? report
+                                : Counter51Utils.mergeReports(List.of(mergedReport, report));
+                        return null;
                       })
-                  .onSuccess(h -> event.resume())
-                  .onFailure(t -> event.close(v -> resultHandler.handle(failedFuture(t))));
+                  .onSuccess(h -> rowStream.resume())
+                  .onFailure(t -> rowStream.close().onComplete(v -> promise.fail(t)));
             })
         .endHandler(
             v ->
-                resultHandler.handle(
+                promise.handle(
                     mergedReport == null
                         ? failedFuture("Merged report is null")
                         : succeededFuture(mergedReport)))
-        .exceptionHandler(t -> resultHandler.handle(failedFuture(t)));
+        .exceptionHandler(promise::fail);
+
+    return promise.future();
   }
 }

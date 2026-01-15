@@ -27,17 +27,15 @@ import java.util.List;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
-import org.folio.rest.client.TenantClient;
+import org.folio.rest.TestUtils;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.HarvestingConfig.HarvestingStatus;
 import org.folio.rest.jaxrs.model.SushiCredentials;
-import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.jaxrs.model.UsageDataProvider.Status;
 import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.ModuleName;
 import org.folio.rest.tools.utils.NetworkUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -95,7 +93,6 @@ public class UsageDataProvidersIT {
     PostgresClient.setPostgresTester(new PostgresTesterContainer());
     PostgresClient.getInstance(vertx);
 
-    Async async = context.async();
     int port = NetworkUtils.nextFreePort();
 
     RestAssured.reset();
@@ -103,34 +100,27 @@ public class UsageDataProvidersIT {
     RestAssured.port = port;
     RestAssured.defaultParser = Parser.JSON;
 
-    TenantClient tenantClient = new TenantClient("http://localhost:" + port, TENANT, TENANT);
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
 
-    vertx.deployVerticle(
-        RestVerticle.class.getName(),
-        options,
-        res -> {
-          try {
-            tenantClient.postTenant(
-                new TenantAttributes().withModuleTo(ModuleName.getModuleVersion()),
-                res2 -> async.complete());
-          } catch (Exception e) {
-            context.fail(e);
-          }
-        });
+    vertx
+        .deployVerticle(RestVerticle.class.getName(), options)
+        .compose(s -> TestUtils.postTenantSync(vertx, TENANT))
+        .onComplete(context.asyncAssertSuccess());
   }
 
   @AfterClass
   public static void teardown(TestContext context) {
     RestAssured.reset();
     Async async = context.async();
-    vertx.close(
-        context.asyncAssertSuccess(
-            res -> {
-              PostgresClient.stopPostgresTester();
-              async.complete();
-            }));
+    vertx
+        .close()
+        .onComplete(
+            context.asyncAssertSuccess(
+                res -> {
+                  PostgresClient.stopPostgresTester();
+                  async.complete();
+                }));
   }
 
   @Test

@@ -4,7 +4,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import java.util.Map;
 import javax.ws.rs.core.Response;
 import org.folio.rest.jaxrs.model.TenantAttributes;
@@ -21,16 +20,13 @@ public class TenantReferenceAPI extends TenantAPI {
 
     return super.loadData(attributes, tenantId, headers, vertxContext)
         .compose(
-            i -> {
-              Promise<Integer> promise = Promise.promise();
-              TenantLoading tl = new TenantLoading();
-              tl.withKey("loadSample")
-                  .withLead("sample-data")
-                  .add("usage-data-providers")
-                  .add("counter-reports")
-                  .perform(attributes, headers, vertxContext.owner(), promise);
-              return promise.future();
-            });
+            i ->
+                new TenantLoading()
+                    .withKey("loadSample")
+                    .withLead("sample-data")
+                    .add("usage-data-providers")
+                    .add("counter-reports")
+                    .perform(attributes, headers, vertxContext, i));
   }
 
   @Override

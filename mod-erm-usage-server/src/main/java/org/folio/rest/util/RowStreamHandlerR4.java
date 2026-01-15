@@ -3,9 +3,9 @@ package org.folio.rest.util;
 import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
-import io.vertx.core.Handler;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.json.Json;
 import io.vertx.sqlclient.Row;
 import io.vertx.sqlclient.RowStream;
@@ -17,62 +17,58 @@ import org.olf.erm.usage.counter41.Counter4Utils;
  * A handler for processing {@code RowStream<Row>} events, where the first column of each {@code
  * Row} represents a Counter4 report, and merging them into a single Counter4 Report.
  */
-public class RowStreamHandlerR4 implements Handler<RowStream<Row>> {
+public class RowStreamHandlerR4 {
 
   private final Context vertxContext;
-  private final Handler<AsyncResult<Report>> resultHandler;
   private Report mergedReport = null;
 
   /**
    * Constructor for RowStreamHandlerR4.
    *
    * @param vertxContext The Vert.x context for handling blocking operations.
-   * @param resultHandler The handler for the final result of merged Counter4 Reports.
    */
-  public RowStreamHandlerR4(Context vertxContext, Handler<AsyncResult<Report>> resultHandler) {
+  public RowStreamHandlerR4(Context vertxContext) {
     this.vertxContext = vertxContext;
-    this.resultHandler = resultHandler;
   }
 
   /**
    * Handles incoming rows from a {@code RowStream<Row>} event, where the first column of each
    * {@code Row} represents a Counter4 report. These reports are merged into a single Counter4
-   * Report and the result is passed to the resultHandler.
+   * Report.
    *
-   * @param event The {@code RowStream<Row>} event to handle.
+   * @param rowStream The {@code RowStream<Row>} to process.
+   * @return A Future that completes with the merged Report
    */
-  @Override
-  public void handle(RowStream<Row> event) {
-    event
+  public Future<Report> handle(RowStream<Row> rowStream) {
+    Promise<Report> promise = Promise.promise();
+
+    rowStream
         .handler(
             r -> {
-              event.pause();
+              rowStream.pause();
               vertxContext
                   .executeBlocking(
-                      promise -> {
-                        try {
-                          CounterReport counterReport =
-                              r.getJsonObject(0).mapTo(CounterReport.class);
-                          Report report =
-                              Counter4Utils.fromJSON(Json.encode(counterReport.getReport()));
-                          mergedReport =
-                              mergedReport == null
-                                  ? report
-                                  : Counter4Utils.merge(mergedReport, report);
-                          promise.complete();
-                        } catch (Exception e) {
-                          promise.fail(e);
-                        }
+                      () -> {
+                        CounterReport counterReport = r.getJsonObject(0).mapTo(CounterReport.class);
+                        Report report =
+                            Counter4Utils.fromJSON(Json.encode(counterReport.getReport()));
+                        mergedReport =
+                            mergedReport == null
+                                ? report
+                                : Counter4Utils.merge(mergedReport, report);
+                        return null;
                       })
-                  .onSuccess(h -> event.resume())
-                  .onFailure(t -> event.close(v -> resultHandler.handle(failedFuture(t))));
+                  .onSuccess(h -> rowStream.resume())
+                  .onFailure(t -> rowStream.close().onComplete(v -> promise.fail(t)));
             })
         .endHandler(
             v ->
-                resultHandler.handle(
+                promise.handle(
                     mergedReport == null
                         ? failedFuture("Merged report is null")
                         : succeededFuture(mergedReport)))
-        .exceptionHandler(t -> resultHandler.handle(failedFuture(t)));
+        .exceptionHandler(promise::fail);
+
+    return promise.future();
   }
 }
