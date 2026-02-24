@@ -1,3 +1,6 @@
+# 5.1.2
+* [MODEUS-218](https://folio-org.atlassian.net/browse/MODEUS-218) Use GitHub Workflows for Maven
+
 # 5.1.1
 * [MODEUS-215](https://folio-org.atlassian.net/browse/MODEUS-215) RMB Logging release - RMB 35.4.1, Vert.x 4.5.22
 
