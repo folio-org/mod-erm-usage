@@ -35,6 +35,18 @@ public class UploadHelperTest {
           true
         },
         new Object[] {
+          "Title Master Report",
+          Map.of("Attributes_To_Show", "YOP|Access_Type|Access_Method|Data_Type|Section_Type"),
+          true
+        },
+        new Object[] {
+          "Title Master Report",
+          Map.of(
+              "Attributes_To_Show",
+              "Data_Type|Data_Type|Section_Type|YOP|Access_Type|Access_Method"),
+          false
+        },
+        new Object[] {
           "Some Report",
           Map.of("Attributes_To_Show", "Data_Type|Section_Type|YOP|Access_Type|Access_Method"),
           false
