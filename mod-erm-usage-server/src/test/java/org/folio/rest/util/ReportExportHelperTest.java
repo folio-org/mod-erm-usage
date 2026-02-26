@@ -76,7 +76,7 @@ public class ReportExportHelperTest {
         .satisfies(
             response -> {
               assertThat(response.getMediaType()).isEqualTo(MediaType.APPLICATION_JSON_TYPE);
-              assertThat(response.getEntity()).isEqualTo("{}");
+              assertThat(response.getEntity()).isEqualTo("{ }");
             });
 
     assertThat(
