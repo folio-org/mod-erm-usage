@@ -12,6 +12,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.niso.schemas.counter.Report;
 import org.olf.erm.usage.counter41.Counter4Utils;
@@ -106,9 +108,30 @@ public class ProcessorHelper {
     List<SUSHIReportHeaderReportAttributes> actualAttributes = header.getReportAttributes();
     if (!(actualAttributes != null
         && actualAttributes.size() == expectedAttributes.size()
-        && new HashSet<>(actualAttributes).containsAll(expectedAttributes))) {
+        && new HashSet<>(normalize(actualAttributes))
+            .containsAll(normalize(expectedAttributes)))) {
       throw new ReportUploadException(INVALID_REPORT_CONTENT, "Unsupported report attributes.");
     }
+  }
+
+  /**
+   * Normalizes report attributes by sorting pipe-delimited values in {@code Attributes_To_Show}
+   * attributes, so that element order does not affect equality comparisons.
+   */
+  private static List<SUSHIReportHeaderReportAttributes> normalize(
+      List<SUSHIReportHeaderReportAttributes> attrs) {
+    return attrs.stream()
+        .map(
+            a ->
+                ATTRIBUTES_TO_SHOW.equals(a.getName())
+                    ? new SUSHIReportHeaderReportAttributes()
+                        .name(a.getName())
+                        .value(
+                            Stream.of(a.getValue().split("\\|"))
+                                .sorted()
+                                .collect(Collectors.joining("|")))
+                    : a)
+        .toList();
   }
 
   /**
