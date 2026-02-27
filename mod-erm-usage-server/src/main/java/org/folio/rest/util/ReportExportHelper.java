@@ -100,7 +100,7 @@ public class ReportExportHelper {
           .orElse(null);
     }
     return Optional.ofNullable(report.getReport())
-        .map(Json::encode)
+        .map(Json::encodePrettily)
         .map(GetCounterReportsDownloadByIdResponse::respond200WithApplicationJson)
         .orElse(null);
   }
