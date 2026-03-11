@@ -40,10 +40,14 @@ $$ LANGUAGE sql;
 
 -- returns the counter report release versions of the usage data provider's counter reports
 CREATE OR REPLACE FUNCTION udp_report_releases(providerId TEXT) RETURNS jsonb AS $$
-  SELECT COALESCE(jsonb_agg(DISTINCT jsonb->>'release'), '[]'::jsonb)
-  FROM counter_reports
-  WHERE jsonb->>'providerId' = $1
-  ORDER BY 1;
+  SELECT COALESCE(json_agg(release)::jsonb, '[]'::jsonb)
+  FROM (
+    SELECT DISTINCT jsonb->>'release' AS release
+    FROM counter_reports
+    WHERE jsonb->>'providerId' = $1
+    ORDER BY 1
+  )
+  AS sub
 $$ LANGUAGE sql;
 
 -- function to update the usage data provider statistics
