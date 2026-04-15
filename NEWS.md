@@ -1,3 +1,15 @@
+# 5.2.0
+* [MODEUS-204](https://folio-org.atlassian.net/browse/MODEUS-204) Add `status` field to UDP schema
+* [MODEUS-205](https://folio-org.atlassian.net/browse/MODEUS-205) Add `fullTextIndex` for `status`
+* [MODEUS-207](https://folio-org.atlassian.net/browse/MODEUS-207) Support upload of R5.1 reports in CSV, TSV and XLSX format
+* [MODEUS-208](https://folio-org.atlassian.net/browse/MODEUS-208) Return structured JSON error object on failed report uploads
+* [MODEUS-216](https://folio-org.atlassian.net/browse/MODEUS-216) Upgrade to latest `erm-usage-counter` version
+* [MODEUS-211](https://folio-org.atlassian.net/browse/MODEUS-211) Upgrade module to Vert.x 5.0
+* [MODEUS-218](https://folio-org.atlassian.net/browse/MODEUS-218) Use GitHub Workflows for Maven
+* [MODEUS-220](https://folio-org.atlassian.net/browse/MODEUS-220) Use order-insensitive comparison for R5.0 pipe-delimited report attribute values
+* [MODEUS-202](https://folio-org.atlassian.net/browse/MODEUS-202) Ensure pretty-printed JSON format for downloaded reports
+* [MODEUS-219](https://folio-org.atlassian.net/browse/MODEUS-219) Fix `udp_report_releases` to guarantee sorted array ordering
+
 # 5.1.0
 * [MODEUS-200](https://folio-org.atlassian.net/browse/MODEUS-200) Update `maven-surefire-plugin` and `maven-failsafe-plugin`
 * [MODEUS-199](https://folio-org.atlassian.net/browse/MODEUS-199) Upgrade to Java 21
