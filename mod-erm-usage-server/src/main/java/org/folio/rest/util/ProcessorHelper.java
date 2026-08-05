@@ -108,8 +108,7 @@ public class ProcessorHelper {
     List<SUSHIReportHeaderReportAttributes> actualAttributes = header.getReportAttributes();
     if (!(actualAttributes != null
         && actualAttributes.size() == expectedAttributes.size()
-        && new HashSet<>(normalize(actualAttributes))
-            .containsAll(normalize(expectedAttributes)))) {
+        && new HashSet<>(normalize(actualAttributes)).containsAll(normalize(expectedAttributes)))) {
       throw new ReportUploadException(INVALID_REPORT_CONTENT, "Unsupported report attributes.");
     }
   }
