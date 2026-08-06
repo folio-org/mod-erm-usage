@@ -7,9 +7,7 @@ import static org.folio.rest.TestResources.R51_SAMPLE_DRD2_OK;
 import static org.folio.rest.TestResources.R51_SAMPLE_DR_INVALID_ATTRIBUTES;
 import static org.folio.rest.TestResources.R51_SAMPLE_DR_INVALID_DATA;
 import static org.folio.rest.TestResources.R51_SAMPLE_DR_OK;
-import static org.folio.rest.TestResources.R51_SAMPLE_DR_OLD_REGISTRY_DOMAIN;
 import static org.folio.rest.TestResources.R51_SAMPLE_TR_TSV;
-import static org.folio.rest.TestResources.R51_SAMPLE_TR_TSV_OLD_REGISTRY_DOMAIN;
 import static org.folio.rest.TestResources.R51_SAMPLE_TR_XLSX;
 import static org.folio.rest.TestUtils.assertReportUploadErrorResponse;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
@@ -24,6 +22,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.junit5.VertxTestContext;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -66,6 +65,8 @@ class CounterReportR5UploadIT {
   private static final Vertx vertx = TestUtils.getVertx();
   private static final String UPLOAD_PATH = "/multipartupload/provider/%s";
   private static final String PROVIDER_ID = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+  private static final String NEW_REGISTRY_DOMAIN = "registry.countermetrics.org";
+  private static final String OLD_REGISTRY_DOMAIN = "registry.projectcounter.org";
 
   @BeforeAll
   static void beforeAll(VertxTestContext testContext) {
@@ -91,6 +92,19 @@ class CounterReportR5UploadIT {
     return given().multiPart(testResource.getAsFile()).post(UPLOAD_PATH.formatted(PROVIDER_ID));
   }
 
+  private static Response postFile(TestResources testResource, boolean useOldRegistryDomain) {
+    if (!useOldRegistryDomain) {
+      return postFile(testResource);
+    }
+    String content = testResource.getAsString();
+    assertThat(content).contains(NEW_REGISTRY_DOMAIN);
+    content = content.replace(NEW_REGISTRY_DOMAIN, OLD_REGISTRY_DOMAIN);
+    return given()
+        .multiPart(
+            "file", testResource.getAsFile().getName(), content.getBytes(StandardCharsets.UTF_8))
+        .post(UPLOAD_PATH.formatted(PROVIDER_ID));
+  }
+
   private static CounterReports getCounterReports() {
     return given()
         .get(QUERY_TEMPLATE.formatted(PROVIDER_ID))
@@ -110,10 +124,11 @@ class CounterReportR5UploadIT {
 
   @ParameterizedTest(name = "{0}")
   @ArgumentsSource(ValidReportsArgumentsProvider.class)
-  void testUploadOfValidReportsInDifferentFormats(String testName, TestResources resource) {
+  void testUploadOfValidReportsInDifferentFormats(
+      String testName, TestResources resource, boolean useOldRegistryDomain) {
     List<String> createdIds =
         Arrays.asList(
-            postFile(resource)
+            postFile(resource, useOldRegistryDomain)
                 .then()
                 .statusCode(200)
                 .body(containsString(MSG_SAVED_REPORT_WITH_IDS))
@@ -126,7 +141,7 @@ class CounterReportR5UploadIT {
     assertThat(getYearMonths(reports)).containsExactlyInAnyOrder(EXPECTED_MONTHS);
     assertThat(getIds(reports)).containsExactlyInAnyOrderElementsOf(createdIds);
 
-    Response response = postFile(resource);
+    Response response = postFile(resource, useOldRegistryDomain);
     assertReportUploadErrorResponse(
         response,
         REPORTS_ALREADY_PRESENT,
@@ -176,11 +191,11 @@ class CounterReportR5UploadIT {
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
       return Stream.of(
-          Arguments.of("DR - JSON", R51_SAMPLE_DR_OK),
-          Arguments.of("DR - JSON (old registry domain)", R51_SAMPLE_DR_OLD_REGISTRY_DOMAIN),
-          Arguments.of("TR - TSV", R51_SAMPLE_TR_TSV),
-          Arguments.of("TR - TSV (old registry domain)", R51_SAMPLE_TR_TSV_OLD_REGISTRY_DOMAIN),
-          Arguments.of("TR - XLSX", R51_SAMPLE_TR_XLSX));
+          Arguments.of("DR - JSON", R51_SAMPLE_DR_OK, false),
+          Arguments.of("DR - JSON (old registry domain)", R51_SAMPLE_DR_OK, true),
+          Arguments.of("TR - TSV", R51_SAMPLE_TR_TSV, false),
+          Arguments.of("TR - TSV (old registry domain)", R51_SAMPLE_TR_TSV, true),
+          Arguments.of("TR - XLSX", R51_SAMPLE_TR_XLSX, false));
     }
   }
 }
