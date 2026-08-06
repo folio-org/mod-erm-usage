@@ -7,7 +7,9 @@ import static org.folio.rest.TestResources.R51_SAMPLE_DRD2_OK;
 import static org.folio.rest.TestResources.R51_SAMPLE_DR_INVALID_ATTRIBUTES;
 import static org.folio.rest.TestResources.R51_SAMPLE_DR_INVALID_DATA;
 import static org.folio.rest.TestResources.R51_SAMPLE_DR_OK;
+import static org.folio.rest.TestResources.R51_SAMPLE_DR_OLD_REGISTRY_DOMAIN;
 import static org.folio.rest.TestResources.R51_SAMPLE_TR_TSV;
+import static org.folio.rest.TestResources.R51_SAMPLE_TR_TSV_OLD_REGISTRY_DOMAIN;
 import static org.folio.rest.TestResources.R51_SAMPLE_TR_XLSX;
 import static org.folio.rest.TestUtils.assertReportUploadErrorResponse;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
@@ -175,7 +177,9 @@ class CounterReportR5UploadIT {
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
       return Stream.of(
           Arguments.of("DR - JSON", R51_SAMPLE_DR_OK),
+          Arguments.of("DR - JSON (old registry domain)", R51_SAMPLE_DR_OLD_REGISTRY_DOMAIN),
           Arguments.of("TR - TSV", R51_SAMPLE_TR_TSV),
+          Arguments.of("TR - TSV (old registry domain)", R51_SAMPLE_TR_TSV_OLD_REGISTRY_DOMAIN),
           Arguments.of("TR - XLSX", R51_SAMPLE_TR_XLSX));
     }
   }
