@@ -7,6 +7,7 @@ import static org.folio.rest.TestResources.R51_SAMPLE_DRD2_OK;
 import static org.folio.rest.TestResources.R51_SAMPLE_DR_INVALID_ATTRIBUTES;
 import static org.folio.rest.TestResources.R51_SAMPLE_DR_INVALID_DATA;
 import static org.folio.rest.TestResources.R51_SAMPLE_DR_OK;
+import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 import static org.hamcrest.Matchers.containsString;
 
@@ -15,6 +16,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.junit5.VertxTestContext;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import org.folio.rest.Setup;
@@ -26,7 +28,10 @@ import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.PostgresClient;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @Setup
 @SetupTenant
@@ -48,11 +53,19 @@ class CounterReportR5UploadIT {
   private static final Vertx vertx = TestUtils.getVertx();
   private static final String UPLOAD_PATH = "/multipartupload/provider/%s";
   private static final String PROVIDER_ID = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+  private static final String NEW_REGISTRY_DOMAIN = "registry.countermetrics.org";
+  private static final String OLD_REGISTRY_DOMAIN = "registry.projectcounter.org";
 
   @BeforeAll
   static void beforeAll(VertxTestContext testContext) {
     TestUtils.setupRestAssured(BASE_PATH, false);
     postProvider().onComplete(testContext.succeedingThenComplete());
+  }
+
+  @BeforeEach
+  void beforeEach(VertxTestContext testContext) {
+    TestUtils.clearTable(TENANT, TABLE_NAME_COUNTER_REPORTS)
+        .onComplete(testContext.succeedingThenComplete());
   }
 
   private static Future<String> postProvider() {
@@ -65,6 +78,19 @@ class CounterReportR5UploadIT {
 
   private static Response postFile(TestResources testResource) {
     return given().multiPart(testResource.getAsFile()).post(UPLOAD_PATH.formatted(PROVIDER_ID));
+  }
+
+  private static Response postFile(TestResources testResource, boolean useOldRegistryDomain) {
+    if (!useOldRegistryDomain) {
+      return postFile(testResource);
+    }
+    String content = testResource.getAsString();
+    assertThat(content).contains(NEW_REGISTRY_DOMAIN);
+    content = content.replace(NEW_REGISTRY_DOMAIN, OLD_REGISTRY_DOMAIN);
+    return given()
+        .multiPart(
+            "file", testResource.getAsFile().getName(), content.getBytes(StandardCharsets.UTF_8))
+        .post(UPLOAD_PATH.formatted(PROVIDER_ID));
   }
 
   private static CounterReports getCounterReports() {
@@ -84,11 +110,12 @@ class CounterReportR5UploadIT {
     return reports.getCounterReports().stream().map(CounterReport::getYearMonth).toList();
   }
 
-  @Test
-  void testUploadR51MultipleMonthsFromJson() {
+  @ParameterizedTest(name = "useOldRegistryDomain={0}")
+  @ValueSource(booleans = {false, true})
+  void testUploadR51MultipleMonthsFromJson(boolean useOldRegistryDomain) {
     List<String> createdIds =
         Arrays.asList(
-            postFile(R51_SAMPLE_DR_OK)
+            postFile(R51_SAMPLE_DR_OK, useOldRegistryDomain)
                 .then()
                 .statusCode(200)
                 .body(containsString(MSG_SAVED_REPORT_WITH_IDS))
@@ -101,7 +128,12 @@ class CounterReportR5UploadIT {
     assertThat(getYearMonths(reports)).containsExactlyInAnyOrder(EXPECTED_MONTHS);
     assertThat(getIds(reports)).containsExactlyInAnyOrderElementsOf(createdIds);
 
-    String postResult = postFile(R51_SAMPLE_DR_OK).then().statusCode(500).extract().asString();
+    String postResult =
+        postFile(R51_SAMPLE_DR_OK, useOldRegistryDomain)
+            .then()
+            .statusCode(500)
+            .extract()
+            .asString();
     assertThat(postResult).contains(MSG_REPORT_ALREADY_EXISTING).contains(EXPECTED_MONTHS);
   }
 
