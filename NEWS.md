@@ -1,3 +1,6 @@
+# 5.3.0 (IN PROGRESS)
+* [MODEUS-225](https://folio-org.atlassian.net/browse/MODEUS-225) Allow both registry domains for `Registry_Record` in COUNTER 5.1 report uploads
+
 # 5.2.0
 * [MODEUS-204](https://folio-org.atlassian.net/browse/MODEUS-204) Add `status` field to UDP schema
 * [MODEUS-205](https://folio-org.atlassian.net/browse/MODEUS-205) Add `fullTextIndex` for `status`
