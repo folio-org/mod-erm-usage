@@ -28,7 +28,7 @@
     <folio-module-descriptor-validator.version>1.0.1</folio-module-descriptor-validator.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
     <generate_routing_context>/counter-reports/multipartupload/provider/{id}</generate_routing_context>
-    <vertx.version>5.0.10</vertx.version> <!-- keep in sync with RMB, ignored by Dependabot -->
+    <vertx.version>5.1.6</vertx.version> <!-- keep in sync with RMB, ignored by Dependabot -->
     <aspectj.version>1.9.22.1</aspectj.version> <!-- keep in sync with RMB, ignored by Dependabot -->
     <aspectj-maven-plugin.version>1.14.1</aspectj-maven-plugin.version>
     <log4j.version>2.26.1</log4j.version>
