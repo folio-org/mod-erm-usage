@@ -7,6 +7,11 @@ updates:
       interval: "weekly"
       day: "sunday"
     open-pull-requests-limit: 10
+    ignore:
+      # Versions are pinned by raml-module-builder and must be aligned manually
+      # when bumping it, see the comments in pom.xml
+      - dependency-name: "io.vertx:*"
+      - dependency-name: "org.aspectj:*"
     commit-message:
       prefix: fix
       prefix-development: chore
