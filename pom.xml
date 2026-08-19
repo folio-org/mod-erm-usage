@@ -31,7 +31,7 @@
     <vertx.version>5.0.10</vertx.version> <!-- keep in sync with RMB, ignored by Dependabot -->
     <aspectj.version>1.9.22.1</aspectj.version> <!-- keep in sync with RMB, ignored by Dependabot -->
     <aspectj-maven-plugin.version>1.14.1</aspectj-maven-plugin.version>
-    <log4j.version>2.25.4</log4j.version>
+    <log4j.version>2.26.1</log4j.version>
     <erm.usage.counter.version>6.1.0-SNAPSHOT</erm.usage.counter.version>
     <spotless.version>3.9.0</spotless.version>
     <google-java-format.version>1.33.0</google-java-format.version>
@@ -125,7 +125,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <groupId>com.coderplus.maven.plugins</groupId>
@@ -135,17 +135,17 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.1</version>
+          <version>3.15.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.6.1</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.6.3</version>
         </plugin>
         <plugin>
           <groupId>org.folio</groupId>
@@ -163,7 +163,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.5.2</version>
+          <version>3.5.6</version>
           <configuration>
             <useSystemClassLoader>false</useSystemClassLoader>
           </configuration>
