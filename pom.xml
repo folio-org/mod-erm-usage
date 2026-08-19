@@ -24,7 +24,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     <maven.compiler.release>21</maven.compiler.release>
-    <raml-module-builder.version>36.0.0</raml-module-builder.version> <!-- when bumping, align vertx.version and aspectj.version with RMB's pom.xml -->
+    <raml-module-builder.version>36.0.1</raml-module-builder.version> <!-- when bumping, align vertx.version and aspectj.version with RMB's pom.xml -->
     <folio-module-descriptor-validator.version>1.0.1</folio-module-descriptor-validator.version>
     <ramlfiles_path>${project.parent.basedir}/ramls</ramlfiles_path>
     <generate_routing_context>/counter-reports/multipartupload/provider/{id}</generate_routing_context>
