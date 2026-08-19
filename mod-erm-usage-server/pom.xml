@@ -288,13 +288,41 @@
         </executions>
       </plugin>
 
-      <!-- Replace the baseUri and the protocols in the RAMLs that have been
-        copied to apidocs directory so that they can be used via the local html api
-        console. -->
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <version>3.2.0</version>
         <executions>
+          <execution>
+            <id>check-rmb-version-alignment</id>
+            <!-- process-classes runs after dependency resolution, so RMB's parent
+                 pom is guaranteed to be in the local repository -->
+            <phase>process-classes</phase>
+            <configuration>
+              <target>
+                <xmlproperty prefix="rmb" file="${settings.localRepository}/org/folio/raml-module-builder/${raml-module-builder.version}/raml-module-builder-${raml-module-builder.version}.pom" />
+                <fail message="vertx.version is ${vertx.version} but raml-module-builder ${raml-module-builder.version} pins ${rmb.project.properties.vertx.version}, align the property in the parent pom.xml">
+                  <condition>
+                    <not>
+                      <equals arg1="${rmb.project.properties.vertx.version}" arg2="${vertx.version}" />
+                    </not>
+                  </condition>
+                </fail>
+                <fail message="aspectj.version is ${aspectj.version} but raml-module-builder ${raml-module-builder.version} pins ${rmb.project.properties.aspectj.version}, align the property in the parent pom.xml">
+                  <condition>
+                    <not>
+                      <equals arg1="${rmb.project.properties.aspectj.version}" arg2="${aspectj.version}" />
+                    </not>
+                  </condition>
+                </fail>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+          <!-- Replace the baseUri and the protocols in the RAMLs that have been
+            copied to apidocs directory so that they can be used via the local html api
+            console. -->
           <execution>
             <phase>prepare-package</phase>
             <configuration>
