@@ -2,6 +2,7 @@
 * [MODEUS-225](https://folio-org.atlassian.net/browse/MODEUS-225) Allow both registry domains for `Registry_Record` in COUNTER 5.1 report uploads
 * [MODEUS-224](https://folio-org.atlassian.net/browse/MODEUS-224) Remove optional `version` property from RAML files
 * [MODEUS-234](https://folio-org.atlassian.net/browse/MODEUS-234) Add grouped Dependabot configuration
+* [MODEUS-237](https://folio-org.atlassian.net/browse/MODEUS-237) Harden `PostgresContainerRule` against early class initialization and setup failures
 
 # 5.2.0
 * [MODEUS-204](https://folio-org.atlassian.net/browse/MODEUS-204) Add `status` field to UDP schema
