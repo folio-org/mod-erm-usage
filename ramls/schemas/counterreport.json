@@ -20,6 +20,11 @@
       "description": "Error message from failed download attempt",
       "type": "string"
     },
+    "apiException": {
+      "description": "Detailed description of the reason for the failed download attempt",
+      "type": "object",
+      "$ref": "exception.json"
+    },
     "release": {
       "description": "Counter Report version",
       "type": "string"
