@@ -9,6 +9,7 @@ documentation:
 types:
   usageDataProvider: !include schemas/udprovider.json
   usageDataProviders: !include ./schemas/udproviders.json
+  serviceTypes: !include ./schemas/servicetypes.json
   errors: !include ./raml-util/schemas/errors.schema
 
 traits:
@@ -39,6 +40,19 @@ resourceTypes:
   post:
     is: [validate]
     description: Post new usage data providers
+  /sushi-config/service-types:
+    get:
+      description: Get the distinct SUSHI service types configured in usage data providers
+      responses:
+        200:
+          description: distinct service types, sorted; missing and empty values are omitted
+          body:
+            application/json:
+              example: !include examples/servicetypes.sample
+              schema: serviceTypes
+        500:
+          body:
+            text/plain:
   /{id}:
     type:
       collection-item:

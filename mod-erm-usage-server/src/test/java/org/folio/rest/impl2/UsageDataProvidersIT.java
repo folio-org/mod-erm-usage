@@ -4,8 +4,11 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.restassured.RestAssured;
@@ -23,7 +26,9 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
@@ -31,6 +36,7 @@ import org.folio.rest.TestUtils;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.HarvestingConfig.HarvestingStatus;
+import org.folio.rest.jaxrs.model.SushiConfig;
 import org.folio.rest.jaxrs.model.SushiCredentials;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
@@ -390,6 +396,89 @@ public class UsageDataProvidersIT {
 
     // DELETE
     deleteEntity(savedProvider).then().statusCode(204);
+  }
+
+  @Test
+  public void checkThatWeGetServiceTypesAndCanFilterByServiceType() {
+    getServiceTypes()
+        .then()
+        .statusCode(200)
+        .body("serviceTypes", not(hasItem("cs50")))
+        .body("serviceTypes", not(hasItem("cs51")));
+
+    List<UsageDataProvider> udps = new ArrayList<>();
+    try {
+      Stream.of("cs51", "cs50", "cs51", "", null)
+          .map(
+              serviceType ->
+                  new UsageDataProvider()
+                      .withLabel("ServiceTypeFilter " + serviceType)
+                      .withHarvestingConfig(
+                          new HarvestingConfig()
+                              .withHarvestingStatus(HarvestingStatus.INACTIVE)
+                              .withSushiConfig(new SushiConfig().withServiceType(serviceType))))
+          .forEach(
+              udp ->
+                  udps.add(
+                      postEntity(udp)
+                          .then()
+                          .statusCode(201)
+                          .extract()
+                          .as(UsageDataProvider.class)));
+      // provider without sushiConfig at all
+      udps.add(
+          postEntity(
+                  new UsageDataProvider()
+                      .withLabel("ServiceTypeFilter without sushiConfig")
+                      .withHarvestingConfig(
+                          new HarvestingConfig().withHarvestingStatus(HarvestingStatus.INACTIVE)))
+              .then()
+              .statusCode(201)
+              .extract()
+              .as(UsageDataProvider.class));
+
+      List<String> serviceTypes =
+          getServiceTypes().then().statusCode(200).extract().jsonPath().getList("serviceTypes");
+      assertThat(serviceTypes).contains("cs50", "cs51").doesNotContain("").doesNotHaveDuplicates();
+      assertThat(serviceTypes.indexOf("cs50")).isLessThan(serviceTypes.indexOf("cs51"));
+
+      // filter as sent by the UI service type filter, restricted to the providers of this test
+      String ownProviders = "label=\"ServiceTypeFilter*\" and ";
+      get(ownProviders + "harvestingConfig.sushiConfig.serviceType=(\"cs50\" or \"cs51\")")
+          .then()
+          .statusCode(200)
+          .body(
+              "usageDataProviders.id",
+              containsInAnyOrder(udps.get(0).getId(), udps.get(1).getId(), udps.get(2).getId()));
+      get(ownProviders + "harvestingConfig.sushiConfig.serviceType=(\"cs50\")")
+          .then()
+          .statusCode(200)
+          .body("usageDataProviders.id", is(List.of(udps.get(1).getId())));
+      // missing or empty service type
+      get(ownProviders
+              + "((cql.allRecords=1 NOT harvestingConfig.sushiConfig.serviceType=\"\")"
+              + " or harvestingConfig.sushiConfig.serviceType==\"\")")
+          .then()
+          .statusCode(200)
+          .body(
+              "usageDataProviders.id",
+              containsInAnyOrder(udps.get(3).getId(), udps.get(4).getId(), udps.get(5).getId()));
+    } finally {
+      udps.forEach(udp -> deleteEntity(udp).then().statusCode(204));
+    }
+
+    getServiceTypes()
+        .then()
+        .statusCode(200)
+        .body("serviceTypes", not(hasItem("cs50")))
+        .body("serviceTypes", not(hasItem("cs51")));
+  }
+
+  private Response getServiceTypes() {
+    return given()
+        .header(XOkapiHeaders.TENANT, TENANT)
+        .header("accept", APPLICATION_JSON)
+        .get(BASE_URI + "/sushi-config/service-types");
   }
 
   private UsageDataProvider postUdp(UsageDataProvider udprovider) {
