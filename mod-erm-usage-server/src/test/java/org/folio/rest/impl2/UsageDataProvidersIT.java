@@ -474,10 +474,20 @@ public class UsageDataProvidersIT {
         .body("serviceTypes", not(hasItem("cs51")));
   }
 
+  @Test
+  public void checkThatGetServiceTypesReturns500OnDatabaseError() {
+    // tenant without schema, so the query fails
+    getServiceTypes("notenant").then().statusCode(500).contentType(ContentType.TEXT);
+  }
+
   private Response getServiceTypes() {
+    return getServiceTypes(TENANT);
+  }
+
+  private Response getServiceTypes(String tenant) {
     return given()
-        .header(XOkapiHeaders.TENANT, TENANT)
-        .header("accept", APPLICATION_JSON)
+        .header(XOkapiHeaders.TENANT, tenant)
+        .header("accept", "application/json, text/plain")
         .get(BASE_URI + "/sushi-config/service-types");
   }
 
