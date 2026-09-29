@@ -4,7 +4,7 @@
   "provides": [
     {
       "id": "usage-data-providers",
-      "version": "3.2",
+      "version": "3.3",
       "handlers": [
         {
           "methods": [
@@ -13,6 +13,15 @@
           "pathPattern": "/usage-data-providers",
           "permissionsRequired": [
             "usagedataproviders.collection.get"
+          ]
+        },
+        {
+          "methods": [
+            "GET"
+          ],
+          "pathPattern": "/usage-data-providers/sushi-config/service-types",
+          "permissionsRequired": [
+            "usagedataproviders.servicetypes.collection.get"
           ]
         },
         {
@@ -386,6 +395,11 @@
       "description": "Delete an usage data provider"
     },
     {
+      "permissionName": "usagedataproviders.servicetypes.collection.get",
+      "displayName": "usage data providers service types collection get",
+      "description": "Get the SUSHI service types configured in usage data providers"
+    },
+    {
       "permissionName": "aggregatorsettings.collection.get",
       "displayName": "aggregator settings collection get",
       "description": "Get a collection of aggregator setting"
@@ -535,6 +549,7 @@
         "usagedataproviders.item.post",
         "usagedataproviders.item.put",
         "usagedataproviders.item.delete",
+        "usagedataproviders.servicetypes.collection.get",
         "aggregatorsettings.collection.get",
         "aggregatorsettings.item.get",
         "aggregatorsettings.item.post",

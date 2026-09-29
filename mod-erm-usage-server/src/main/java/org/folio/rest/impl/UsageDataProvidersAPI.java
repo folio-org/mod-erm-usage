@@ -20,6 +20,7 @@ import org.folio.rest.jaxrs.model.UsageDataProvidersGetOrder;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.ValidationHelper;
+import org.folio.rest.util.PgHelper;
 
 public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.UsageDataProviders {
 
@@ -144,5 +145,28 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
         vertxContext,
         PutUsageDataProvidersByIdResponse.class,
         asyncResultHandler);
+  }
+
+  @Override
+  public void getUsageDataProvidersSushiConfigServiceTypes(
+      Map<String, String> okapiHeaders,
+      Handler<AsyncResult<Response>> asyncResultHandler,
+      Context vertxContext) {
+    PgHelper.getServiceTypes(vertxContext, okapiHeaders)
+        .onComplete(
+            ar -> {
+              if (ar.succeeded()) {
+                asyncResultHandler.handle(
+                    succeededFuture(
+                        GetUsageDataProvidersSushiConfigServiceTypesResponse
+                            .respond200WithApplicationJson(ar.result())));
+              } else {
+                logger.error("Error getting service types", ar.cause());
+                asyncResultHandler.handle(
+                    succeededFuture(
+                        GetUsageDataProvidersSushiConfigServiceTypesResponse
+                            .respond500WithTextPlain(ar.cause().getMessage())));
+              }
+            });
   }
 }

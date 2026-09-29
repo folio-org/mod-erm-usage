@@ -118,7 +118,7 @@
     },
     {
       "tableName": "usage_data_providers",
-      "fromModuleVersion": "mod-erm-usage-5.2.0",
+      "fromModuleVersion": "mod-erm-usage-5.3.0",
       "withMetadata": true,
       "customSnippetPath": "usage_data_providers.sql",
       "fullTextIndex": [
@@ -135,6 +135,10 @@
         },
         {
           "fieldName": "harvestingConfig.harvestVia",
+          "tOps": "ADD"
+        },
+        {
+          "fieldName": "harvestingConfig.sushiConfig.serviceType",
           "tOps": "ADD"
         },
         {

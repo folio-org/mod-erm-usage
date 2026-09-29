@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "description": "List of SUSHI service types configured in usage data providers",
+  "properties": {
+    "serviceTypes": {
+      "description": "Distinct values of harvestingConfig.sushiConfig.serviceType, sorted",
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "serviceTypes"
+  ]
+}

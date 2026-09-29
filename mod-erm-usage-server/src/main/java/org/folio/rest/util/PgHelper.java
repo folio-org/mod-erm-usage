@@ -23,6 +23,7 @@ import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.ErrorCodes;
 import org.folio.rest.jaxrs.model.ReportReleases;
 import org.folio.rest.jaxrs.model.ReportTypes;
+import org.folio.rest.jaxrs.model.ServiceTypes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.persist.Criteria.Criteria;
 import org.folio.rest.persist.Criteria.Criterion;
@@ -316,6 +317,31 @@ public class PgHelper {
                         .toList();
                 ReportReleases reportReleases = new ReportReleases().withReportReleases(collect);
                 result.complete(reportReleases);
+              } else {
+                result.fail(ar.cause());
+              }
+            });
+    return result.future();
+  }
+
+  public static Future<ServiceTypes> getServiceTypes(
+      Context vertxContext, Map<String, String> okapiHeaders) {
+    String query =
+        "SELECT DISTINCT(jsonb->'harvestingConfig'->'sushiConfig'->>'serviceType') AS serviceType"
+            + " FROM usage_data_providers"
+            + " WHERE jsonb->'harvestingConfig'->'sushiConfig'->>'serviceType' <> ''"
+            + " ORDER BY serviceType";
+    Promise<ServiceTypes> result = Promise.promise();
+    PgUtil.postgresClient(vertxContext, okapiHeaders)
+        .select(
+            query,
+            ar -> {
+              if (ar.succeeded()) {
+                List<String> collect =
+                    StreamSupport.stream(ar.result().spliterator(), false)
+                        .map(row -> row.getString(0))
+                        .toList();
+                result.complete(new ServiceTypes().withServiceTypes(collect));
               } else {
                 result.fail(ar.cause());
               }
