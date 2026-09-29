@@ -6,9 +6,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.restassured.RestAssured;
@@ -400,12 +398,6 @@ public class UsageDataProvidersIT {
 
   @Test
   public void checkThatWeGetServiceTypesAndCanFilterByServiceType() {
-    getServiceTypes()
-        .then()
-        .statusCode(200)
-        .body("serviceTypes", not(hasItem("cs50")))
-        .body("serviceTypes", not(hasItem("cs51")));
-
     List<UsageDataProvider> udps = new ArrayList<>();
     try {
       Stream.of("cs51", "cs50", "cs51", "", null)
@@ -439,8 +431,7 @@ public class UsageDataProvidersIT {
 
       List<String> serviceTypes =
           getServiceTypes().then().statusCode(200).extract().jsonPath().getList("serviceTypes");
-      assertThat(serviceTypes).contains("cs50", "cs51").doesNotContain("").doesNotHaveDuplicates();
-      assertThat(serviceTypes.indexOf("cs50")).isLessThan(serviceTypes.indexOf("cs51"));
+      assertThat(serviceTypes).containsExactly("cs50", "cs51");
 
       // filter as sent by the UI service type filter, restricted to the providers of this test
       String ownProviders = "label=\"ServiceTypeFilter*\" and ";
@@ -467,11 +458,7 @@ public class UsageDataProvidersIT {
       udps.forEach(udp -> deleteEntity(udp).then().statusCode(204));
     }
 
-    getServiceTypes()
-        .then()
-        .statusCode(200)
-        .body("serviceTypes", not(hasItem("cs50")))
-        .body("serviceTypes", not(hasItem("cs51")));
+    getServiceTypes().then().statusCode(200).body("serviceTypes", is(List.of()));
   }
 
   @Test
