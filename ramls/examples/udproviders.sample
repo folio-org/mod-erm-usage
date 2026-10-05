@@ -1,6 +1,6 @@
 {
   "id": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd72",
-  "label": "Data provider without aggregator",
+  "label": "Data provider",
   "description": "maintained by Betty",
   "status": "active",
   "harvestingConfig": {

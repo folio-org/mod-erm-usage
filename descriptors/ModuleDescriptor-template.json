@@ -4,7 +4,7 @@
   "provides": [
     {
       "id": "usage-data-providers",
-      "version": "3.3",
+      "version": "4.0",
       "handlers": [
         {
           "methods": [
@@ -58,75 +58,6 @@
           "pathPattern": "/usage-data-providers/{id}",
           "permissionsRequired": [
             "usagedataproviders.item.delete"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "aggregator-settings",
-      "version": "2.0",
-      "handlers": [
-        {
-          "methods": [
-            "GET"
-          ],
-          "pathPattern": "/aggregator-settings",
-          "permissionsRequired": [
-            "aggregatorsettings.collection.get"
-          ]
-        },
-        {
-          "methods": [
-            "GET"
-          ],
-          "pathPattern": "/aggregator-settings/{id}",
-          "permissionsRequired": [
-            "aggregatorsettings.item.get"
-          ]
-        },
-        {
-          "methods": [
-            "POST"
-          ],
-          "pathPattern": "/aggregator-settings",
-          "permissionsRequired": [
-            "aggregatorsettings.item.post"
-          ]
-        },
-        {
-          "methods": [
-            "PUT"
-          ],
-          "pathPattern": "/aggregator-settings/{id}",
-          "permissionsRequired": [
-            "aggregatorsettings.item.put"
-          ]
-        },
-        {
-          "methods": [
-            "DELETE"
-          ],
-          "pathPattern": "/aggregator-settings/{id}",
-          "permissionsRequired": [
-            "aggregatorsettings.item.delete"
-          ]
-        },
-        {
-          "methods": [
-            "DELETE"
-          ],
-          "pathPattern": "/aggregator-settings/{id}",
-          "permissionsRequired": [
-            "aggregatorsettings.item.delete"
-          ]
-        },
-        {
-          "methods": [
-            "GET"
-          ],
-          "pathPattern": "/aggregator-settings/{id}/exportcredentials",
-          "permissionsRequired": [
-            "aggregatorsettings.exportcredentials.item.get"
           ]
         }
       ]
@@ -400,36 +331,6 @@
       "description": "Get the SUSHI service types configured in usage data providers"
     },
     {
-      "permissionName": "aggregatorsettings.collection.get",
-      "displayName": "aggregator settings collection get",
-      "description": "Get a collection of aggregator setting"
-    },
-    {
-      "permissionName": "aggregatorsettings.item.get",
-      "displayName": "aggregator settings item get",
-      "description": "Get a single aggregator setting"
-    },
-    {
-      "permissionName": "aggregatorsettings.item.post",
-      "displayName": "aggregator settings item post",
-      "description": "Create a new aggregator setting"
-    },
-    {
-      "permissionName": "aggregatorsettings.item.put",
-      "displayName": "aggregator settings item put",
-      "description": "Edit an aggregator setting"
-    },
-    {
-      "permissionName": "aggregatorsettings.item.delete",
-      "displayName": "aggregator settings item delete",
-      "description": "Delete an aggregator setting"
-    },
-    {
-      "permissionName": "aggregatorsettings.exportcredentials.item.get",
-      "displayName": "aggregator settings export credentials item get",
-      "description": "Export credentials for an aggregator setting"
-    },
-    {
       "permissionName": "counterreports.collection.delete",
       "displayName": "counter reports collection delete",
       "description": "Delete a collection of counter reports"
@@ -550,12 +451,6 @@
         "usagedataproviders.item.put",
         "usagedataproviders.item.delete",
         "usagedataproviders.servicetypes.collection.get",
-        "aggregatorsettings.collection.get",
-        "aggregatorsettings.item.get",
-        "aggregatorsettings.item.post",
-        "aggregatorsettings.item.put",
-        "aggregatorsettings.item.delete",
-        "aggregatorsettings.exportcredentials.item.get",
         "counterreports.collection.delete",
         "counterreports.collection.get",
         "counterreports.errorcodes.collection.get",

@@ -31,7 +31,6 @@ import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.postgres.testing.PostgresTesterContainer;
 import org.folio.rest.RestVerticle;
 import org.folio.rest.TestUtils;
-import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.HarvestingConfig.HarvestingStatus;
 import org.folio.rest.jaxrs.model.SushiConfig;
@@ -52,7 +51,6 @@ public class UsageDataProvidersIT {
 
   private static final String APPLICATION_JSON = "application/json";
   private static final String BASE_URI = "/usage-data-providers";
-  private static final String AGGREGATOR_PATH = "/aggregator-settings";
   private static final String TENANT = "diku";
   private static final String CONSTRAINT_VIOLATION =
       "violates check constraint \"usage_data_providers_harvestingstatus_constraint\"";
@@ -61,7 +59,6 @@ public class UsageDataProvidersIT {
   private static UsageDataProvider udprovider2;
   private static UsageDataProvider udproviderChanged;
   private static UsageDataProvider udproviderInvalid;
-  private static AggregatorSetting aggregator;
 
   @Rule public Timeout timeout = Timeout.seconds(10);
 
@@ -78,9 +75,6 @@ public class UsageDataProvidersIT {
       udprovider2 = Json.decodeValue(udprovider2Str, UsageDataProvider.class);
       SushiCredentials sushiCredentials = udprovider2.getSushiCredentials();
 
-      String aggregatorStr =
-          new String(Files.readAllBytes(Paths.get("../ramls/examples/aggregatorsettings.sample")));
-      aggregator = Json.decodeValue(aggregatorStr, AggregatorSetting.class);
       String udproviderStr =
           new String(Files.readAllBytes(Paths.get("../ramls/examples/udproviders.sample")));
       udprovider = Json.decodeValue(udproviderStr, UsageDataProvider.class);
@@ -128,63 +122,10 @@ public class UsageDataProvidersIT {
   }
 
   @Test
-  public void checkThatWeCanAddAProviderWithAggregatorSettings() {
-    // POST aggregator
-    given()
-        .body(Json.encode(aggregator))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(AGGREGATOR_PATH)
-        .then()
-        .statusCode(201);
-
-    // POST provider
-    given()
-        .body(Json.encode(udprovider2))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(BASE_URI)
-        .then()
-        .statusCode(201);
-
-    // GET provider && check if aggregator name got resolved
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + "/" + udprovider2.getId())
-        .then()
-        .statusCode(200)
-        .body("id", equalTo(udprovider2.getId()))
-        .body("label", equalTo(udprovider2.getLabel()))
-        .body("harvestingConfig.aggregator.name", equalTo(aggregator.getLabel()));
-
-    // DELETE provider
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + udprovider2.getId())
-        .then()
-        .statusCode(204);
-
-    // DELETE aggregator
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(AGGREGATOR_PATH + "/" + aggregator.getId())
-        .then()
-        .statusCode(204);
-  }
-
-  @Test
   public void checkThatWeCanAddGetPutAndDeleteUsageDataProviders() {
     String mockedOkapiUrl = "http://localhost:" + wireMockRule.port();
 
-    // POST provider without aggregator
+    // POST provider
     given()
         .body(Json.encode(udprovider))
         .header("X-Okapi-Tenant", TENANT)
@@ -280,7 +221,7 @@ public class UsageDataProvidersIT {
         .body("usageDataProviders.label", is(List.of(udprovider.getLabel())))
         .body("usageDataProviders.id", is(List.of(udprovider.getId())));
 
-    // GET by CQL: search for a word from aggregator name, description, and label
+    // GET by CQL: search for a word from description, and label
     get("keywords all \"digital meeting with\"")
         .then()
         .statusCode(200)

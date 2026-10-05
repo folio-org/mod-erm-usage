@@ -9,8 +9,6 @@ CREATE INDEX IF NOT EXISTS counter_reports_custom_errorcodes_idx ON counter_repo
   WHERE jsonb ->> 'failedReason' IS NOT NULL;
 
 DROP INDEX IF EXISTS usage_data_providers_custom_aggregatorid_idx;
-CREATE INDEX IF NOT EXISTS usage_data_providers_custom_aggregatorid_idx ON usage_data_providers
-  USING btree ((jsonb->'harvestingConfig'->'aggregator'->>'id'));
 
 DROP INDEX IF EXISTS counter_reports_custom_reporttypes_idx;
 CREATE INDEX IF NOT EXISTS counter_reports_custom_reporttypes_idx ON counter_reports

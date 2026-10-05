@@ -38,9 +38,8 @@
         },
         "harvestVia": {
           "type": "string",
-          "description": "Specifies how to harvest usage data, from an aggregator or directly from a provider via Sushi.",
+          "description": "Specifies how to harvest usage data, from a provider via Sushi.",
           "enum": [
-            "aggregator",
             "sushi"
           ]
         },
@@ -57,27 +56,6 @@
               "description": "SUSHI service URL to access provider's SUSHI service."
             }
           }
-        },
-        "aggregator": {
-          "type": "object",
-          "description": "Links to aggregator, if statistic shall be harvested via aggregator",
-          "properties": {
-            "id": {
-              "type": "string",
-              "description": "Id of aggregator, linking of an aggregator predefined by an admin in the app settings"
-            },
-            "name": {
-              "type": "string",
-              "description": "Name of the linked aggregator"
-            },
-            "vendorCode": {
-              "type": "string",
-              "description": "Code used by the aggregator to identify the vendor (e. g. platform parameter at National Statistic Server)"
-            }
-          },
-          "required": [
-            "id"
-          ]
         },
         "reportRelease": {
           "type": "string",

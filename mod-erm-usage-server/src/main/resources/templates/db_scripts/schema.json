@@ -37,11 +37,6 @@
     },
     {
       "run": "after",
-      "snippetPath": "aggregatorsettings_triggers.sql",
-      "fromModuleVersion": "mod-erm-usage-2.6.0"
-    },
-    {
-      "run": "after",
       "snippetPath": "usagedataproviders_triggers.sql",
       "fromModuleVersion": "mod-erm-usage-2.6.0"
     },
@@ -72,11 +67,6 @@
     }
   ],
   "tables": [
-    {
-      "tableName": "aggregator_settings",
-      "fromModuleVersion": "mod-erm-usage-2.6.0",
-      "withMetadata": true
-    },
     {
       "tableName": "counter_reports",
       "fromModuleVersion": "mod-erm-usage-2.7.0",
@@ -124,7 +114,7 @@
       "fullTextIndex": [
         {
           "fieldName": "keywords",
-          "multiFieldNames": "label,description,harvestingConfig.aggregator.name"
+          "multiFieldNames": "label,description"
         },
         {
           "fieldName": "status"
@@ -139,10 +129,6 @@
         },
         {
           "fieldName": "harvestingConfig.sushiConfig.serviceType",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "harvestingConfig.aggregator.name",
           "tOps": "ADD"
         },
         {

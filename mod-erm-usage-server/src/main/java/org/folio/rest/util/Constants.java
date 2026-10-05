@@ -6,7 +6,6 @@ public class Constants {
   public static final String TABLE_NAME_CUSTOM_REPORTS = "custom_reports";
   public static final String TABLE_NAME_FILES = "files";
   public static final String TABLE_NAME_UDP = "usage_data_providers";
-  public static final String FIELD_NAME_AGGREGATOR = "'aggregator'";
   public static final String FIELD_NAME_HARVESTING_CONFIG = "'harvestingConfig'";
   public static final String FIELD_NAME_ID = "'id'";
   public static final String FIELD_NAME_PROVIDER_ID = "'providerId'";
