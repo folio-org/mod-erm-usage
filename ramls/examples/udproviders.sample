@@ -1,11 +1,10 @@
 {
   "id": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd72",
-  "label": "Data provider",
+  "label": "Sushi data provider",
   "description": "maintained by Betty",
   "status": "active",
   "harvestingConfig": {
     "harvestingStatus": "active",
-    "harvestVia": "sushi",
     "sushiConfig": {
       "serviceType": "cs41",
       "serviceUrl": "http://myvendor.com"

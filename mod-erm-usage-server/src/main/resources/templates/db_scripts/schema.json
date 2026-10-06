@@ -2,6 +2,11 @@
   "scripts": [
     {
       "run": "after",
+      "snippetPath": "migration/6.0.0/migrate_remove_aggregator.sql",
+      "fromModuleVersion": "mod-erm-usage-6.0.0"
+    },
+    {
+      "run": "after",
       "snippetPath": "migration/5.2.0/migrate_udp_schema.sql",
       "fromModuleVersion": "mod-erm-usage-5.2.0"
     },
@@ -108,7 +113,7 @@
     },
     {
       "tableName": "usage_data_providers",
-      "fromModuleVersion": "mod-erm-usage-5.3.0",
+      "fromModuleVersion": "mod-erm-usage-6.0.0",
       "withMetadata": true,
       "customSnippetPath": "usage_data_providers.sql",
       "fullTextIndex": [
@@ -121,10 +126,6 @@
         },
         {
           "fieldName": "harvestingConfig.harvestingStatus",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "harvestingConfig.harvestVia",
           "tOps": "ADD"
         },
         {

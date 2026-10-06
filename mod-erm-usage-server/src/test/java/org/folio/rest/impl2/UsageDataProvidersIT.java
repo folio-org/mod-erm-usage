@@ -222,7 +222,7 @@ public class UsageDataProvidersIT {
         .body("usageDataProviders.id", is(List.of(udprovider.getId())));
 
     // GET by CQL: search for a word from description, and label
-    get("keywords all \"digital meeting with\"")
+    get("keywords all \"provider meeting\"")
         .then()
         .statusCode(200)
         .body("usageDataProviders.id", is(List.of(udprovider2.getId())));

@@ -3,7 +3,6 @@
   "label": "JSTOR",
   "harvestingConfig": {
     "harvestingStatus": "active",
-    "harvestVia": "sushi",
     "sushiConfig": {
       "serviceType": "cs41",
       "serviceUrl": "http://www.jstor.org/sushi"

@@ -6,7 +6,6 @@
       "status": "active",
       "harvestingConfig": {
         "harvestingStatus": "active",
-        "harvestVia": "sushi",
         "sushiConfig": {
           "serviceType": "cs41",
           "serviceUrl": "http://myvendor.com"
@@ -34,7 +33,6 @@
       "status": "active",
       "harvestingConfig": {
         "harvestingStatus": "active",
-        "harvestVia": "sushi",
         "sushiConfig": {
           "serviceType": "cs41",
           "serviceUrl": "http://myvendor.com"

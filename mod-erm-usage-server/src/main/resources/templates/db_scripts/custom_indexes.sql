@@ -8,8 +8,6 @@ CREATE INDEX IF NOT EXISTS counter_reports_custom_errorcodes_idx ON counter_repo
   USING btree(SUBSTRING(jsonb->>'failedReason','(?:Number=|"Code": ?)([0-9]{1,4})'))
   WHERE jsonb ->> 'failedReason' IS NOT NULL;
 
-DROP INDEX IF EXISTS usage_data_providers_custom_aggregatorid_idx;
-
 DROP INDEX IF EXISTS counter_reports_custom_reporttypes_idx;
 CREATE INDEX IF NOT EXISTS counter_reports_custom_reporttypes_idx ON counter_reports
   USING btree ((jsonb->>'reportName'));

@@ -48,9 +48,7 @@ public class SQLTriggersIT {
       new UsageDataProvider()
           .withId(PROVIDER_ID)
           .withLabel("Test Provider")
-          .withHarvestingConfig(
-              new HarvestingConfig()
-                  .withHarvestingStatus(INACTIVE));
+          .withHarvestingConfig(new HarvestingConfig().withHarvestingStatus(INACTIVE));
 
   private final List<CounterReport> sampleReports =
       List.of(
