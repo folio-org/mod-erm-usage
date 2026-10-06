@@ -2,6 +2,11 @@
   "scripts": [
     {
       "run": "after",
+      "snippetPath": "migration/5.3.0/migrate_cs41_harvesting_status.sql",
+      "fromModuleVersion": "mod-erm-usage-5.3.0"
+    },
+    {
+      "run": "after",
       "snippetPath": "migration/5.2.0/migrate_udp_schema.sql",
       "fromModuleVersion": "mod-erm-usage-5.2.0"
     },
