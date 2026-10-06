@@ -3,7 +3,7 @@
   "label": "Sample Provider R4",
   "status": "active",
   "harvestingConfig": {
-    "harvestingStatus": "active",
+    "harvestingStatus": "inactive",
     "harvestVia": "sushi",
     "sushiConfig": {
       "serviceType": "cs41",

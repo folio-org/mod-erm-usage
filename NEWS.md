@@ -4,6 +4,7 @@
 * [MODEUS-234](https://folio-org.atlassian.net/browse/MODEUS-234) Add grouped Dependabot configuration
 * [MODEUS-237](https://folio-org.atlassian.net/browse/MODEUS-237) Harden `PostgresContainerRule` against early class initialization and setup failures
 * [MODEUS-242](https://folio-org.atlassian.net/browse/MODEUS-242) Add `/usage-data-providers/sushi-config/service-types` endpoint and `fullTextIndex` for `harvestingConfig.sushiConfig.serviceType`
+* [MODEUS-244](https://folio-org.atlassian.net/browse/MODEUS-244) Set harvesting status to `inactive` for UDPs with service type `cs41`
 
 # 5.2.0
 * [MODEUS-204](https://folio-org.atlassian.net/browse/MODEUS-204) Add `status` field to UDP schema
