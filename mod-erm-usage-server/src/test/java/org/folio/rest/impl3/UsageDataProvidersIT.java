@@ -1,6 +1,5 @@
-package org.folio.rest.impl2;
+package org.folio.rest.impl3;
 
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -8,19 +7,10 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Timeout;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -28,107 +18,68 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import org.folio.okapi.common.XOkapiHeaders;
-import org.folio.postgres.testing.PostgresTesterContainer;
-import org.folio.rest.RestVerticle;
+import org.folio.rest.Setup;
+import org.folio.rest.SetupTenant;
 import org.folio.rest.TestUtils;
 import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.HarvestingConfig.HarvestingStatus;
 import org.folio.rest.jaxrs.model.SushiConfig;
-import org.folio.rest.jaxrs.model.SushiCredentials;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.jaxrs.model.UsageDataProvider.Status;
-import org.folio.rest.persist.PostgresClient;
-import org.folio.rest.tools.utils.NetworkUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-@RunWith(VertxUnitRunner.class)
-public class UsageDataProvidersIT {
+@Setup
+@SetupTenant
+@Timeout(10)
+class UsageDataProvidersIT {
 
   private static final String APPLICATION_JSON = "application/json";
   private static final String BASE_URI = "/usage-data-providers";
   private static final String AGGREGATOR_PATH = "/aggregator-settings";
-  private static final String TENANT = "diku";
+  private static final String TENANT = TestUtils.getTenant();
   private static final String CONSTRAINT_VIOLATION =
       "violates check constraint \"usage_data_providers_harvestingstatus_constraint\"";
-  private static Vertx vertx;
-  private static UsageDataProvider udprovider;
-  private static UsageDataProvider udprovider2;
-  private static UsageDataProvider udproviderChanged;
-  private static UsageDataProvider udproviderInvalid;
+  private static UsageDataProvider udProvider;
+  private static UsageDataProvider udProvider2;
+  private static UsageDataProvider udProviderChanged;
+  private static UsageDataProvider udProviderInvalid;
   private static AggregatorSetting aggregator;
 
-  @Rule public Timeout timeout = Timeout.seconds(10);
-
-  @Rule public WireMockRule wireMockRule = new WireMockRule(options().dynamicPort());
-
-  @BeforeClass
-  public static void setUp(TestContext context) {
-    vertx = Vertx.vertx();
-
+  @BeforeAll
+  static void beforeAll() throws IOException {
     // setup sample data
-    try {
-      String udprovider2Str =
-          new String(Files.readAllBytes(Paths.get("../ramls/examples/udproviders2.sample")));
-      udprovider2 = Json.decodeValue(udprovider2Str, UsageDataProvider.class);
-      SushiCredentials sushiCredentials = udprovider2.getSushiCredentials();
+    var udProvider2Str =
+        new String(Files.readAllBytes(Paths.get("../ramls/examples/udproviders2.sample")));
+    udProvider2 = Json.decodeValue(udProvider2Str, UsageDataProvider.class);
+    var sushiCredentials = udProvider2.getSushiCredentials();
 
-      String aggregatorStr =
-          new String(Files.readAllBytes(Paths.get("../ramls/examples/aggregatorsettings.sample")));
-      aggregator = Json.decodeValue(aggregatorStr, AggregatorSetting.class);
-      String udproviderStr =
-          new String(Files.readAllBytes(Paths.get("../ramls/examples/udproviders.sample")));
-      udprovider = Json.decodeValue(udproviderStr, UsageDataProvider.class);
-      udproviderChanged =
-          Json.decodeValue(udproviderStr, UsageDataProvider.class)
-              .withLabel("CHANGED")
-              .withSushiCredentials(
-                  sushiCredentials.withRequestorMail("CHANGED@ub.uni-leipzig.de"));
-      udproviderInvalid = Json.decodeValue(udproviderStr, UsageDataProvider.class).withLabel(null);
-    } catch (IOException ex) {
-      context.fail(ex);
-    }
+    var aggregatorStr =
+        new String(Files.readAllBytes(Paths.get("../ramls/examples/aggregatorsettings.sample")));
+    aggregator = Json.decodeValue(aggregatorStr, AggregatorSetting.class);
+    var udProviderStr =
+        new String(Files.readAllBytes(Paths.get("../ramls/examples/udproviders.sample")));
+    udProvider = Json.decodeValue(udProviderStr, UsageDataProvider.class);
+    udProviderChanged =
+        Json.decodeValue(udProviderStr, UsageDataProvider.class)
+            .withLabel("CHANGED")
+            .withSushiCredentials(sushiCredentials.withRequestorMail("CHANGED@ub.uni-leipzig.de"));
+    udProviderInvalid = Json.decodeValue(udProviderStr, UsageDataProvider.class).withLabel(null);
 
-    PostgresClient.setPostgresTester(new PostgresTesterContainer());
-    PostgresClient.getInstance(vertx);
-
-    int port = NetworkUtils.nextFreePort();
-
-    RestAssured.reset();
-    RestAssured.baseURI = "http://localhost";
-    RestAssured.port = port;
-    RestAssured.defaultParser = Parser.JSON;
-
-    DeploymentOptions options =
-        new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
-
-    vertx
-        .deployVerticle(RestVerticle.class.getName(), options)
-        .compose(s -> TestUtils.postTenantSync(vertx, TENANT))
-        .onComplete(context.asyncAssertSuccess());
+    TestUtils.setupRestAssured("", false);
   }
 
-  @AfterClass
-  public static void teardown(TestContext context) {
-    RestAssured.reset();
-    Async async = context.async();
-    vertx
-        .close()
-        .onComplete(
-            context.asyncAssertSuccess(
-                res -> {
-                  PostgresClient.stopPostgresTester();
-                  async.complete();
-                }));
+  @AfterAll
+  static void afterAll() {
+    TestUtils.resetRestAssured();
   }
 
   @Test
-  public void checkThatWeCanAddAProviderWithAggregatorSettings() {
+  void checkThatWeCanAddAProviderWithAggregatorSettings() {
     // POST aggregator
     given()
         .body(Json.encode(aggregator))
@@ -141,7 +92,7 @@ public class UsageDataProvidersIT {
 
     // POST provider
     given()
-        .body(Json.encode(udprovider2))
+        .body(Json.encode(udProvider2))
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
@@ -154,11 +105,11 @@ public class UsageDataProvidersIT {
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + "/" + udprovider2.getId())
+        .get(BASE_URI + "/" + udProvider2.getId())
         .then()
         .statusCode(200)
-        .body("id", equalTo(udprovider2.getId()))
-        .body("label", equalTo(udprovider2.getLabel()))
+        .body("id", equalTo(udProvider2.getId()))
+        .body("label", equalTo(udProvider2.getLabel()))
         .body("harvestingConfig.aggregator.name", equalTo(aggregator.getLabel()));
 
     // DELETE provider
@@ -166,7 +117,7 @@ public class UsageDataProvidersIT {
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + udprovider2.getId())
+        .delete(BASE_URI + "/" + udProvider2.getId())
         .then()
         .statusCode(204);
 
@@ -181,22 +132,19 @@ public class UsageDataProvidersIT {
   }
 
   @Test
-  public void checkThatWeCanAddGetPutAndDeleteUsageDataProviders() {
-    String mockedOkapiUrl = "http://localhost:" + wireMockRule.port();
-
+  void checkThatWeCanAddGetPutAndDeleteUsageDataProviders() {
     // POST provider without aggregator
     given()
-        .body(Json.encode(udprovider))
+        .body(Json.encode(udProvider))
         .header("X-Okapi-Tenant", TENANT)
-        .header("x-okapi-url", mockedOkapiUrl)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .request()
         .post(BASE_URI)
         .then()
         .statusCode(201)
-        .body("id", equalTo(udprovider.getId()))
-        .body("label", equalTo(udprovider.getLabel()));
+        .body("id", equalTo(udProvider.getId()))
+        .body("label", equalTo(udProvider.getLabel()));
 
     // GET
     UsageDataProvider udproviderResult =
@@ -205,7 +153,7 @@ public class UsageDataProvidersIT {
             .header("content-type", APPLICATION_JSON)
             .header("accept", APPLICATION_JSON)
             .when()
-            .get(BASE_URI + "/" + udprovider.getId())
+            .get(BASE_URI + "/" + udProvider.getId())
             .then()
             .contentType(ContentType.JSON)
             .statusCode(200)
@@ -214,17 +162,16 @@ public class UsageDataProvidersIT {
     assertThat(udproviderResult)
         .usingRecursiveComparison()
         .ignoringFields("metadata")
-        .isEqualTo(udprovider);
+        .isEqualTo(udProvider);
 
     // PUT
     given()
-        .body(Json.encode(udproviderChanged))
+        .body(Json.encode(udProviderChanged))
         .header("X-Okapi-Tenant", TENANT)
-        .header("x-okapi-url", mockedOkapiUrl)
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .request()
-        .put(BASE_URI + "/" + udproviderChanged.getId())
+        .put(BASE_URI + "/" + udProviderChanged.getId())
         .then()
         .statusCode(204);
 
@@ -235,7 +182,7 @@ public class UsageDataProvidersIT {
             .header("content-type", APPLICATION_JSON)
             .header("accept", APPLICATION_JSON)
             .request()
-            .get(BASE_URI + "/" + udproviderChanged.getId())
+            .get(BASE_URI + "/" + udProviderChanged.getId())
             .then()
             .statusCode(200)
             .extract()
@@ -243,7 +190,7 @@ public class UsageDataProvidersIT {
     assertThat(udproviderChangedResult)
         .usingRecursiveComparison()
         .ignoringFields("metadata")
-        .isEqualTo(udproviderChanged);
+        .isEqualTo(udProviderChanged);
 
     // DELETE
     given()
@@ -251,7 +198,7 @@ public class UsageDataProvidersIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .when()
-        .delete(BASE_URI + "/" + udproviderChanged.getId())
+        .delete(BASE_URI + "/" + udProviderChanged.getId())
         .then()
         .statusCode(204);
 
@@ -261,33 +208,33 @@ public class UsageDataProvidersIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
         .when()
-        .get(BASE_URI + "/" + udproviderChanged.getId())
+        .get(BASE_URI + "/" + udProviderChanged.getId())
         .then()
         .statusCode(404);
   }
 
   @Test
-  public void checkThatWeCanSearchByCQL() {
-    var udproviders = List.of(udprovider, udprovider2);
+  void checkThatWeCanSearchByCQL() {
+    var udProviders = List.of(udProvider, udProvider2);
 
     // POST two providers
-    udproviders.forEach(this::postUdp);
+    udProviders.forEach(this::postUdp);
 
     // GET by CQL: search for label
-    get("label=\"" + udprovider.getLabel() + "\"")
+    get("label=\"" + udProvider.getLabel() + "\"")
         .then()
         .statusCode(200)
-        .body("usageDataProviders.label", is(List.of(udprovider.getLabel())))
-        .body("usageDataProviders.id", is(List.of(udprovider.getId())));
+        .body("usageDataProviders.label", is(List.of(udProvider.getLabel())))
+        .body("usageDataProviders.id", is(List.of(udProvider.getId())));
 
     // GET by CQL: search for a word from aggregator name, description, and label
     get("keywords all \"digital meeting with\"")
         .then()
         .statusCode(200)
-        .body("usageDataProviders.id", is(List.of(udprovider2.getId())));
+        .body("usageDataProviders.id", is(List.of(udProvider2.getId())));
 
     // DELETE
-    udproviders.forEach(
+    udProviders.forEach(
         udp ->
             given()
                 .header("X-Okapi-Tenant", TENANT)
@@ -300,9 +247,9 @@ public class UsageDataProvidersIT {
   }
 
   @Test
-  public void checkThatInvalidUsageDataProviderIsNotPosted() {
+  void checkThatInvalidUsageDataProviderIsNotPosted() {
     given()
-        .body(udproviderInvalid)
+        .body(udProviderInvalid)
         .header("X-Okapi-Tenant", TENANT)
         .header("content-type", APPLICATION_JSON)
         .header("accept", APPLICATION_JSON)
@@ -313,10 +260,10 @@ public class UsageDataProvidersIT {
   }
 
   @Test
-  public void checkThatDefaultValueForHasFailedReportsIsNo() {
+  void checkThatDefaultValueForHasFailedReportsIsNo() {
     UsageDataProvider udp =
         given()
-            .body(udprovider)
+            .body(udProvider)
             .header("X-Okapi-Tenant", TENANT)
             .header("content-type", APPLICATION_JSON)
             .header("accept", APPLICATION_JSON)
@@ -334,13 +281,13 @@ public class UsageDataProvidersIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .when()
-        .delete(BASE_URI + "/" + udprovider.getId())
+        .delete(BASE_URI + "/" + udProvider.getId())
         .then()
         .statusCode(204);
   }
 
   @Test
-  public void checkThatWeCantPostInactiveProviderWithActiveHarvestingStatus() {
+  void checkThatWeCantPostInactiveProviderWithActiveHarvestingStatus() {
     UsageDataProvider inactiveProvider =
         new UsageDataProvider()
             .withLabel("Inactive Provider")
@@ -353,9 +300,9 @@ public class UsageDataProvidersIT {
   }
 
   @Test
-  public void checkThatWeCantPutInactiveProviderWithActiveHarvestingStatus() {
+  void checkThatWeCantPutInactiveProviderWithActiveHarvestingStatus() {
     UsageDataProvider provider =
-        postEntity(udprovider).then().statusCode(201).extract().as(UsageDataProvider.class);
+        postEntity(udProvider).then().statusCode(201).extract().as(UsageDataProvider.class);
 
     String body =
         putEntity(provider.withStatus(Status.INACTIVE)).then().statusCode(500).extract().asString();
@@ -366,7 +313,7 @@ public class UsageDataProvidersIT {
 
   /** Tests backward compatibility with previous versions */
   @Test
-  public void checkThatWeCanHandleProviderWithoutStatus() {
+  void checkThatWeCanHandleProviderWithoutStatus() {
     UsageDataProvider providerWithoutStatus =
         new UsageDataProvider()
             .withLabel("Provider without status")
@@ -397,7 +344,7 @@ public class UsageDataProvidersIT {
   }
 
   @Test
-  public void checkThatWeGetServiceTypesAndCanFilterByServiceType() {
+  void checkThatWeGetServiceTypesAndCanFilterByServiceType() {
     List<UsageDataProvider> udps = new ArrayList<>();
     try {
       Stream.of("cs51", "cs50", "cs51", "", null)
@@ -462,7 +409,7 @@ public class UsageDataProvidersIT {
   }
 
   @Test
-  public void checkThatGetServiceTypesReturns500OnDatabaseError() {
+  void checkThatGetServiceTypesReturns500OnDatabaseError() {
     // tenant without schema, so the query fails
     getServiceTypes("notenant").then().statusCode(500).contentType(ContentType.TEXT);
   }
@@ -478,24 +425,19 @@ public class UsageDataProvidersIT {
         .get(BASE_URI + "/sushi-config/service-types");
   }
 
-  private UsageDataProvider postUdp(UsageDataProvider udprovider) {
-    String mockedOkapiUrl = "http://localhost:" + wireMockRule.port();
-
+  private void postUdp(UsageDataProvider udProvider) {
     UsageDataProvider udp =
         given()
-            .body(Json.encode(udprovider))
+            .body(Json.encode(udProvider))
             .header("X-Okapi-Tenant", TENANT)
-            .header("X-Okapi-Url", mockedOkapiUrl)
             .header("content-type", APPLICATION_JSON)
             .header("accept", APPLICATION_JSON)
             .request()
             .post(BASE_URI)
             .thenReturn()
             .as(UsageDataProvider.class);
-    assertThat(udp.getLabel()).isEqualTo(udprovider.getLabel());
+    assertThat(udp.getLabel()).isEqualTo(udProvider.getLabel());
     assertThat(udp.getId()).isNotEmpty();
-
-    return udp;
   }
 
   private Response get(String cql) {
