@@ -27,6 +27,32 @@ public class MigrateRemoveAggregatorIT {
   private static final String SCHEMA = PostgresClient.convertToPsqlStandard(TENANT);
   private static final Vertx vertx = Vertx.vertx();
 
+  /** Stand-ins for the aggregator database objects of 5.2.x, the drops only need their names. */
+  private static final String LEGACY_OBJECTS =
+      """
+      CREATE TABLE %1$s.aggregator_settings (id UUID PRIMARY KEY, jsonb JSONB NOT NULL);
+      CREATE INDEX usage_data_providers_custom_aggregatorid_idx ON %1$s.usage_data_providers ((jsonb->'harvestingConfig'->'aggregator'->>'id'));
+      CREATE FUNCTION %1$s.resolve_aggregator_label() RETURNS trigger AS $$ BEGIN RETURN NEW; END $$ LANGUAGE plpgsql;
+      CREATE FUNCTION %1$s.update_aggregator_label_references() RETURNS trigger AS $$ BEGIN RETURN NEW; END $$ LANGUAGE plpgsql;
+      CREATE FUNCTION %1$s.aggregator_settings_set_md() RETURNS trigger AS $$ BEGIN RETURN NEW; END $$ LANGUAGE plpgsql;
+      CREATE FUNCTION %1$s.set_aggregator_settings_md_json() RETURNS trigger AS $$ BEGIN RETURN NEW; END $$ LANGUAGE plpgsql;
+      CREATE TRIGGER resolve_aggregator_label_before_insert BEFORE INSERT ON %1$s.usage_data_providers FOR EACH ROW EXECUTE PROCEDURE %1$s.resolve_aggregator_label();
+      CREATE TRIGGER resolve_aggregator_label_before_update BEFORE UPDATE ON %1$s.usage_data_providers FOR EACH ROW EXECUTE PROCEDURE %1$s.resolve_aggregator_label();
+      CREATE TRIGGER update_aggregator_label_references_after_update AFTER UPDATE ON %1$s.aggregator_settings FOR EACH ROW EXECUTE PROCEDURE %1$s.update_aggregator_label_references();
+      """;
+
+  /** Number of tables, indexes, functions and triggers with "aggregator" in their name. */
+  private static final String COUNT_AGGREGATOR_OBJECTS =
+      """
+      SELECT (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = '%1$s' AND c.relname LIKE '%%aggregator%%')
+           + (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+              WHERE n.nspname = '%1$s' AND p.proname LIKE '%%aggregator%%')
+           + (SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = '%1$s' AND t.tgname LIKE '%%aggregator%%')
+      """;
+
   @ClassRule
   public static PostgresContainerRule postgresContainerRule =
       new PostgresContainerRule(vertx, TENANT);
@@ -43,12 +69,16 @@ public class MigrateRemoveAggregatorIT {
 
     // UDPs as stored by mod-erm-usage 5.2.x
     JsonObject legacySushiUdp = sushiUdp.copy();
-    legacySushiUdp.getJsonObject("harvestingConfig").put("harvestVia", "sushi");
+    JsonObject aggregator = new JsonObject().put("id", "5ea343c7-5aac-4648-bb37-c4f72a6c2836");
+    legacySushiUdp
+        .getJsonObject("harvestingConfig")
+        .put("harvestVia", "sushi")
+        .put("aggregator", aggregator);
     JsonObject legacyAggregatorUdp = aggregatorUdp.copy();
     legacyAggregatorUdp
         .getJsonObject("harvestingConfig")
         .put("harvestVia", "aggregator")
-        .put("aggregator", new JsonObject().put("id", "5ea343c7-5aac-4648-bb37-c4f72a6c2836"));
+        .put("aggregator", aggregator);
 
     TenantAttributes upgrade =
         new TenantAttributes()
@@ -58,9 +88,7 @@ public class MigrateRemoveAggregatorIT {
         new TenantAPI().sqlFile(TENANT, true, upgrade, "mod-erm-usage-5.2.0", null);
 
     pgClient
-        .execute(
-            "CREATE TABLE %s.aggregator_settings (id UUID PRIMARY KEY, jsonb JSONB NOT NULL)"
-                .formatted(SCHEMA))
+        .runSqlFile(LEGACY_OBJECTS.formatted(SCHEMA))
         .compose(v -> insertUdp(legacySushiUdp))
         .compose(v -> insertUdp(legacyAggregatorUdp))
         .compose(v -> pgClient.runSqlFile(String.join("\n", upgradeSql)))
@@ -104,9 +132,9 @@ public class MigrateRemoveAggregatorIT {
   }
 
   @Test
-  public void testAggregatorSettingsTableIsDropped(TestContext context) {
+  public void testAggregatorObjectsAreDropped(TestContext context) {
     pgClient
-        .selectSingle("SELECT to_regclass('%s.aggregator_settings')".formatted(SCHEMA))
-        .onComplete(context.asyncAssertSuccess(row -> assertThat(row.getValue(0)).isNull()));
+        .selectSingle(COUNT_AGGREGATOR_OBJECTS.formatted(SCHEMA))
+        .onComplete(context.asyncAssertSuccess(row -> assertThat(row.getLong(0)).isZero()));
   }
 }
