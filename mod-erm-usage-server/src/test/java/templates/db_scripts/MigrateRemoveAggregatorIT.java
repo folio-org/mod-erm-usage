@@ -7,9 +7,11 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.sqlclient.Tuple;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import org.folio.rest.impl.TenantAPI;
 import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.PostgresClient;
@@ -123,8 +125,8 @@ public class MigrateRemoveAggregatorIT {
   private static Future<Void> insertUdp(JsonObject udp) {
     return pgClient
         .execute(
-            "INSERT INTO %s.usage_data_providers (id, jsonb) VALUES ('%s', '%s')"
-                .formatted(SCHEMA, udp.getString("id"), udp.encode().replace("'", "''")))
+            "INSERT INTO %s.usage_data_providers (id, jsonb) VALUES ($1, $2)".formatted(SCHEMA),
+            Tuple.of(UUID.fromString(udp.getString("id")), udp))
         .mapEmpty();
   }
 
@@ -138,7 +140,7 @@ public class MigrateRemoveAggregatorIT {
 
   @Test
   public void testAggregatorUdpIsDeactivated(TestContext context) {
-    JsonObject expectedHc =
+    JsonObject expectedHarvestingConfig =
         aggregatorUdp.getJsonObject("harvestingConfig").copy().put("harvestingStatus", "inactive");
     String expectedDescription =
         """
@@ -152,7 +154,8 @@ public class MigrateRemoveAggregatorIT {
         .onComplete(
             context.asyncAssertSuccess(
                 udp -> {
-                  assertThat(udp.getJsonObject("harvestingConfig")).isEqualTo(expectedHc);
+                  assertThat(udp.getJsonObject("harvestingConfig"))
+                      .isEqualTo(expectedHarvestingConfig);
                   assertThat(udp.getString("description")).isEqualTo(expectedDescription);
                 }));
   }

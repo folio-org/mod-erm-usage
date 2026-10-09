@@ -12,7 +12,7 @@ DROP INDEX IF EXISTS usage_data_providers_custom_aggregatorid_idx;
 --    vendor code, after a blank line if the description has text
 UPDATE usage_data_providers
 SET jsonb = jsonb_set(jsonb, '{description}', to_jsonb(concat_ws(E'\n\n',
-  NULLIF(jsonb->>'description', ''),
+  CASE WHEN btrim(jsonb->>'description', E' \t\r\n') <> '' THEN jsonb->>'description' END,
   concat_ws(E'\n',
     '--- Umbrellaleaf upgrade ---',
     CASE WHEN jsonb #>> '{harvestingConfig,harvestingStatus}' = 'active'
