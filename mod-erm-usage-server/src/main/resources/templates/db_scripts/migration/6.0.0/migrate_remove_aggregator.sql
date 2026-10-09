@@ -8,12 +8,26 @@ DROP FUNCTION IF EXISTS aggregator_settings_set_md();
 DROP FUNCTION IF EXISTS set_aggregator_settings_md_json();
 DROP INDEX IF EXISTS usage_data_providers_custom_aggregatorid_idx;
 
--- 2. Deactivate aggregator UDPs (always satisfies the status/harvestingStatus constraint)
+-- 2. Append an upgrade note to the description of aggregator UDPs that were active or have a
+--    vendor code, after a blank line if the description has text
+UPDATE usage_data_providers
+SET jsonb = jsonb_set(jsonb, '{description}', to_jsonb(concat_ws(E'\n\n',
+  NULLIF(jsonb->>'description', ''),
+  concat_ws(E'\n',
+    '--- Umbrellaleaf upgrade ---',
+    CASE WHEN jsonb #>> '{harvestingConfig,harvestingStatus}' = 'active'
+      THEN 'Harvesting deactivated: harvesting via aggregator is no longer supported.' END,
+    'Aggregator vendor code: ' || NULLIF(jsonb #>> '{harvestingConfig,aggregator,vendorCode}', '')))))
+WHERE jsonb #>> '{harvestingConfig,harvestVia}' = 'aggregator'
+  AND (jsonb #>> '{harvestingConfig,harvestingStatus}' = 'active'
+    OR NULLIF(jsonb #>> '{harvestingConfig,aggregator,vendorCode}', '') IS NOT NULL);
+
+-- 3. Deactivate aggregator UDPs (always satisfies the status/harvestingStatus constraint)
 UPDATE usage_data_providers
 SET jsonb = jsonb_set(jsonb, '{harvestingConfig,harvestingStatus}', '"inactive"')
 WHERE jsonb #>> '{harvestingConfig,harvestVia}' = 'aggregator';
 
--- 3. Remove harvestVia and aggregator from all UDPs
+-- 4. Remove harvestVia and aggregator from all UDPs
 UPDATE usage_data_providers
 SET jsonb = jsonb #- '{harvestingConfig,harvestVia}' #- '{harvestingConfig,aggregator}'
 WHERE jsonb->'harvestingConfig' ?| array['harvestVia', 'aggregator'];

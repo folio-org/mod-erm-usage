@@ -57,28 +57,37 @@ public class MigrateRemoveAggregatorIT {
   public static PostgresContainerRule postgresContainerRule =
       new PostgresContainerRule(vertx, TENANT);
 
+  private static final String AGGREGATOR_ID = "5ea343c7-5aac-4648-bb37-c4f72a6c2836";
+  private static final String NO_DESCRIPTION_ID = "9c5e7f4b-1a6d-4c8e-8f0b-4d5e6f7a8b9c";
+  private static final String INACTIVE_VENDOR_CODE_ID = "0d6f8a5c-2b7e-4d9f-9a1c-5e6f7a8b9c0d";
+
   private static PostgresClient pgClient;
   private static JsonObject sushiUdp;
   private static JsonObject aggregatorUdp;
+  private static JsonObject inactiveAggregatorUdp;
 
   @BeforeClass
   public static void beforeClass(TestContext context) throws Exception {
     pgClient = PostgresClient.getInstance(vertx);
     sushiUdp = loadSample("udproviders.sample");
     aggregatorUdp = loadSample("udproviders2.sample");
+    inactiveAggregatorUdp = aggregatorUdp.copy().put("id", "8b4d6e3a-0f5c-4b7d-9e9a-3c4d5e6f7a8b");
+    inactiveAggregatorUdp.getJsonObject("harvestingConfig").put("harvestingStatus", "inactive");
 
     // UDPs as stored by mod-erm-usage 5.2.x
     JsonObject legacySushiUdp = sushiUdp.copy();
-    JsonObject aggregator = new JsonObject().put("id", "5ea343c7-5aac-4648-bb37-c4f72a6c2836");
     legacySushiUdp
         .getJsonObject("harvestingConfig")
         .put("harvestVia", "sushi")
-        .put("aggregator", aggregator);
-    JsonObject legacyAggregatorUdp = aggregatorUdp.copy();
-    legacyAggregatorUdp
-        .getJsonObject("harvestingConfig")
-        .put("harvestVia", "aggregator")
-        .put("aggregator", aggregator);
+        .put("aggregator", new JsonObject().put("id", AGGREGATOR_ID));
+    JsonObject legacyAggregatorUdp = legacyAggregatorUdp(aggregatorUdp, "ACMDL");
+    JsonObject legacyInactiveAggregatorUdp = legacyAggregatorUdp(inactiveAggregatorUdp, null);
+    JsonObject legacyNoDescriptionUdp =
+        legacyAggregatorUdp(aggregatorUdp.copy().put("id", NO_DESCRIPTION_ID), "ACMDL");
+    legacyNoDescriptionUdp.remove("description");
+    JsonObject legacyInactiveVendorCodeUdp =
+        legacyAggregatorUdp(
+            inactiveAggregatorUdp.copy().put("id", INACTIVE_VENDOR_CODE_ID), "ACMDL");
 
     TenantAttributes upgrade =
         new TenantAttributes()
@@ -91,12 +100,24 @@ public class MigrateRemoveAggregatorIT {
         .runSqlFile(LEGACY_OBJECTS.formatted(SCHEMA))
         .compose(v -> insertUdp(legacySushiUdp))
         .compose(v -> insertUdp(legacyAggregatorUdp))
+        .compose(v -> insertUdp(legacyInactiveAggregatorUdp))
+        .compose(v -> insertUdp(legacyNoDescriptionUdp))
+        .compose(v -> insertUdp(legacyInactiveVendorCodeUdp))
         .compose(v -> pgClient.runSqlFile(String.join("\n", upgradeSql)))
         .onComplete(context.asyncAssertSuccess());
   }
 
   private static JsonObject loadSample(String name) throws IOException {
     return new JsonObject(Files.readString(Path.of("../ramls/examples", name)));
+  }
+
+  private static JsonObject legacyAggregatorUdp(JsonObject udp, String vendorCode) {
+    JsonObject legacyUdp = udp.copy();
+    legacyUdp
+        .getJsonObject("harvestingConfig")
+        .put("harvestVia", "aggregator")
+        .put("aggregator", new JsonObject().put("id", AGGREGATOR_ID).put("vendorCode", vendorCode));
+    return legacyUdp;
   }
 
   private static Future<Void> insertUdp(JsonObject udp) {
@@ -107,28 +128,87 @@ public class MigrateRemoveAggregatorIT {
         .mapEmpty();
   }
 
-  private Future<JsonObject> getHarvestingConfig(JsonObject udp) {
+  private Future<JsonObject> getUdp(JsonObject udp) {
     return pgClient
         .selectSingle(
-            "SELECT jsonb->'harvestingConfig' FROM %s.usage_data_providers WHERE id = '%s'"
+            "SELECT jsonb FROM %s.usage_data_providers WHERE id = '%s'"
                 .formatted(SCHEMA, udp.getString("id")))
         .map(row -> row.getJsonObject(0));
   }
 
   @Test
   public void testAggregatorUdpIsDeactivated(TestContext context) {
-    JsonObject expected =
+    JsonObject expectedHc =
         aggregatorUdp.getJsonObject("harvestingConfig").copy().put("harvestingStatus", "inactive");
-    getHarvestingConfig(aggregatorUdp)
-        .onComplete(context.asyncAssertSuccess(hc -> assertThat(hc).isEqualTo(expected)));
+    String expectedDescription =
+        """
+        See meeting notes 2023-10-05
+
+        --- Umbrellaleaf upgrade ---
+        Harvesting deactivated: harvesting via aggregator is no longer supported.
+        Aggregator vendor code: ACMDL\
+        """;
+    getUdp(aggregatorUdp)
+        .onComplete(
+            context.asyncAssertSuccess(
+                udp -> {
+                  assertThat(udp.getJsonObject("harvestingConfig")).isEqualTo(expectedHc);
+                  assertThat(udp.getString("description")).isEqualTo(expectedDescription);
+                }));
+  }
+
+  @Test
+  public void testInactiveAggregatorUdpWithoutVendorCodeKeepsDescription(TestContext context) {
+    getUdp(inactiveAggregatorUdp)
+        .onComplete(
+            context.asyncAssertSuccess(
+                udp -> {
+                  assertThat(udp.getJsonObject("harvestingConfig"))
+                      .isEqualTo(inactiveAggregatorUdp.getJsonObject("harvestingConfig"));
+                  assertThat(udp.getString("description"))
+                      .isEqualTo(inactiveAggregatorUdp.getString("description"));
+                }));
+  }
+
+  @Test
+  public void testDescriptionIsSetWithoutBlankLineIfEmpty(TestContext context) {
+    getUdp(new JsonObject().put("id", NO_DESCRIPTION_ID))
+        .onComplete(
+            context.asyncAssertSuccess(
+                udp ->
+                    assertThat(udp.getString("description"))
+                        .isEqualTo(
+                            """
+                            --- Umbrellaleaf upgrade ---
+                            Harvesting deactivated: harvesting via aggregator is no longer supported.
+                            Aggregator vendor code: ACMDL\
+                            """)));
+  }
+
+  @Test
+  public void testDescriptionOfInactiveUdpHasOnlyVendorCode(TestContext context) {
+    getUdp(new JsonObject().put("id", INACTIVE_VENDOR_CODE_ID))
+        .onComplete(
+            context.asyncAssertSuccess(
+                udp ->
+                    assertThat(udp.getString("description"))
+                        .isEqualTo(
+                            """
+                            See meeting notes 2023-10-05
+
+                            --- Umbrellaleaf upgrade ---
+                            Aggregator vendor code: ACMDL\
+                            """)));
   }
 
   @Test
   public void testSushiUdpStaysActive(TestContext context) {
-    getHarvestingConfig(sushiUdp)
+    getUdp(sushiUdp)
         .onComplete(
             context.asyncAssertSuccess(
-                hc -> assertThat(hc).isEqualTo(sushiUdp.getJsonObject("harvestingConfig"))));
+                udp ->
+                    assertThat(udp.getJsonObject("harvestingConfig"))
+                        .isEqualTo(sushiUdp.getJsonObject("harvestingConfig"))));
   }
 
   @Test
