@@ -1,9 +1,10 @@
-# 5.3.0 (IN PROGRESS)
+# 6.0.0 (IN PROGRESS)
 * [MODEUS-225](https://folio-org.atlassian.net/browse/MODEUS-225) Allow both registry domains for `Registry_Record` in COUNTER 5.1 report uploads
 * [MODEUS-224](https://folio-org.atlassian.net/browse/MODEUS-224) Remove optional `version` property from RAML files
 * [MODEUS-234](https://folio-org.atlassian.net/browse/MODEUS-234) Add grouped Dependabot configuration
 * [MODEUS-237](https://folio-org.atlassian.net/browse/MODEUS-237) Harden `PostgresContainerRule` against early class initialization and setup failures
 * [MODEUS-242](https://folio-org.atlassian.net/browse/MODEUS-242) Add `/usage-data-providers/sushi-config/service-types` endpoint and `fullTextIndex` for `harvestingConfig.sushiConfig.serviceType`
+* [MODEUS-243](https://folio-org.atlassian.net/browse/MODEUS-243) *BREAKING* Remove aggregator settings and aggregator UDP fields
 
 # 5.2.0
 * [MODEUS-204](https://folio-org.atlassian.net/browse/MODEUS-204) Add `status` field to UDP schema
