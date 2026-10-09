@@ -389,6 +389,7 @@
               </transformers>
               <artifactSet />
               <outputFile>${project.build.directory}/${project.artifactId}-fat.jar</outputFile>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
               <filters>
                 <!-- this required to fix module logging -->
                 <filter>
