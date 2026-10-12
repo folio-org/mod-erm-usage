@@ -4,6 +4,7 @@
 * [MODEUS-234](https://folio-org.atlassian.net/browse/MODEUS-234) Add grouped Dependabot configuration
 * [MODEUS-237](https://folio-org.atlassian.net/browse/MODEUS-237) Harden `PostgresContainerRule` against early class initialization and setup failures
 * [MODEUS-242](https://folio-org.atlassian.net/browse/MODEUS-242) Add `/usage-data-providers/sushi-config/service-types` endpoint and `fullTextIndex` for `harvestingConfig.sushiConfig.serviceType`
+* Disable the dependency-reduced POM of `maven-shade-plugin`
 * [MODEUS-243](https://folio-org.atlassian.net/browse/MODEUS-243) *BREAKING* Remove aggregator settings and aggregator UDP fields
 
 # 5.2.0
