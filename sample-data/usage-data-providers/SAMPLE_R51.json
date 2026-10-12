@@ -4,7 +4,6 @@
   "status": "active",
   "harvestingConfig": {
     "harvestingStatus": "active",
-    "harvestVia": "sushi",
     "sushiConfig": {
       "serviceType": "cs51",
       "serviceUrl": "https://localhost/sample"

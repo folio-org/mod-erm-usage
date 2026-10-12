@@ -21,8 +21,7 @@ public class CustomIndexesIT {
     "counter_reports_custom_getcsv_idx",
     "counter_reports_custom_errorcodes_idx",
     "counter_reports_custom_reporttypes_idx",
-    "counter_reports_custom_reportreleases_idx",
-    "usage_data_providers_custom_aggregatorid_idx"
+    "counter_reports_custom_reportreleases_idx"
   };
 
   private static Vertx vertx = Vertx.vertx();

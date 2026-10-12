@@ -2,6 +2,11 @@
   "scripts": [
     {
       "run": "after",
+      "snippetPath": "migration/6.0.0/migrate_remove_aggregator.sql",
+      "fromModuleVersion": "mod-erm-usage-6.0.0"
+    },
+    {
+      "run": "after",
       "snippetPath": "migration/5.2.0/migrate_udp_schema.sql",
       "fromModuleVersion": "mod-erm-usage-5.2.0"
     },
@@ -37,11 +42,6 @@
     },
     {
       "run": "after",
-      "snippetPath": "aggregatorsettings_triggers.sql",
-      "fromModuleVersion": "mod-erm-usage-2.6.0"
-    },
-    {
-      "run": "after",
       "snippetPath": "usagedataproviders_triggers.sql",
       "fromModuleVersion": "mod-erm-usage-2.6.0"
     },
@@ -72,11 +72,6 @@
     }
   ],
   "tables": [
-    {
-      "tableName": "aggregator_settings",
-      "fromModuleVersion": "mod-erm-usage-2.6.0",
-      "withMetadata": true
-    },
     {
       "tableName": "counter_reports",
       "fromModuleVersion": "mod-erm-usage-2.7.0",
@@ -118,13 +113,13 @@
     },
     {
       "tableName": "usage_data_providers",
-      "fromModuleVersion": "mod-erm-usage-5.3.0",
+      "fromModuleVersion": "mod-erm-usage-6.0.0",
       "withMetadata": true,
       "customSnippetPath": "usage_data_providers.sql",
       "fullTextIndex": [
         {
           "fieldName": "keywords",
-          "multiFieldNames": "label,description,harvestingConfig.aggregator.name"
+          "multiFieldNames": "label,description"
         },
         {
           "fieldName": "status"
@@ -134,15 +129,7 @@
           "tOps": "ADD"
         },
         {
-          "fieldName": "harvestingConfig.harvestVia",
-          "tOps": "ADD"
-        },
-        {
           "fieldName": "harvestingConfig.sushiConfig.serviceType",
-          "tOps": "ADD"
-        },
-        {
-          "fieldName": "harvestingConfig.aggregator.name",
           "tOps": "ADD"
         },
         {
