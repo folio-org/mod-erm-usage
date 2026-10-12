@@ -2,12 +2,12 @@
   "scripts": [
     {
       "run": "after",
-      "snippetPath": "migration6.0.0/migrate_cs41_harvesting_status.sql",
+      "snippetPath": "migration/6.0.0/migrate_remove_aggregator.sql",
       "fromModuleVersion": "mod-erm-usage-6.0.0"
     },
     {
       "run": "after",
-      "snippetPath": "migration/6.0.0/migrate_remove_aggregator.sql",
+      "snippetPath": "migration/6.0.0/migrate_cs41_harvesting_status.sql",
       "fromModuleVersion": "mod-erm-usage-6.0.0"
     },
     {

@@ -12,8 +12,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
-import org.folio.rest.impl.TenantAPI;
-import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.persist.PostgresClient;
 import org.folio.rest.util.PostgresContainerRule;
 import org.junit.BeforeClass;
@@ -91,12 +89,13 @@ public class MigrateRemoveAggregatorIT {
         legacyAggregatorUdp(
             inactiveAggregatorUdp.copy().put("id", INACTIVE_VENDOR_CODE_ID), "ACMDL");
 
-    TenantAttributes upgrade =
-        new TenantAttributes()
-            .withModuleFrom("mod-erm-usage-5.2.0")
-            .withModuleTo("mod-erm-usage-6.0.0");
-    String[] upgradeSql =
-        new TenantAPI().sqlFile(TENANT, true, upgrade, "mod-erm-usage-5.2.0", null);
+    // Don't run the full upgrade here to not interfere with
+    // 'migration/6.0.0/migrate_remove_aggregator.sql' side effects.
+    String migrationSql =
+        "SET search_path TO %s;%n".formatted(SCHEMA)
+            + Files.readString(
+                Path.of(
+                    "src/main/resources/templates/db_scripts/migration/6.0.0/migrate_remove_aggregator.sql"));
 
     pgClient
         .runSqlFile(LEGACY_OBJECTS.formatted(SCHEMA))
@@ -105,7 +104,7 @@ public class MigrateRemoveAggregatorIT {
         .compose(v -> insertUdp(legacyInactiveAggregatorUdp))
         .compose(v -> insertUdp(legacyNoDescriptionUdp))
         .compose(v -> insertUdp(legacyInactiveVendorCodeUdp))
-        .compose(v -> pgClient.runSqlFile(String.join("\n", upgradeSql)))
+        .compose(v -> pgClient.runSqlFile(migrationSql))
         .onComplete(context.asyncAssertSuccess());
   }
 

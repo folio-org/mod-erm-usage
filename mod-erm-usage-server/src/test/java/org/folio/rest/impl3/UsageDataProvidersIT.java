@@ -24,7 +24,6 @@ import org.folio.rest.Setup;
 import org.folio.rest.SetupTenant;
 import org.folio.rest.TestUtils;
 import org.folio.rest.impl.TenantAPI;
-import org.folio.rest.jaxrs.model.AggregatorSetting;
 import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.HarvestingConfig.HarvestingStatus;
 import org.folio.rest.jaxrs.model.SushiConfig;
@@ -53,7 +52,6 @@ class UsageDataProvidersIT {
   private static UsageDataProvider udProvider2;
   private static UsageDataProvider udProviderChanged;
   private static UsageDataProvider udProviderInvalid;
-  private static AggregatorSetting aggregator;
 
   @BeforeAll
   static void beforeAll() throws IOException {
@@ -63,9 +61,6 @@ class UsageDataProvidersIT {
     udProvider2 = Json.decodeValue(udProvider2Str, UsageDataProvider.class);
     var sushiCredentials = udProvider2.getSushiCredentials();
 
-    var aggregatorStr =
-        new String(Files.readAllBytes(Paths.get("../ramls/examples/aggregatorsettings.sample")));
-    aggregator = Json.decodeValue(aggregatorStr, AggregatorSetting.class);
     var udProviderStr =
         new String(Files.readAllBytes(Paths.get("../ramls/examples/udproviders.sample")));
     udProvider = Json.decodeValue(udProviderStr, UsageDataProvider.class);
@@ -85,16 +80,6 @@ class UsageDataProvidersIT {
 
   @Test
   void checkThatWeCanAddAProviderWithAggregatorSettings() {
-    // POST aggregator
-    given()
-        .body(Json.encode(aggregator))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(AGGREGATOR_PATH)
-        .then()
-        .statusCode(201);
-
     // POST provider
     given()
         .body(Json.encode(udProvider2))
@@ -114,8 +99,7 @@ class UsageDataProvidersIT {
         .then()
         .statusCode(200)
         .body("id", equalTo(udProvider2.getId()))
-        .body("label", equalTo(udProvider2.getLabel()))
-        .body("harvestingConfig.aggregator.name", equalTo(aggregator.getLabel()));
+        .body("label", equalTo(udProvider2.getLabel()));
 
     // DELETE provider
     given()
@@ -123,15 +107,6 @@ class UsageDataProvidersIT {
         .header("content-type", APPLICATION_JSON)
         .header("accept", "text/plain")
         .delete(BASE_URI + "/" + udProvider2.getId())
-        .then()
-        .statusCode(204);
-
-    // DELETE aggregator
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(AGGREGATOR_PATH + "/" + aggregator.getId())
         .then()
         .statusCode(204);
   }
@@ -422,7 +397,6 @@ class UsageDataProvidersIT {
             .withHarvestingConfig(
                 new HarvestingConfig()
                     .withHarvestingStatus(HarvestingStatus.ACTIVE)
-                    .withHarvestVia(HarvestingConfig.HarvestVia.SUSHI)
                     .withSushiConfig(
                         new SushiConfig()
                             .withServiceType("cs41")
