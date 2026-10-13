@@ -14,7 +14,6 @@
 # Maven
 log/
 target/
-dependency-reduced-pom.xml
 
 # Vertx
 .vertx/

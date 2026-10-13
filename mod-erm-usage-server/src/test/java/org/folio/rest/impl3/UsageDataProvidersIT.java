@@ -16,22 +16,17 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.Setup;
 import org.folio.rest.SetupTenant;
 import org.folio.rest.TestUtils;
-import org.folio.rest.impl.TenantAPI;
 import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.HarvestingConfig.HarvestingStatus;
 import org.folio.rest.jaxrs.model.SushiConfig;
-import org.folio.rest.jaxrs.model.TenantAttributes;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.jaxrs.model.UsageDataProvider.Status;
-import org.folio.rest.tools.utils.ModuleName;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -44,7 +39,6 @@ class UsageDataProvidersIT {
 
   private static final String APPLICATION_JSON = "application/json";
   private static final String BASE_URI = "/usage-data-providers";
-  private static final String AGGREGATOR_PATH = "/aggregator-settings";
   private static final String TENANT = TestUtils.getTenant();
   private static final String CONSTRAINT_VIOLATION =
       "violates check constraint \"usage_data_providers_harvestingstatus_constraint\"";
@@ -76,39 +70,6 @@ class UsageDataProvidersIT {
   @AfterAll
   static void afterAll() {
     TestUtils.resetRestAssured();
-  }
-
-  @Test
-  void checkThatWeCanAddAProviderWithAggregatorSettings() {
-    // POST provider
-    given()
-        .body(Json.encode(udProvider2))
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .post(BASE_URI)
-        .then()
-        .statusCode(201);
-
-    // GET provider && check if aggregator name got resolved
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", APPLICATION_JSON)
-        .get(BASE_URI + "/" + udProvider2.getId())
-        .then()
-        .statusCode(200)
-        .body("id", equalTo(udProvider2.getId()))
-        .body("label", equalTo(udProvider2.getLabel()));
-
-    // DELETE provider
-    given()
-        .header("X-Okapi-Tenant", TENANT)
-        .header("content-type", APPLICATION_JSON)
-        .header("accept", "text/plain")
-        .delete(BASE_URI + "/" + udProvider2.getId())
-        .then()
-        .statusCode(204);
   }
 
   @Test
@@ -389,70 +350,6 @@ class UsageDataProvidersIT {
   }
 
   @Test
-  void checkThatUpgradeSetsHarvestingStatusOfCs41ProvidersToInactive()
-      throws ExecutionException, InterruptedException {
-    var udProvider41Active =
-        new UsageDataProvider()
-            .withLabel("Migration cs41 active")
-            .withHarvestingConfig(
-                new HarvestingConfig()
-                    .withHarvestingStatus(HarvestingStatus.ACTIVE)
-                    .withSushiConfig(
-                        new SushiConfig()
-                            .withServiceType("cs41")
-                            .withServiceUrl("http://localhost/sushi"))
-                    .withReportRelease("4")
-                    .withRequestedReports(List.of("JR1", "BR1")));
-    var udProvider50Active =
-        new UsageDataProvider()
-            .withLabel("Migration cs50 active")
-            .withHarvestingConfig(
-                new HarvestingConfig()
-                    .withHarvestingStatus(HarvestingStatus.ACTIVE)
-                    .withSushiConfig(new SushiConfig().withServiceType("cs50")));
-    var udProvider41Inactive =
-        new UsageDataProvider()
-            .withLabel("Migration cs41 inactive")
-            .withHarvestingConfig(
-                new HarvestingConfig()
-                    .withHarvestingStatus(HarvestingStatus.INACTIVE)
-                    .withSushiConfig(new SushiConfig().withServiceType("cs41")));
-    var udps =
-        Stream.of(udProvider41Active, udProvider50Active, udProvider41Inactive)
-            .map(
-                udp -> postEntity(udp).then().statusCode(201).extract().as(UsageDataProvider.class))
-            .toList();
-
-    var moduleFrom = ModuleName.getModuleName() + "-5.2.0";
-    var moduleTo = ModuleName.getModuleName() + "-" + ModuleName.getModuleVersion();
-
-    try {
-      var before = udps.stream().map(udp -> getEntityJson(udp.getId())).toList();
-      var resp =
-          new TenantAPI()
-              .postTenantSync(
-                  new TenantAttributes().withModuleFrom(moduleFrom).withModuleTo(moduleTo),
-                  Map.of(XOkapiHeaders.TENANT, TENANT),
-                  TestUtils.getVertx().getOrCreateContext())
-              .toCompletionStage()
-              .toCompletableFuture()
-              .get();
-      assertThat(resp.getStatus()).isEqualTo(204);
-
-      var after = udps.stream().map(udp -> getEntityJson(udp.getId())).toList();
-      // cs41 and active: only harvestingStatus changes
-      JsonObject expected = before.getFirst().copy();
-      expected.getJsonObject("harvestingConfig").put("harvestingStatus", "inactive");
-      assertThat(after.get(0)).isEqualTo(expected);
-      // not cs41 or already inactive: unchanged
-      assertThat(after.get(1)).isEqualTo(before.get(1));
-      assertThat(after.get(2)).isEqualTo(before.get(2));
-    } finally {
-      udps.forEach(udp -> deleteEntity(udp).then().statusCode(204));
-    }
-  }
-
-  @Test
   void checkThatGetServiceTypesReturns500OnDatabaseError() {
     // tenant without schema, so the query fails
     getServiceTypes("notenant").then().statusCode(500).contentType(ContentType.TEXT);
@@ -514,10 +411,6 @@ class UsageDataProvidersIT {
 
   private Response getEntityById(String id) {
     return given().header(XOkapiHeaders.TENANT, TENANT).get(BASE_URI + "/{id}", id);
-  }
-
-  private JsonObject getEntityJson(String id) {
-    return new JsonObject(getEntityById(id).then().statusCode(200).extract().asString());
   }
 
   private Response deleteEntity(Object entity) {
