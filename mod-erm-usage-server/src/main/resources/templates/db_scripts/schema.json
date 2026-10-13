@@ -7,6 +7,11 @@
     },
     {
       "run": "after",
+      "snippetPath": "migration/6.0.0/migrate_cs41_harvesting_status.sql",
+      "fromModuleVersion": "mod-erm-usage-6.0.0"
+    },
+    {
+      "run": "after",
       "snippetPath": "migration/5.2.0/migrate_udp_schema.sql",
       "fromModuleVersion": "mod-erm-usage-5.2.0"
     },
