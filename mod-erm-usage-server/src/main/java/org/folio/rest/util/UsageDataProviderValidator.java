@@ -46,7 +46,8 @@ public class UsageDataProviderValidator {
 
     // No harvesting configuration or configured harvester not 'active'
     if (harvestingConfig
-        .filter(config -> config.getHarvestingStatus() != HarvestingStatus.ACTIVE)
+        .map(HarvestingConfig::getHarvestingStatus)
+        .filter(HarvestingStatus.ACTIVE::equals)
         .isEmpty()) {
       return errors; // No errors
     }
@@ -59,21 +60,20 @@ public class UsageDataProviderValidator {
     final var sushiConfig = harvestingConfig.map(HarvestingConfig::getSushiConfig);
     final var serviceUrl = sushiConfig.map(SushiConfig::getServiceUrl);
 
-    // No harvesting start, error
+    // No harvesting start
     requirePresent(
         errors, HARVESTING_START, harvestingConfig.map(HarvestingConfig::getHarvestingStart));
 
-    // No service type, error
+    // No service type
     requirePresent(errors, SERVICE_TYPE, sushiConfig.map(SushiConfig::getServiceType));
 
-    // No service URL, error
+    // No service URL
     requirePresent(errors, SERVICE_URL, serviceUrl);
 
-    // No customer ID in SUSHI credentials, error
-    requirePresent(
-        errors,
-        CUSTOMER_ID,
-        Optional.ofNullable(udp.getSushiCredentials()).map(SushiCredentials::getCustomerId));
+    // No customer ID in SUSHI credentials
+    final var customerId =
+        Optional.ofNullable(udp.getSushiCredentials()).map(SushiCredentials::getCustomerId);
+    requirePresent(errors, CUSTOMER_ID, customerId);
 
     // Service URL doesn't match pattern
     serviceUrl
