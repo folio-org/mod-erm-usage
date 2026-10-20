@@ -14,7 +14,6 @@ import org.apache.logging.log4j.Logger;
 import org.folio.cql2pgjson.CQL2PgJSON;
 import org.folio.cql2pgjson.exception.FieldException;
 import org.folio.rest.annotations.Validate;
-import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProviders;
 import org.folio.rest.jaxrs.model.UsageDataProvidersGetOrder;
@@ -85,7 +84,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-    Errors errors = UsageDataProviderValidator.validate(entity);
+    final var errors = UsageDataProviderValidator.validate(entity);
     if (!errors.getErrors().isEmpty()) {
       asyncResultHandler.handle(
           succeededFuture(PostUsageDataProvidersResponse.respond422WithApplicationJson(errors)));
@@ -144,7 +143,7 @@ public class UsageDataProvidersAPI implements org.folio.rest.jaxrs.resource.Usag
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-    Errors errors = UsageDataProviderValidator.validate(entity);
+    final var errors = UsageDataProviderValidator.validate(entity);
     if (!errors.getErrors().isEmpty()) {
       asyncResultHandler.handle(
           succeededFuture(PutUsageDataProvidersByIdResponse.respond422WithApplicationJson(errors)));

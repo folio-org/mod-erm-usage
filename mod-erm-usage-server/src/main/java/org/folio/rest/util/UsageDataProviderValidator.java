@@ -24,10 +24,10 @@ public class UsageDataProviderValidator {
   private static final String CUSTOMER_ID = "sushiCredentials.customerId";
 
   private static final String MSG_INACTIVE_WITH_ACTIVE_HARVESTING =
-      "must not be active if status is inactive";
+      "must not be active if provider status is inactive";
   private static final String MSG_REQUIRED = "is required if harvesting status is active";
   private static final String MSG_INVALID_URL =
-      "must start with http:// or https:// followed by a non-whitespace character";
+      "must start with 'http://' or 'https://' followed by a non-whitespace character";
 
   // same pattern as the ui-erm-usage form
   private static final Pattern SERVICE_URL_PATTERN = Pattern.compile("^https?://\\S");
@@ -40,49 +40,58 @@ public class UsageDataProviderValidator {
    * @param udp the {@link UsageDataProvider} to validate
    * @return {@link Errors} naming the violating fields, empty if {@code udp} is valid
    */
-  public static Errors validate(UsageDataProvider udp) {
-    Errors errors = new Errors();
-    HarvestingConfig harvestingConfig = udp.getHarvestingConfig();
-    if (harvestingConfig == null
-        || harvestingConfig.getHarvestingStatus() != HarvestingStatus.ACTIVE) {
-      return errors;
+  public static Errors validate(final UsageDataProvider udp) {
+    final var errors = new Errors();
+    final var harvestingConfig = Optional.ofNullable(udp.getHarvestingConfig());
+
+    // No harvesting configuration or configured harvester not 'active'
+    if (harvestingConfig
+        .filter(config -> config.getHarvestingStatus() != HarvestingStatus.ACTIVE)
+        .isEmpty()) {
+      return errors; // No errors
     }
 
+    // Harvesting status 'active' but provider status 'inactive'
     if (udp.getStatus() == Status.INACTIVE) {
       addError(errors, HARVESTING_STATUS, "active", MSG_INACTIVE_WITH_ACTIVE_HARVESTING);
     }
 
-    Optional<SushiConfig> sushiConfig = Optional.ofNullable(harvestingConfig.getSushiConfig());
-    String serviceUrl = sushiConfig.map(SushiConfig::getServiceUrl).orElse(null);
-    requirePresent(errors, HARVESTING_START, harvestingConfig.getHarvestingStart());
-    requirePresent(errors, SERVICE_TYPE, sushiConfig.map(SushiConfig::getServiceType).orElse(null));
+    final var sushiConfig = harvestingConfig.map(HarvestingConfig::getSushiConfig);
+    final var serviceUrl = sushiConfig.map(SushiConfig::getServiceUrl);
+
+    // No harvesting start, error
+    requirePresent(
+        errors, HARVESTING_START, harvestingConfig.map(HarvestingConfig::getHarvestingStart));
+
+    // No service type, error
+    requirePresent(errors, SERVICE_TYPE, sushiConfig.map(SushiConfig::getServiceType));
+
+    // No service URL, error
     requirePresent(errors, SERVICE_URL, serviceUrl);
+
+    // No customer ID in SUSHI credentials, error
     requirePresent(
         errors,
         CUSTOMER_ID,
-        Optional.ofNullable(udp.getSushiCredentials())
-            .map(SushiCredentials::getCustomerId)
-            .orElse(null));
+        Optional.ofNullable(udp.getSushiCredentials()).map(SushiCredentials::getCustomerId));
 
-    if (isPresent(serviceUrl) && !SERVICE_URL_PATTERN.matcher(serviceUrl).find()) {
-      addError(errors, SERVICE_URL, serviceUrl, MSG_INVALID_URL);
-    }
+    // Service URL doesn't match pattern
+    serviceUrl
+        .filter(url -> !SERVICE_URL_PATTERN.matcher(url).find())
+        .ifPresent(url -> addError(errors, SERVICE_URL, url, MSG_INVALID_URL));
 
     return errors;
   }
 
-  // like the UI's required check, only null and empty values count as missing
-  private static boolean isPresent(String value) {
-    return value != null && !value.isEmpty();
+  private static void requirePresent(
+      final Errors errors, final String field, final Optional<String> maybeValue) {
+    maybeValue
+        .filter(value -> !value.isEmpty())
+        .ifPresentOrElse(value -> {}, () -> addError(errors, field, null, MSG_REQUIRED));
   }
 
-  private static void requirePresent(Errors errors, String field, String value) {
-    if (!isPresent(value)) {
-      addError(errors, field, value, MSG_REQUIRED);
-    }
-  }
-
-  private static void addError(Errors errors, String field, String value, String message) {
+  private static void addError(
+      final Errors errors, final String field, final String value, final String message) {
     errors
         .getErrors()
         .addAll(ValidationHelper.createValidationErrorMessage(field, value, message).getErrors());
