@@ -1,5 +1,7 @@
 package org.folio.rest.util;
 
+import static java.util.function.Predicate.not;
+
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.folio.rest.jaxrs.model.Errors;
@@ -44,15 +46,13 @@ public class UsageDataProviderValidator {
     final var errors = new Errors();
     final var harvestingConfig = Optional.ofNullable(udp.getHarvestingConfig());
 
-    // No harvesting configuration or configured harvester not 'active'
     if (harvestingConfig
         .map(HarvestingConfig::getHarvestingStatus)
         .filter(HarvestingStatus.ACTIVE::equals)
         .isEmpty()) {
-      return errors; // No errors
+      return errors;
     }
 
-    // Harvesting status 'active' but provider status 'inactive'
     if (udp.getStatus() == Status.INACTIVE) {
       addError(errors, HARVESTING_STATUS, "active", MSG_INACTIVE_WITH_ACTIVE_HARVESTING);
     }
@@ -60,22 +60,17 @@ public class UsageDataProviderValidator {
     final var sushiConfig = harvestingConfig.map(HarvestingConfig::getSushiConfig);
     final var serviceUrl = sushiConfig.map(SushiConfig::getServiceUrl);
 
-    // No harvesting start
     requirePresent(
         errors, HARVESTING_START, harvestingConfig.map(HarvestingConfig::getHarvestingStart));
 
-    // No service type
     requirePresent(errors, SERVICE_TYPE, sushiConfig.map(SushiConfig::getServiceType));
 
-    // No service URL
     requirePresent(errors, SERVICE_URL, serviceUrl);
 
-    // No customer ID in SUSHI credentials
     final var customerId =
         Optional.ofNullable(udp.getSushiCredentials()).map(SushiCredentials::getCustomerId);
     requirePresent(errors, CUSTOMER_ID, customerId);
 
-    // Service URL doesn't match pattern
     serviceUrl
         .filter(url -> !SERVICE_URL_PATTERN.matcher(url).find())
         .ifPresent(url -> addError(errors, SERVICE_URL, url, MSG_INVALID_URL));
@@ -83,10 +78,11 @@ public class UsageDataProviderValidator {
     return errors;
   }
 
+  @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "java:S3553"})
   private static void requirePresent(
       final Errors errors, final String field, final Optional<String> maybeValue) {
     maybeValue
-        .filter(value -> !value.isEmpty())
+        .filter(not(String::isEmpty))
         .ifPresentOrElse(value -> {}, () -> addError(errors, field, null, MSG_REQUIRED));
   }
 
