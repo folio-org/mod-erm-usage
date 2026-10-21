@@ -7,7 +7,7 @@
 * Disable the dependency-reduced POM of `maven-shade-plugin`
 * [MODEUS-243](https://folio-org.atlassian.net/browse/MODEUS-243) *BREAKING* Remove aggregator settings and aggregator UDP fields
 * [MODEUS-244](https://folio-org.atlassian.net/browse/MODEUS-244) Set harvesting status to `inactive` for UDPs with service type `cs41`
-* [MODEUS-241](https://folio-org.atlassian.net/browse/MODEUS-241) Validate status and harvesting fields of UDPs on POST and PUT, returning 422 instead of 500
+* [MODEUS-241](https://folio-org.atlassian.net/browse/MODEUS-241) Validate status and harvesting fields of UDPs on POST and PUT, returning 422 instead of 500; existing UDPs with active harvesting must satisfy the new rules before they can be updated
 
 # 5.2.0
 * [MODEUS-204](https://folio-org.atlassian.net/browse/MODEUS-204) Add `status` field to UDP schema

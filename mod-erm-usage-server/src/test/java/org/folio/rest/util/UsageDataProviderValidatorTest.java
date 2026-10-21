@@ -121,7 +121,7 @@ class UsageDataProviderValidatorTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"http://x", "https://x.org/sushi", "https://x y"})
+  @ValueSource(strings = {"http://x", "https://x.org/sushi", "https://x y", "HTTPS://x.org"})
   void validServiceUrlIsAccepted(String serviceUrl) {
     UsageDataProvider udp = createActiveUdp();
     udp.getHarvestingConfig().getSushiConfig().setServiceUrl(serviceUrl);
@@ -129,11 +129,27 @@ class UsageDataProviderValidatorTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"ftp://x.org", "x.org", "https://", "https:// x.org", "HTTPS://x.org"})
+  @ValueSource(strings = {"ftp://x.org", "x.org", "https://", "https:// x.org"})
   void invalidServiceUrlIsRejected(String serviceUrl) {
     UsageDataProvider udp = createActiveUdp();
     udp.getHarvestingConfig().getSushiConfig().setServiceUrl(serviceUrl);
     assertThat(validate(udp)).containsExactly("harvestingConfig.sushiConfig.serviceUrl");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"2024-01", "2024-12", "1999-10"})
+  void validHarvestingStartIsAccepted(String harvestingStart) {
+    UsageDataProvider udp = createActiveUdp();
+    udp.getHarvestingConfig().setHarvestingStart(harvestingStart);
+    assertThat(validate(udp)).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"foo", "2024-13", "2024-00", "2024-1", "24-01", "2024-01-15", " 2024-01"})
+  void invalidHarvestingStartIsRejected(String harvestingStart) {
+    UsageDataProvider udp = createActiveUdp();
+    udp.getHarvestingConfig().setHarvestingStart(harvestingStart);
+    assertThat(validate(udp)).containsExactly("harvestingConfig.harvestingStart");
   }
 
   @Test
