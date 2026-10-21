@@ -25,22 +25,17 @@ public class UsageDataProviderValidator {
   private static final String SERVICE_URL = "harvestingConfig.sushiConfig.serviceUrl";
   private static final String CUSTOMER_ID = "sushiCredentials.customerId";
 
-  private static final String MSG_INACTIVE_WITH_ACTIVE_HARVESTING =
-      "must not be active if provider status is inactive";
-  private static final String MSG_REQUIRED = "is required if harvesting status is active";
-  private static final String MSG_INVALID_URL =
-      "must start with 'http://' or 'https://' followed by a non-whitespace character";
-
   // same pattern as the ui-erm-usage form
   private static final Pattern SERVICE_URL_PATTERN = Pattern.compile("^https?://\\S");
 
   private UsageDataProviderValidator() {}
 
   /**
-   * Validates a {@link UsageDataProvider}.
-   *
-   * @param udp the {@link UsageDataProvider} to validate
-   * @return {@link Errors} naming the violating fields, empty if {@code udp} is valid
+   * Validates {@code udp} and returns the keys of the rejected fields. If harvesting is active, the
+   * tests assert that the harvesting config has a non-empty {@code harvestingStart} and {@code
+   * sushiConfig.serviceType}, a {@code sushiConfig.serviceUrl} starting with {@code http(s)://},
+   * and no active {@code harvestingStatus} on an inactive UDP. {@code sushiCredentials.customerId}
+   * must also be non-empty.
    */
   public static Errors validate(final UsageDataProvider udp) {
     final var errors = new Errors();
@@ -50,21 +45,23 @@ public class UsageDataProviderValidator {
         .map(HarvestingConfig::getHarvestingStatus)
         .filter(HarvestingStatus.ACTIVE::equals)
         .isEmpty()) {
-      return errors;
+      return errors; // A configuration with inactive harvesting status won't throw errors.
     }
 
     if (udp.getStatus() == Status.INACTIVE) {
-      addError(errors, HARVESTING_STATUS, "active", MSG_INACTIVE_WITH_ACTIVE_HARVESTING);
+      addError(
+          errors, HARVESTING_STATUS, "active", "must not be active if provider status is inactive");
     }
 
     final var sushiConfig = harvestingConfig.map(HarvestingConfig::getSushiConfig);
+
+    final var harvestingStart = harvestingConfig.map(HarvestingConfig::getHarvestingStart);
+    requirePresent(errors, HARVESTING_START, harvestingStart);
+
+    final var serviceType = sushiConfig.map(SushiConfig::getServiceType);
+    requirePresent(errors, SERVICE_TYPE, serviceType);
+
     final var serviceUrl = sushiConfig.map(SushiConfig::getServiceUrl);
-
-    requirePresent(
-        errors, HARVESTING_START, harvestingConfig.map(HarvestingConfig::getHarvestingStart));
-
-    requirePresent(errors, SERVICE_TYPE, sushiConfig.map(SushiConfig::getServiceType));
-
     requirePresent(errors, SERVICE_URL, serviceUrl);
 
     final var customerId =
@@ -72,8 +69,16 @@ public class UsageDataProviderValidator {
     requirePresent(errors, CUSTOMER_ID, customerId);
 
     serviceUrl
+        .filter(not(String::isEmpty))
         .filter(url -> !SERVICE_URL_PATTERN.matcher(url).find())
-        .ifPresent(url -> addError(errors, SERVICE_URL, url, MSG_INVALID_URL));
+        .ifPresent(
+            url ->
+                addError(
+                    errors,
+                    SERVICE_URL,
+                    url,
+                    "must start with 'http://' or 'https://' followed by a non-whitespace"
+                        + " character"));
 
     return errors;
   }
@@ -81,9 +86,9 @@ public class UsageDataProviderValidator {
   @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "java:S3553"})
   private static void requirePresent(
       final Errors errors, final String field, final Optional<String> maybeValue) {
-    maybeValue
-        .filter(not(String::isEmpty))
-        .ifPresentOrElse(value -> {}, () -> addError(errors, field, null, MSG_REQUIRED));
+    if (maybeValue.filter(not(String::isEmpty)).isEmpty()) {
+      addError(errors, field, "<missing or empty>", "is required if harvesting status is active");
+    }
   }
 
   private static void addError(
