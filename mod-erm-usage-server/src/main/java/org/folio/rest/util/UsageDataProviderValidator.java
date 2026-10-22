@@ -2,19 +2,16 @@ package org.folio.rest.util;
 
 import static java.util.function.Predicate.not;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
-import org.folio.rest.jaxrs.model.Error;
 import org.folio.rest.jaxrs.model.Errors;
 import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.HarvestingConfig.HarvestingStatus;
-import org.folio.rest.jaxrs.model.Parameter;
 import org.folio.rest.jaxrs.model.SushiConfig;
 import org.folio.rest.jaxrs.model.SushiCredentials;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.Status;
-import org.folio.rest.resource.DomainModelConsts;
+import org.folio.rest.tools.utils.ValidationHelper;
 
 @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "java:S3553"})
 public class UsageDataProviderValidator {
@@ -111,11 +108,6 @@ public class UsageDataProviderValidator {
       final Errors errors, final String field, final String value, final String message) {
     errors
         .getErrors()
-        .add(
-            new Error()
-                .withMessage(message)
-                .withCode("-1")
-                .withType(DomainModelConsts.VALIDATION_FIELD_ERROR)
-                .withParameters(List.of(new Parameter().withKey(field).withValue(value))));
+        .addAll(ValidationHelper.createValidationErrorMessage(field, value, message).getErrors());
   }
 }
