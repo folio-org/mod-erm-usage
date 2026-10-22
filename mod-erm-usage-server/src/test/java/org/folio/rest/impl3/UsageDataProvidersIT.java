@@ -3,6 +3,8 @@ package org.folio.rest.impl3;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -16,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.Setup;
@@ -27,6 +30,7 @@ import org.folio.rest.jaxrs.model.SushiConfig;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.jaxrs.model.UsageDataProvider.Status;
+import org.folio.rest.persist.PostgresClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,6 +44,8 @@ class UsageDataProvidersIT {
   private static final String APPLICATION_JSON = "application/json";
   private static final String BASE_URI = "/usage-data-providers";
   private static final String TENANT = TestUtils.getTenant();
+  private static final String CONSTRAINT_VIOLATION =
+      "violates check constraint \"usage_data_providers_harvestingstatus_constraint\"";
   private static UsageDataProvider udProvider;
   private static UsageDataProvider udProvider2;
   private static UsageDataProvider udProviderChanged;
@@ -236,6 +242,24 @@ class UsageDataProvidersIT {
 
     assertThat(getErrorKeys(postEntity(inactiveProvider)))
         .contains("harvestingConfig.harvestingStatus");
+  }
+
+  @Test
+  void checkThatDbConstraintRejectsInactiveProviderWithActiveHarvestingStatus() {
+    UsageDataProvider inactiveProvider =
+        Json.decodeValue(Json.encode(udProvider), UsageDataProvider.class)
+            .withId(UUID.randomUUID().toString())
+            .withStatus(Status.INACTIVE);
+    inactiveProvider.getHarvestingConfig().setHarvestingStatus(HarvestingStatus.ACTIVE);
+
+    // bypass the API validation and save directly to the database
+    var saveFuture =
+        PostgresClient.getInstance(TestUtils.getVertx(), TENANT)
+            .save(TABLE_NAME_UDP, inactiveProvider.getId(), inactiveProvider)
+            .toCompletionStage()
+            .toCompletableFuture();
+
+    assertThatThrownBy(saveFuture::join).hasMessageContaining(CONSTRAINT_VIOLATION);
   }
 
   @Test
