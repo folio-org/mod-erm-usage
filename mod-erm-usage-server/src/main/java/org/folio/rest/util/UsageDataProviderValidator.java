@@ -16,10 +16,6 @@ import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.Status;
 import org.folio.rest.resource.DomainModelConsts;
 
-/**
- * Validates a {@link UsageDataProvider} on write, following the rules of the ui-erm-usage form.
- * Existing records are not checked.
- */
 @SuppressWarnings({"OptionalUsedAsFieldOrParameterType", "java:S3553"})
 public class UsageDataProviderValidator {
 
@@ -29,8 +25,7 @@ public class UsageDataProviderValidator {
   private static final String SERVICE_URL = "harvestingConfig.sushiConfig.serviceUrl";
   private static final String CUSTOMER_ID = "sushiCredentials.customerId";
 
-  private static final Pattern SERVICE_URL_PATTERN =
-      Pattern.compile("^https?://\\S", Pattern.CASE_INSENSITIVE);
+  private static final Pattern SERVICE_URL_PATTERN = Pattern.compile("^https?://\\S");
   private static final Pattern HARVESTING_START_PATTERN = Pattern.compile("\\d{4}-(0[1-9]|1[0-2])");
 
   private UsageDataProviderValidator() {}
@@ -38,9 +33,9 @@ public class UsageDataProviderValidator {
   /**
    * @return The violations of {@code udp}. If harvesting is active, the harvesting config needs a
    *     {@code harvestingStart} in the format {@code yyyy-MM}, a non-empty {@code
-   *     sushiConfig.serviceType} and a {@code sushiConfig.serviceUrl} starting with {@code
-   *     http(s)://}, the provider must not be inactive, and {@code sushiCredentials.customerId}
-   *     must be non-empty.
+   *     sushiConfig.serviceType} and a {@code sushiConfig.serviceUrl} starting with a lowercase
+   *     {@code http(s)://}, the provider must not be inactive, and {@code
+   *     sushiCredentials.customerId} must be non-empty.
    */
   public static Errors validate(final UsageDataProvider udp) {
     final var errors = new Errors();
@@ -94,8 +89,8 @@ public class UsageDataProviderValidator {
                     errors,
                     SERVICE_URL,
                     serviceUrl,
-                    "must start with 'http://' or 'https://' followed by a non-whitespace"
-                        + " character"));
+                    "must start with lowercase 'http://' or 'https://' followed by a"
+                        + " non-whitespace character"));
   }
 
   private static void requireValidHarvestingStart(

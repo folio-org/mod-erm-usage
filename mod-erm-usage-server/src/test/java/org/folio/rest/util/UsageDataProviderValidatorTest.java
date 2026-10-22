@@ -121,7 +121,7 @@ class UsageDataProviderValidatorTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"http://x", "https://x.org/sushi", "https://x y", "HTTPS://x.org"})
+  @ValueSource(strings = {"http://x", "https://x.org/sushi", "https://x y", "https://X.ORG"})
   void validServiceUrlIsAccepted(String serviceUrl) {
     UsageDataProvider udp = createActiveUdp();
     udp.getHarvestingConfig().getSushiConfig().setServiceUrl(serviceUrl);
@@ -129,7 +129,15 @@ class UsageDataProviderValidatorTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"ftp://x.org", "x.org", "https://", "https:// x.org"})
+  @ValueSource(
+      strings = {
+        "ftp://x.org",
+        "x.org",
+        "https://",
+        "https:// x.org",
+        "HTTPS://x.org",
+        "Http://x.org"
+      })
   void invalidServiceUrlIsRejected(String serviceUrl) {
     UsageDataProvider udp = createActiveUdp();
     udp.getHarvestingConfig().getSushiConfig().setServiceUrl(serviceUrl);
