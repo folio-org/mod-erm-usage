@@ -3,6 +3,8 @@ package org.folio.rest.impl3;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -16,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.Setup;
@@ -27,6 +30,7 @@ import org.folio.rest.jaxrs.model.SushiConfig;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
 import org.folio.rest.jaxrs.model.UsageDataProvider.HasFailedReport;
 import org.folio.rest.jaxrs.model.UsageDataProvider.Status;
+import org.folio.rest.persist.PostgresClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -236,8 +240,26 @@ class UsageDataProvidersIT {
             .withHarvestingConfig(
                 new HarvestingConfig().withHarvestingStatus(HarvestingStatus.ACTIVE));
 
-    String body = postEntity(inactiveProvider).then().statusCode(500).extract().asString();
-    assertThat(body).contains(CONSTRAINT_VIOLATION);
+    assertThat(getErrorKeys(postEntity(inactiveProvider)))
+        .contains("harvestingConfig.harvestingStatus");
+  }
+
+  @Test
+  void checkThatDbConstraintRejectsInactiveProviderWithActiveHarvestingStatus() {
+    UsageDataProvider inactiveProvider =
+        Json.decodeValue(Json.encode(udProvider), UsageDataProvider.class)
+            .withId(UUID.randomUUID().toString())
+            .withStatus(Status.INACTIVE);
+    inactiveProvider.getHarvestingConfig().setHarvestingStatus(HarvestingStatus.ACTIVE);
+
+    // bypass the API validation and save directly to the database
+    var saveFuture =
+        PostgresClient.getInstance(TestUtils.getVertx(), TENANT)
+            .save(TABLE_NAME_UDP, inactiveProvider.getId(), inactiveProvider)
+            .toCompletionStage()
+            .toCompletableFuture();
+
+    assertThatThrownBy(saveFuture::join).hasMessageContaining(CONSTRAINT_VIOLATION);
   }
 
   @Test
@@ -245,9 +267,38 @@ class UsageDataProvidersIT {
     UsageDataProvider provider =
         postEntity(udProvider).then().statusCode(201).extract().as(UsageDataProvider.class);
 
-    String body =
-        putEntity(provider.withStatus(Status.INACTIVE)).then().statusCode(500).extract().asString();
-    assertThat(body).contains(CONSTRAINT_VIOLATION);
+    assertThat(getErrorKeys(putEntity(provider.withStatus(Status.INACTIVE))))
+        .containsExactly("harvestingConfig.harvestingStatus");
+
+    deleteEntity(provider).then().statusCode(204);
+  }
+
+  @Test
+  void checkThatWeCantPostOrPutActiveHarvestingWithoutCustomerId() {
+    UsageDataProvider provider = Json.decodeValue(Json.encode(udProvider), UsageDataProvider.class);
+    provider.getSushiCredentials().setCustomerId(null);
+
+    assertThat(getErrorKeys(postEntity(provider))).containsExactly("sushiCredentials.customerId");
+
+    UsageDataProvider savedProvider =
+        postEntity(udProvider).then().statusCode(201).extract().as(UsageDataProvider.class);
+    savedProvider.getSushiCredentials().setCustomerId(null);
+    assertThat(getErrorKeys(putEntity(savedProvider)))
+        .containsExactly("sushiCredentials.customerId");
+
+    deleteEntity(savedProvider).then().statusCode(204);
+  }
+
+  @Test
+  void checkThatWeCanPutInactiveHarvestingWithIncompleteSushiConfig() {
+    UsageDataProvider provider =
+        postEntity(udProvider).then().statusCode(201).extract().as(UsageDataProvider.class);
+    provider.getHarvestingConfig().setHarvestingStatus(HarvestingStatus.INACTIVE);
+    provider
+        .getHarvestingConfig()
+        .setSushiConfig(new SushiConfig().withServiceType("unsupported").withServiceUrl("x.org"));
+
+    putEntity(provider).then().statusCode(204);
 
     deleteEntity(provider).then().statusCode(204);
   }
@@ -256,10 +307,10 @@ class UsageDataProvidersIT {
   @Test
   void checkThatWeCanHandleProviderWithoutStatus() {
     UsageDataProvider providerWithoutStatus =
-        new UsageDataProvider()
+        Json.decodeValue(Json.encode(udProvider), UsageDataProvider.class)
+            .withId(null)
             .withLabel("Provider without status")
-            .withHarvestingConfig(
-                new HarvestingConfig().withHarvestingStatus(HarvestingStatus.ACTIVE));
+            .withStatus(null);
 
     // POST without status
     UsageDataProvider savedProvider =
@@ -407,6 +458,16 @@ class UsageDataProvidersIT {
         .header(XOkapiHeaders.TENANT, TENANT)
         .header(CONTENT_TYPE, APPLICATION_JSON)
         .put(BASE_URI + "/{id}", id);
+  }
+
+  private List<String> getErrorKeys(Response response) {
+    return response
+        .then()
+        .statusCode(422)
+        .contentType(ContentType.JSON)
+        .extract()
+        .jsonPath()
+        .getList("errors.parameters.flatten().key", String.class);
   }
 
   private Response getEntityById(String id) {
