@@ -3,6 +3,10 @@
   "downloadTime" : 1738677797218,
   "failedAttempts" : 5,
   "failedReason" : "{\"Code\":3030,\"Severity\":\"Error\",\"Message\":\"No Usage Available for Requested Dates\"}",
+  "apiExceptions" : [ {
+    "code" : 3030,
+    "message" : "No Usage Available for Requested Dates"
+  } ],
   "release" : "5",
   "reportName" : "IR",
   "yearMonth" : "2022-04",

@@ -3,6 +3,12 @@
   "downloadTime" : "2025-02-04T14:03:25.448+00:00",
   "failedAttempts" : 5,
   "failedReason" : "{\"Code\":3032,\"Message\":\"Usage no longer available for requested dates\",\"Help_URL\":\"http://example.com\",\"Data\":\"No usage data prior to Jan 2022 is available\"}",
+  "apiExceptions" : [ {
+    "code" : 3032,
+    "message" : "Usage no longer available for requested dates",
+    "helpUrl" : "http://example.com",
+    "data" : "No usage data prior to Jan 2022 is available"
+  } ],
   "release" : "5.1",
   "reportName" : "DR",
   "yearMonth" : "2021-12",

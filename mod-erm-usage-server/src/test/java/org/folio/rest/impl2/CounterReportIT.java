@@ -37,6 +37,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
+import org.folio.rest.jaxrs.model.ApiException;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.ErrorCodes;
@@ -329,6 +330,43 @@ public class CounterReportIT {
   }
 
   @Test
+  public void checkThatEmptyApiExceptionsAreRejected() {
+    CounterReport failedReport =
+        createSampleReportsWithFailedReasonForProviderId(UUID.randomUUID().toString()).getFirst();
+    String withEmptyApiExceptions =
+        new JsonObject(Json.encode(failedReport)).put("apiExceptions", new JsonArray()).encode();
+
+    // POST
+    given(counterReportsReqSpec).body(withEmptyApiExceptions).post().then().statusCode(422);
+    given(counterReportsReqSpec)
+        .body(Json.encode(failedReport.withApiExceptions(null)))
+        .post()
+        .then()
+        .statusCode(201);
+
+    // GET
+    JsonObject storedReport =
+        new JsonObject(
+            given(counterReportsReqSpec)
+                .get("/" + failedReport.getId())
+                .then()
+                .statusCode(200)
+                .extract()
+                .asString());
+    assertThat(storedReport.containsKey("apiExceptions")).isFalse();
+
+    // PUT
+    given(counterReportsReqSpec)
+        .body(withEmptyApiExceptions)
+        .put("/" + failedReport.getId())
+        .then()
+        .statusCode(422);
+
+    // DELETE
+    given(counterReportsReqSpec).delete("/" + failedReport.getId()).then().statusCode(204);
+  }
+
+  @Test
   public void checkThatCounterReportFailedReasonTriggerIsExecuted(TestContext context) {
     UsageDataProvider udprovider = null;
     try {
@@ -366,7 +404,8 @@ public class CounterReportIT {
         .isEqualTo(UsageDataProvider.HasFailedReport.YES.value());
 
     List<String> udpErrorCodes = udp.getReportErrorCodes();
-    assertThat(udpErrorCodes).containsExactlyInAnyOrder("3000", "3031", "3060", "3070", "other");
+    assertThat(udpErrorCodes)
+        .containsExactlyInAnyOrder("3000", "3031", "3060", "3070", "3071", "other");
 
     // DELETE reports
     sampleReports.forEach(
@@ -393,7 +432,7 @@ public class CounterReportIT {
         given(counterReportsReqSpec).get(PATH_ERROR_CODES).thenReturn().as(ErrorCodes.class);
 
     assertThat(errorCodes.getErrorCodes())
-        .containsExactlyInAnyOrder("3000", "3031", "3060", "3070", "other");
+        .containsExactlyInAnyOrder("3000", "3031", "3060", "3070", "3071", "other");
 
     // DELETE reports
     sampleReports.forEach(
@@ -486,23 +525,34 @@ public class CounterReportIT {
     YearMonth startMonth = YearMonth.of(2019, 1);
     AtomicLong counter = new AtomicLong(0);
     return Stream.of(
-            "Report not valid: Exception{Number=3000, Severity=ERROR, Message=Report Not"
-                + " Supported}",
-            "Number=3031",
-            "Some other error message 4040",
-            "\"Code\": 3060",
-            "\"Code\": 3060",
-            "\"Code\":3070")
+            createFailedReport(
+                "Report not valid: Exception{Number=3000, Severity=ERROR, Message=Report Not"
+                    + " Supported}",
+                3000),
+            createFailedReport("Number=3031", 3031),
+            createFailedReport("Some other error message 4040"),
+            // codes are taken from apiExceptions only, so this one counts as "other"
+            createFailedReport("\"Code\": 3099"),
+            createFailedReport("\"Code\": 3060", 3060),
+            createFailedReport("\"Code\": 3060", 3060),
+            createFailedReport("[{\"Code\":3070},{\"Code\":3071}]", 3070, 3071))
         .map(
-            msg ->
-                new CounterReport()
-                    .withId(UUID.randomUUID().toString())
+            cr ->
+                cr.withId(UUID.randomUUID().toString())
                     .withProviderId(providerId)
-                    .withDownloadTime(Date.from(Instant.now()))
-                    .withReportName("JR1")
-                    .withRelease("4")
-                    .withFailedReason(msg)
                     .withYearMonth(startMonth.plusMonths(counter.getAndIncrement()).toString()))
         .collect(Collectors.toList());
+  }
+
+  private CounterReport createFailedReport(String failedReason, Integer... codes) {
+    return new CounterReport()
+        .withDownloadTime(Date.from(Instant.now()))
+        .withReportName("JR1")
+        .withRelease("4")
+        .withFailedReason(failedReason)
+        .withApiExceptions(
+            codes.length == 0
+                ? null
+                : Stream.of(codes).map(code -> new ApiException().withCode(code)).toList());
   }
 }

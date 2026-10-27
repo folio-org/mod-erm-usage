@@ -34,6 +34,7 @@ import java.util.stream.IntStream;
 import javax.ws.rs.core.MediaType;
 import org.apache.commons.lang3.StringUtils;
 import org.folio.rest.RestVerticle;
+import org.folio.rest.jaxrs.model.ApiException;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.Report;
 import org.folio.rest.persist.PostgresClient;
@@ -131,6 +132,8 @@ public class CounterReportAPIPerformanceIT {
     if (report == null) {
       cr.setFailedReason(
           "Report not valid: Exception{Number=3000, Severity=ERROR, Message=Report Not Supported}");
+      cr.setApiExceptions(
+          List.of(new ApiException().withCode(3000).withMessage("Report Not Supported")));
       cr.setFailedAttempts(1);
     }
     return cr;

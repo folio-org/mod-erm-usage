@@ -24,6 +24,7 @@
       "description": "One or multiple exceptions related to the failed download attempt",
       "type": "array",
       "default": null,
+      "minItems": 1,
       "items": {
         "type": "object",
         "$ref": "exception.json"

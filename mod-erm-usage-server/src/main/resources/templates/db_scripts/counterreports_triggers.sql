@@ -8,15 +8,17 @@ CREATE OR REPLACE FUNCTION earliest_year_month(providerId TEXT) RETURNS TEXT AS 
 	SELECT MIN(jsonb->>'yearMonth') FROM counter_reports WHERE jsonb->>'providerId'=$1 AND jsonb->'failedAttempts' IS NULL;
 $$ LANGUAGE sql;
 
--- returns the counter/sushi error codes of the usage data provider's counter reports
+-- returns the counter/sushi error codes of the usage data provider's failed counter reports, taken from their
+-- apiExceptions; a failed report without apiExceptions counts as 'other'
+-- index: counter_reports_custom_failed_idx
 CREATE OR REPLACE FUNCTION udp_report_errors(providerId TEXT) RETURNS jsonb AS $$
   SELECT json_agg(errors)::jsonb
   FROM (
-    SELECT
-      DISTINCT(
-        COALESCE(SUBSTRING(jsonb->>'failedReason','(?:Number=|"Code": ?)([0-9]{1,4})'), 'other')
-      ) AS errors
+    SELECT DISTINCT COALESCE(e->>'code', 'other') AS errors
     FROM counter_reports
+    LEFT JOIN LATERAL jsonb_array_elements(
+      CASE WHEN jsonb_typeof(jsonb->'apiExceptions') = 'array' THEN jsonb->'apiExceptions' END
+    ) AS e ON true
     WHERE jsonb->>'providerId'=$1 AND jsonb->>'failedReason' IS NOT NULL
     ORDER BY 1
   )

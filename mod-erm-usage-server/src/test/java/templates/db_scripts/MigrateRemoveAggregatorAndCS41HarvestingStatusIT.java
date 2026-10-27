@@ -7,6 +7,7 @@ import io.vertx.sqlclient.Tuple;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.folio.rest.PostgresExtension;
@@ -59,6 +60,15 @@ class MigrateRemoveAggregatorAndCS41HarvestingStatusIT {
   private static final String INACTIVE_VENDOR_CODE_ID = "0d6f8a5c-2b7e-4d9f-9a1c-5e6f7a8b9c0d";
   private static final String CS41_ACTIVE_ID = "1e7a9b6d-3c8f-4e0a-8b2d-6f7a8b9c0d1e";
   private static final String CS41_INACTIVE_ID = "2f8b0c7e-4d9a-4f1b-9c3e-7a8b9c0d1e2f";
+
+  private static final List<String> STATISTICS =
+      List.of(
+          "latestReport",
+          "earliestReport",
+          "reportErrorCodes",
+          "hasFailedReport",
+          "reportTypes",
+          "reportReleases");
 
   private static PostgresClient pgClient;
   private static JsonObject sushiUdp;
@@ -228,6 +238,14 @@ class MigrateRemoveAggregatorAndCS41HarvestingStatusIT {
 
   @Test
   void testInactiveCs41UdpIsUnchanged() {
-    assertThat(getUdp(CS41_INACTIVE_ID)).isEqualTo(cs41InactiveUdp);
+    assertThat(withoutStatistics(getUdp(CS41_INACTIVE_ID)))
+        .isEqualTo(withoutStatistics(cs41InactiveUdp));
+  }
+
+  /** Removes the statistics, which migrate_api_exceptions.sql recomputes for every UDP. */
+  private static JsonObject withoutStatistics(JsonObject udp) {
+    JsonObject copy = udp.copy();
+    STATISTICS.forEach(copy::remove);
+    return copy;
   }
 }
