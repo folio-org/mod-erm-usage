@@ -343,13 +343,14 @@ class MigrateApiExceptionsIT {
 
   @Test
   void testTriggerIsEnabledAgain() {
-    String tgenabled =
+    String triggerEnabled =
         """
         SELECT t.tgenabled::text FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid
           JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE n.nspname = '%s' AND t.tgname = '%s'
         """;
-    assertThat(pgClient.selectSingle(tgenabled.formatted(SCHEMA, TRIGGER)).await().getString(0))
+    assertThat(
+            pgClient.selectSingle(triggerEnabled.formatted(SCHEMA, TRIGGER)).await().getString(0))
         .isEqualTo("O");
   }
 
