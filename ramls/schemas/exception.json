@@ -10,13 +10,11 @@
     },
     "message": {
       "type": "string",
-      "minlength": 2,
       "description": "Exception Message."
     },
     "helpUrl": {
       "type": "string",
-      "description": "URL to a help page that explains the Exception in more detail.",
-      "format": "uri"
+      "description": "URL to a help page that explains the Exception in more detail."
     },
     "data": {
       "type": "string",
