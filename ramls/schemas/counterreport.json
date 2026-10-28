@@ -22,7 +22,7 @@
     },
     "apiExceptions": {
       "description": "One or multiple exceptions related to the failed download attempt",
-      "type": "array",
+      "type": ["array", "null"],
       "default": null,
       "items": {
         "type": "object",
