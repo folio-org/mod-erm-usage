@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "title": "Exception",
+  "title": "ApiException",
   "description": "Structured Error Description",
   "type": "object",
   "properties": {
