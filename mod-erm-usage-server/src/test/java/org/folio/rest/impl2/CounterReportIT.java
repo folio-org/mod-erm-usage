@@ -21,12 +21,14 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Date;
 import java.time.Instant;
 import java.time.YearMonth;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,6 +39,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
+import org.folio.rest.jaxrs.model.ApiException;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.ErrorCodes;
@@ -66,6 +69,7 @@ public class CounterReportIT {
   private static final String PATH_REPORT_RELEASES = "/reports/releases";
   private static final String PATH_REPORT_TYPES = "/reports/types";
   private static final String PATH_ERROR_CODES = "/errors/codes";
+  private static final String PATH_UDPS = "/usage-data-providers";
   private static final String TENANT = "diku";
   private static final Vertx vertx = Vertx.vertx();
   private static final Map<String, String> defaultHeaders =
@@ -329,27 +333,15 @@ public class CounterReportIT {
   }
 
   @Test
-  public void checkThatCounterReportFailedReasonTriggerIsExecuted(TestContext context) {
-    UsageDataProvider udprovider = null;
-    try {
-      String udproviderStr =
-          new String(Files.readAllBytes(Paths.get("../ramls/examples/udproviders.sample")));
-      udprovider = Json.decodeValue(udproviderStr, UsageDataProvider.class);
-
-    } catch (IOException e) {
-      context.fail();
-    }
+  public void checkThatCounterReportFailedReasonTriggerIsExecuted() throws IOException {
+    var udProvider = getUsageDataProviderFromExamples("udproviders.sample");
 
     // POST usage data provider
-    given(defaultHeaderSpec)
-        .body(Json.encode(udprovider))
-        .post("/usage-data-providers")
-        .then()
-        .statusCode(201);
+    given(defaultHeaderSpec).body(Json.encode(udProvider)).post(PATH_UDPS).then().statusCode(201);
 
     // POST reports
     List<CounterReport> sampleReports =
-        createSampleReportsWithFailedReasonForProviderId(udprovider.getId());
+        createSampleReportsWithFailedReasonForProviderId(udProvider.getId());
     sampleReports.forEach(
         report ->
             given(counterReportsReqSpec).body(Json.encode(report)).post().then().statusCode(201));
@@ -357,10 +349,10 @@ public class CounterReportIT {
     // Check if hasFailedReport and errorCode of UDP is set
     UsageDataProvider udp =
         given(defaultHeaderSpec)
-            .body(Json.encode(udprovider))
-            .get("/usage-data-providers/" + udprovider.getId())
+            .body(Json.encode(udProvider))
+            .get(PATH_UDPS + "/" + udProvider.getId())
             .as(UsageDataProvider.class);
-    assertThat(udp.getLabel()).isEqualTo(udprovider.getLabel());
+    assertThat(udp.getLabel()).isEqualTo(udProvider.getLabel());
     assertThat(udp.getId()).isNotEmpty();
     assertThat(udp.getHasFailedReport().value())
         .isEqualTo(UsageDataProvider.HasFailedReport.YES.value());
@@ -373,10 +365,7 @@ public class CounterReportIT {
         report -> given(counterReportsReqSpec).delete("/" + report.getId()).then().statusCode(204));
 
     // DELETE udp
-    given(defaultHeaderSpec)
-        .delete("/usage-data-providers/" + udprovider.getId())
-        .then()
-        .statusCode(204);
+    given(defaultHeaderSpec).delete(PATH_UDPS + "/" + udProvider.getId()).then().statusCode(204);
   }
 
   @Test
@@ -482,6 +471,30 @@ public class CounterReportIT {
     assertThat(reportTypes.getReportTypes()).isEmpty();
   }
 
+  /**
+   * TODO: Make it work
+   */
+  @Test
+  public void testGetReportsYieldsSameReportsAfterPostReportsWithApiExceptions() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST reports
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var report =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_complete.json", "api_exception_bare.json");
+    given(counterReportsReqSpec).body(Json.encode(report)).post().then().statusCode(201);
+
+    // GET report
+    given(counterReportsReqSpec)
+        .pathParam("id", reportId)
+        .get(PATH_DOWNLOAD)
+        .then()
+        .statusCode(200) // TODO: We don't find the report
+        .contentType(ContentType.JSON)
+        .body(equalTo(Counter4Utils.toXML(Json.encode(report.getReport())))); // TODO: Compare correctly
+  }
+
   private List<CounterReport> createSampleReportsWithFailedReasonForProviderId(String providerId) {
     YearMonth startMonth = YearMonth.of(2019, 1);
     AtomicLong counter = new AtomicLong(0);
@@ -503,6 +516,39 @@ public class CounterReportIT {
                     .withRelease("4")
                     .withFailedReason(msg)
                     .withYearMonth(startMonth.plusMonths(counter.getAndIncrement()).toString()))
-        .collect(Collectors.toList());
+        .toList();
+  }
+
+  private static UsageDataProvider getUsageDataProviderFromExamples(final String udProviderPath) {
+    var udProviderString =
+        readFromFileWithUncheckedException("../ramls/examples/" + udProviderPath);
+    return Json.decodeValue(udProviderString, UsageDataProvider.class);
+  }
+
+  private static String readFromFileWithUncheckedException(String path) {
+    try {
+      return Files.readString(Paths.get(path));
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private CounterReport createSampleReportWithApiExceptionForProviderId(
+      String providerId, String reportId, String... apiExceptionPaths) {
+    var yearMonth = YearMonth.of(2026, 1);
+    var apiExceptions =
+        Arrays.stream(apiExceptionPaths)
+            .map(path -> "../ramls/examples/" + path)
+            .map(CounterReportIT::readFromFileWithUncheckedException)
+            .map(exception -> Json.decodeValue(exception, ApiException.class))
+            .toList();
+    return new CounterReport()
+        .withId(reportId)
+        .withProviderId(providerId)
+        .withDownloadTime(Date.from(Instant.now()))
+        .withReportName("TR")
+        .withRelease("5.1")
+        .withApiExceptions(apiExceptions)
+        .withYearMonth(yearMonth.toString());
   }
 }

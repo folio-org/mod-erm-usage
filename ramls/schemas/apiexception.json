@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ApiException",
+  "description": "Structured Error Description",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "integer",
+      "description": "Exception Code."
+    },
+    "message": {
+      "type": "string",
+      "description": "Exception Message."
+    },
+    "helpUrl": {
+      "type": "string",
+      "description": "URL to a help page that explains the Exception in more detail."
+    },
+    "data": {
+      "type": "string",
+      "description": "Additional data provided by the server to clarify the Exception."
+    }
+  },
+  "required": [
+    "code"
+  ]
+}

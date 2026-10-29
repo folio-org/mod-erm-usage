@@ -20,6 +20,15 @@
       "description": "Error message from failed download attempt",
       "type": "string"
     },
+    "apiExceptions": {
+      "description": "One or multiple exceptions related to the failed download attempt",
+      "type": ["array", "null"],
+      "default": null,
+      "items": {
+        "type": "object",
+        "$ref": "apiexception.json"
+      }
+    },
     "release": {
       "description": "Counter Report version",
       "type": "string"
