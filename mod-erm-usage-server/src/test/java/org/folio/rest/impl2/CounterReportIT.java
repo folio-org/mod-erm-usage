@@ -2,7 +2,9 @@ package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
 
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
@@ -21,12 +23,14 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Date;
 import java.time.Instant;
 import java.time.YearMonth;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,6 +41,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
+import org.folio.rest.jaxrs.model.ApiException;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.ErrorCodes;
@@ -480,6 +485,96 @@ public class CounterReportIT {
     reportTypes =
         given(counterReportsReqSpec).get(PATH_REPORT_TYPES).thenReturn().as(ReportTypes.class);
     assertThat(reportTypes.getReportTypes()).isEmpty();
+  }
+
+  @Test
+  public void testGetReportsYieldsSameReportsAfterPostReportsWithApiExceptions() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST reports
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var reportToSend =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_complete.json", "api_exception_bare.json");
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(201);
+
+    // GET report
+    var apiExceptionsReceived =
+        given(counterReportsReqSpec)
+            .pathParam("id", reportId)
+            .get("/{id}")
+            .then()
+            .statusCode(200)
+            .extract()
+            .as(CounterReport.class)
+            .getApiExceptions();
+
+    assertThat(apiExceptionsReceived.size()).isEqualTo(2);
+    assertThat(apiExceptionsReceived.stream().map(ApiException::getCode).toList())
+        .containsAll(List.of(1030, 3031));
+  }
+
+  @Test
+  public void testGetReportsYieldsSameReportsAfterPostReportsWithoutApiExceptions() {
+    var reportId = "7c0faed5-3ab6-4657-8179-fee651d6a569";
+
+    // POST reports
+    given(counterReportsReqSpec) //
+        .body(Json.encode(reportChanged)) //
+        .post() //
+        .then() //
+        .statusCode(201);
+
+    // GET report
+    given(counterReportsReqSpec) //
+        .pathParam("id", reportId) //
+        .get("/{id}") //
+        .then() //
+        .statusCode(200) //
+        .body("$", not(hasKey("apiExceptions")));
+  }
+
+  @Test
+  public void testPostReportWithApiExceptionsWithoutErrorCodeFails() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST reports
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var reportToSend =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_no_code.json");
+    given(counterReportsReqSpec) //
+        .body(Json.encode(reportToSend)) //
+        .post() //
+        .then() //
+        .statusCode(422);
+  }
+
+  private CounterReport createSampleReportWithApiExceptionForProviderId(
+      String providerId, String reportId, String... apiExceptionPaths) {
+    var yearMonth = YearMonth.of(2026, 1);
+    var apiExceptions =
+        Arrays.stream(apiExceptionPaths)
+            .map(path -> "../ramls/examples/" + path)
+            .map(CounterReportIT::readFromFileWithUncheckedException)
+            .map(exception -> Json.decodeValue(exception, ApiException.class))
+            .toList();
+    return new CounterReport()
+        .withId(reportId)
+        .withProviderId(providerId)
+        .withDownloadTime(Date.from(Instant.now()))
+        .withReportName("TR")
+        .withRelease("5.1")
+        .withApiExceptions(apiExceptions)
+        .withYearMonth(yearMonth.toString());
+  }
+
+  private static String readFromFileWithUncheckedException(String path) {
+    try {
+      return Files.readString(Paths.get(path));
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private List<CounterReport> createSampleReportsWithFailedReasonForProviderId(String providerId) {
