@@ -2,9 +2,7 @@ package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasKey;
 
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
@@ -491,12 +489,16 @@ public class CounterReportIT {
   public void testGetReportsYieldsSameReportsAfterPostReportsWithApiExceptions() {
     var reportId = UUID.randomUUID().toString();
 
-    // POST reports
+    // POST report
     var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
     var reportToSend =
         createSampleReportWithApiExceptionForProviderId(
             providerId, reportId, "api_exception_complete.json", "api_exception_bare.json");
-    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(201);
+    given(counterReportsReqSpec) //
+        .body(Json.encode(reportToSend)) //
+        .post() //
+        .then() //
+        .statusCode(201);
 
     // GET report
     var apiExceptionsReceived =
@@ -518,7 +520,7 @@ public class CounterReportIT {
   public void testGetReportsYieldsSameReportsAfterPostReportsWithoutApiExceptions() {
     var reportId = "7c0faed5-3ab6-4657-8179-fee651d6a569";
 
-    // POST reports
+    // POST report
     given(counterReportsReqSpec) //
         .body(Json.encode(reportChanged)) //
         .post() //
@@ -526,19 +528,24 @@ public class CounterReportIT {
         .statusCode(201);
 
     // GET report
-    given(counterReportsReqSpec) //
-        .pathParam("id", reportId) //
-        .get("/{id}") //
-        .then() //
-        .statusCode(200) //
-        .body("$", not(hasKey("apiExceptions")));
+    var apiExceptionsReceived =
+        given(counterReportsReqSpec) //
+            .pathParam("id", reportId) //
+            .get("/{id}") //
+            .then() //
+            .statusCode(200) //
+            .extract() //
+            .as(CounterReport.class) //
+            .getApiExceptions();
+
+    assertThat(apiExceptionsReceived).isEmpty();
   }
 
   @Test
   public void testPostReportWithApiExceptionsWithoutErrorCodeFails() {
     var reportId = UUID.randomUUID().toString();
 
-    // POST reports
+    // POST report
     var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
     var reportToSend =
         createSampleReportWithApiExceptionForProviderId(
@@ -548,6 +555,89 @@ public class CounterReportIT {
         .post() //
         .then() //
         .statusCode(422);
+  }
+
+  @Test
+  public void testPutReportWithApiExceptionsWithoutErrorCodeFails() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST report
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var reportToSend =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_complete.json");
+    given(counterReportsReqSpec) //
+        .body(Json.encode(reportToSend)) //
+        .post() //
+        .then() //
+        .statusCode(201);
+
+    // PUT report
+    var updatedReport =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_no_code.json");
+    given(counterReportsReqSpec) //
+        .body(Json.encode(updatedReport)) //
+        .pathParam("id", reportId)
+        .put("/{id}")
+        .then() //
+        .statusCode(422);
+  }
+
+  @Test
+  public void testPutReportWithApiExceptionsWithErrorCodesSucceeds() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST report
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var reportToSend =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_bare.json");
+    given(counterReportsReqSpec) //
+        .body(Json.encode(reportToSend)) //
+        .post() //
+        .then() //
+        .statusCode(201);
+
+    // GET report
+    var apiExceptionsReceived =
+        given(counterReportsReqSpec) //
+            .pathParam("id", reportId) //
+            .get("/{id}") //
+            .then() //
+            .statusCode(200) //
+            .extract() //
+            .as(CounterReport.class) //
+            .getApiExceptions();
+
+    assertThat(apiExceptionsReceived).hasSize(1);
+    assertThat(apiExceptionsReceived.stream().map(ApiException::getCode).toList()).contains(1030);
+
+    // PUT report
+    var updatedReport =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_complete.json");
+    given(counterReportsReqSpec) //
+        .body(Json.encode(updatedReport)) //
+        .pathParam("id", reportId)
+        .put("/{id}")
+        .then() //
+        .statusCode(204);
+
+    // GET report
+    var updatedApiExceptionsReceived =
+        given(counterReportsReqSpec) //
+            .pathParam("id", reportId) //
+            .get("/{id}") //
+            .then() //
+            .statusCode(200) //
+            .extract() //
+            .as(CounterReport.class) //
+            .getApiExceptions();
+
+    assertThat(updatedApiExceptionsReceived).hasSize(1);
+    assertThat(updatedApiExceptionsReceived.stream().map(ApiException::getCode).toList())
+        .contains(3031);
   }
 
   private CounterReport createSampleReportWithApiExceptionForProviderId(

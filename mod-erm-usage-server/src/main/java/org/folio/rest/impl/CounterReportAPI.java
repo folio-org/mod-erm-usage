@@ -53,7 +53,6 @@ import org.folio.rest.persist.Criteria.Criterion;
 import org.folio.rest.persist.PgUtil;
 import org.folio.rest.persist.cql.CQLWrapper;
 import org.folio.rest.tools.utils.ValidationHelper;
-import org.folio.rest.util.CounterReportValidator;
 import org.folio.rest.util.PgHelper;
 import org.folio.rest.util.ReportFileFormat;
 import org.folio.rest.util.ReportUploadErrorCode;
@@ -137,15 +136,6 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
       Map<String, String> okapiHeaders,
       Handler<AsyncResult<Response>> asyncResultHandler,
       Context vertxContext) {
-
-    // Since nested types such as the list of "ApiExceptions" are not affected by the "@Validate"
-    // annotation, we need an extra validation step here
-    var errors = CounterReportValidator.validate(entity);
-    if (!errors.getErrors().isEmpty()) {
-      asyncResultHandler.handle(
-          succeededFuture(PostCounterReportsResponse.respond422WithApplicationJson(errors)));
-      return;
-    }
 
     PgUtil.post(
         TABLE_NAME_COUNTER_REPORTS,
