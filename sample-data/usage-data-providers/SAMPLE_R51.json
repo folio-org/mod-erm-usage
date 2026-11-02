@@ -20,6 +20,5 @@
   },
   "sushiCredentials": {
     "customerId": "abc123"
-  },
-  "notes": "Provider with sample data for COUNTER 5 and COUNTER 5.1 reports."
+  }
 }

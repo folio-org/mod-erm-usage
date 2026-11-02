@@ -18,12 +18,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-/**
- * Tests {@code migration/6.0.0/migrate_remove_aggregator.sql} and {@code
- * migration/6.0.0/migrate_cs41_harvesting_status.sql} on an upgrade from 5.2.0.
- */
+/** Tests the {@code migration/6.0.0} scripts on an upgrade from 5.2.0. */
 @ExtendWith(PostgresExtension.class)
-class MigrateRemoveAggregatorAndCS41HarvestingStatusIT {
+class MigrateTo6_0_0IT {
 
   private static final String TENANT = "migration";
   private static final String SCHEMA = PostgresClient.convertToPsqlStandard(TENANT);
@@ -108,7 +105,8 @@ class MigrateRemoveAggregatorAndCS41HarvestingStatusIT {
             legacyInactiveVendorCodeUdp,
             cs41ActiveUdp,
             cs41InactiveUdp)
-        .forEach(MigrateRemoveAggregatorAndCS41HarvestingStatusIT::insertUdp);
+        .map(udp -> udp.copy().put("notes", "This is a note!"))
+        .forEach(MigrateTo6_0_0IT::insertUdp);
 
     TenantAttributes upgrade =
         new TenantAttributes()
@@ -211,6 +209,18 @@ class MigrateRemoveAggregatorAndCS41HarvestingStatusIT {
   @Test
   void testAggregatorObjectsAreDropped() {
     assertThat(pgClient.selectSingle(COUNT_AGGREGATOR_OBJECTS.formatted(SCHEMA)).await().getLong(0))
+        .isZero();
+  }
+
+  @Test
+  void testNotesAreRemoved() {
+    assertThat(
+            pgClient
+                .selectSingle(
+                    "SELECT count(*) FROM %s.usage_data_providers WHERE jsonb ? 'notes'"
+                        .formatted(SCHEMA))
+                .await()
+                .getLong(0))
         .isZero();
   }
 
