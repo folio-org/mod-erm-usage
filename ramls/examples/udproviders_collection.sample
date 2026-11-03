@@ -24,8 +24,7 @@
         "apiKey": "678iuoi",
         "requestorName": "Karla Kolumna",
         "requestorMail": "kolumna@ub.uni-leipzig.de"
-      },
-      "notes": "This is a note!"
+      }
     },
     {
       "id": "bf6c9ddc-ff82-40c4-be64-dd2414bdcd72",
@@ -50,8 +49,7 @@
         "apiKey": "678iuoi",
         "requestorName": "Karla Kolumna",
         "requestorMail": "kolumna@ub.uni-leipzig.de"
-      },
-      "notes": "This is a note!"
+      }
     }
   ],
   "totalRecords": 2

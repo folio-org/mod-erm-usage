@@ -8,6 +8,7 @@
 * [MODEUS-243](https://folio-org.atlassian.net/browse/MODEUS-243) *BREAKING* Remove aggregator settings and aggregator UDP fields
 * [MODEUS-244](https://folio-org.atlassian.net/browse/MODEUS-244) Set harvesting status to `inactive` for UDPs with service type `cs41`
 * [MODEUS-241](https://folio-org.atlassian.net/browse/MODEUS-241) Validate status and harvesting fields of UDPs on POST and PUT, returning 422 instead of 500; `serviceUrl` must start with lowercase `http://` or `https://`; existing UDPs with active harvesting must satisfy the new rules before they can be updated
+* [MODEUS-246](https://folio-org.atlassian.net/browse/MODEUS-246) *BREAKING* Remove the unused UDP `notes` field; existing values are deleted on upgrade
 * [MODEUS-235](https://folio-org.atlassian.net/browse/MODEUS-235) Add `DeployConfig.json` (ADR-0013 Configuration Management)
 
 # 5.2.0
