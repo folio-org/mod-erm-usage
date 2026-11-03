@@ -18,6 +18,5 @@
   "sushiCredentials": {
     "customerId": "123-45-678",
     "requestorId": "456789"
-  },
-  "notes": "Provider with sample data for COUNTER 4 reports."
+  }
 }
