@@ -2,8 +2,11 @@ package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Resources;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -28,7 +31,7 @@ import java.nio.file.Paths;
 import java.sql.Date;
 import java.time.Instant;
 import java.time.YearMonth;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -494,11 +497,7 @@ public class CounterReportIT {
     var reportToSend =
         createSampleReportWithApiExceptionForProviderId(
             providerId, reportId, "api_exception_complete.json", "api_exception_bare.json");
-    given(counterReportsReqSpec) //
-        .body(Json.encode(reportToSend)) //
-        .post() //
-        .then() //
-        .statusCode(201);
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(201);
 
     // GET report
     var apiExceptionsReceived =
@@ -512,33 +511,31 @@ public class CounterReportIT {
             .getApiExceptions();
 
     assertThat(apiExceptionsReceived.size()).isEqualTo(2);
-    assertThat(apiExceptionsReceived.stream().map(ApiException::getCode).toList())
-        .containsAll(List.of(1030, 3031));
+    assertThat(apiExceptionsReceived)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(reportToSend.getApiExceptions());
   }
 
   @Test
-  public void testGetReportsYieldsSameReportsAfterPostReportsWithoutApiExceptions() {
-    var reportId = "7c0faed5-3ab6-4657-8179-fee651d6a569";
+  public void testGetReportsYieldsSameReportsAfterPostReportsWithoutApiExceptions()
+      throws IOException {
+    var mapper = new ObjectMapper();
+    var jsonNode = (ObjectNode) mapper.readTree(Json.encode(reportChanged));
+    jsonNode.remove("apiException");
+    var reportToSend = mapper.writeValueAsString(reportChanged);
 
     // POST report
-    given(counterReportsReqSpec) //
-        .body(Json.encode(reportChanged)) //
-        .post() //
-        .then() //
-        .statusCode(201);
+    given(counterReportsReqSpec).body(reportToSend).post().then().statusCode(201);
 
     // GET report
-    var apiExceptionsReceived =
-        given(counterReportsReqSpec) //
-            .pathParam("id", reportId) //
-            .get("/{id}") //
-            .then() //
-            .statusCode(200) //
-            .extract() //
-            .as(CounterReport.class) //
-            .getApiExceptions();
-
-    assertThat(apiExceptionsReceived).isEmpty();
+    given(counterReportsReqSpec)
+        .pathParam("id", reportChanged.getId())
+        .get("/{id}")
+        .then()
+        .statusCode(200)
+        .contentType("application/json")
+        .body("apiExceptions", empty());
   }
 
   @Test
@@ -550,11 +547,18 @@ public class CounterReportIT {
     var reportToSend =
         createSampleReportWithApiExceptionForProviderId(
             providerId, reportId, "api_exception_no_code.json");
-    given(counterReportsReqSpec) //
-        .body(Json.encode(reportToSend)) //
-        .post() //
-        .then() //
-        .statusCode(422);
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(422);
+  }
+
+  public void testPostReportWithNullApiExceptionFails() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST report
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var reportToSend =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_complete.json", null);
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(422);
   }
 
   @Test
@@ -566,21 +570,17 @@ public class CounterReportIT {
     var reportToSend =
         createSampleReportWithApiExceptionForProviderId(
             providerId, reportId, "api_exception_complete.json");
-    given(counterReportsReqSpec) //
-        .body(Json.encode(reportToSend)) //
-        .post() //
-        .then() //
-        .statusCode(201);
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(201);
 
     // PUT report
     var updatedReport =
         createSampleReportWithApiExceptionForProviderId(
             providerId, reportId, "api_exception_no_code.json");
-    given(counterReportsReqSpec) //
-        .body(Json.encode(updatedReport)) //
+    given(counterReportsReqSpec)
+        .body(Json.encode(updatedReport))
         .pathParam("id", reportId)
         .put("/{id}")
-        .then() //
+        .then()
         .statusCode(422);
   }
 
@@ -593,62 +593,69 @@ public class CounterReportIT {
     var reportToSend =
         createSampleReportWithApiExceptionForProviderId(
             providerId, reportId, "api_exception_bare.json");
-    given(counterReportsReqSpec) //
-        .body(Json.encode(reportToSend)) //
-        .post() //
-        .then() //
-        .statusCode(201);
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(201);
 
     // GET report
     var apiExceptionsReceived =
-        given(counterReportsReqSpec) //
-            .pathParam("id", reportId) //
-            .get("/{id}") //
-            .then() //
-            .statusCode(200) //
-            .extract() //
-            .as(CounterReport.class) //
+        given(counterReportsReqSpec)
+            .pathParam("id", reportId)
+            .get("/{id}")
+            .then()
+            .statusCode(200)
+            .extract()
+            .as(CounterReport.class)
             .getApiExceptions();
 
     assertThat(apiExceptionsReceived).hasSize(1);
-    assertThat(apiExceptionsReceived.stream().map(ApiException::getCode).toList()).contains(1030);
+    assertThat(apiExceptionsReceived)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(reportToSend.getApiExceptions());
 
     // PUT report
     var updatedReport =
         createSampleReportWithApiExceptionForProviderId(
             providerId, reportId, "api_exception_complete.json");
-    given(counterReportsReqSpec) //
-        .body(Json.encode(updatedReport)) //
+    given(counterReportsReqSpec)
+        .body(Json.encode(updatedReport))
         .pathParam("id", reportId)
         .put("/{id}")
-        .then() //
+        .then()
         .statusCode(204);
 
     // GET report
     var updatedApiExceptionsReceived =
-        given(counterReportsReqSpec) //
-            .pathParam("id", reportId) //
-            .get("/{id}") //
-            .then() //
-            .statusCode(200) //
-            .extract() //
-            .as(CounterReport.class) //
+        given(counterReportsReqSpec)
+            .pathParam("id", reportId)
+            .get("/{id}")
+            .then()
+            .statusCode(200)
+            .extract()
+            .as(CounterReport.class)
             .getApiExceptions();
 
     assertThat(updatedApiExceptionsReceived).hasSize(1);
-    assertThat(updatedApiExceptionsReceived.stream().map(ApiException::getCode).toList())
-        .contains(3031);
+    assertThat(updatedApiExceptionsReceived)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(updatedReport.getApiExceptions());
   }
 
   private CounterReport createSampleReportWithApiExceptionForProviderId(
       String providerId, String reportId, String... apiExceptionPaths) {
     var yearMonth = YearMonth.of(2026, 1);
-    var apiExceptions =
-        Arrays.stream(apiExceptionPaths)
-            .map(path -> "../ramls/examples/" + path)
-            .map(CounterReportIT::readFromFileWithUncheckedException)
-            .map(exception -> Json.decodeValue(exception, ApiException.class))
-            .toList();
+    var apiExceptions = new ArrayList<ApiException>();
+    for (String apiExceptionPath : apiExceptionPaths) {
+      if (apiExceptionPath == null) {
+        apiExceptions.add(null);
+      } else {
+        var exceptionString =
+            readFromFileWithUncheckedException("../ramls/examples/" + apiExceptionPath);
+        var apiException = Json.decodeValue(exceptionString, ApiException.class);
+        apiExceptions.add(apiException);
+      }
+    }
+
     return new CounterReport()
         .withId(reportId)
         .withProviderId(providerId)

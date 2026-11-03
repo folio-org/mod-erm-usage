@@ -21,7 +21,7 @@
       "type": "string"
     },
     "apiExceptions": {
-      "description": "One or multiple exceptions related to the failed download attempt",
+      "description": "Exceptions from the COUNTER API for a failed download attempt, empty if none were recorded",
       "type": "array",
       "items": {
         "type": "object",

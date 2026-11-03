@@ -1,6 +1,6 @@
 {
   "code": 3031,
-  "message": "This is such a message",
-  "helpUrl": "http://www.google.de",
-  "data": "some extra intel here"
+  "message": "Usage Not Ready for Requested Dates",
+  "helpUrl": "https://example.org/help/3031",
+  "data": "Usage not yet processed for 2026-01"
 }
