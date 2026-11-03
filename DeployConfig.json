@@ -165,7 +165,7 @@
       {
         "name": "QUARKUS_HTTP_LIMITS_MAX_BODY_SIZE",
         "value": "200M",
-        "description": "Maximum request body size the sidecar accepts; raised from the 10 MB default because COUNTER report uploads exceed it.",
+        "description": "Maximum request body size the sidecar accepts, raised from the 10 MB default to the module's own 200 MB upload limit because COUNTER report uploads exceed 10 MB.",
         "type": "QUARKUS",
         "essential": false
       }
