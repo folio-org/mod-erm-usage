@@ -41,7 +41,7 @@
         "send": "60s",
         "read": "60s"
       },
-      "description": "Default timeouts. Report exports and uploads answer only when finished and take longer with larger date ranges and reports, so very large ones can exceed the read timeout; raise it if they do."
+      "description": "Default timeouts. Report exports and uploads answer only when finished and take longer with larger date ranges and reports, so very large ones can exceed the read timeout. Raise it if they do, keeping the sidecar's REQUEST_TIMEOUT (in milliseconds, 60000 when unset) at least as high."
     },
     "EnvVars": [
       {
