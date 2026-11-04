@@ -1,0 +1,6 @@
+{
+  "code": 3031,
+  "message": "Usage Not Ready for Requested Dates",
+  "helpUrl": "https://example.org/help/3031",
+  "data": "Usage not yet processed for 2026-01"
+}
