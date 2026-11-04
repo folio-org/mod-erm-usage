@@ -2,6 +2,7 @@ package org.folio.rest.impl2;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 
 import com.google.common.io.Resources;
@@ -21,12 +22,15 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.Timeout;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Date;
 import java.time.Instant;
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,6 +41,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.folio.okapi.common.XOkapiHeaders;
 import org.folio.rest.RestVerticle;
+import org.folio.rest.jaxrs.model.ApiException;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.CounterReports;
 import org.folio.rest.jaxrs.model.ErrorCodes;
@@ -67,11 +72,16 @@ public class CounterReportIT {
   private static final String PATH_REPORT_TYPES = "/reports/types";
   private static final String PATH_ERROR_CODES = "/errors/codes";
   private static final String TENANT = "diku";
-  private static final Vertx vertx = Vertx.vertx();
-  private static final Map<String, String> defaultHeaders =
+  private static final Vertx VERTX = Vertx.vertx();
+  private static final Map<String, String> DEFAULT_HEADERS =
       Map.of(
           XOkapiHeaders.TENANT, TENANT, HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString());
-  @ClassRule public static PostgresContainerRule pgRule = new PostgresContainerRule(vertx, TENANT);
+  private static final ApiException INVALID_EXCEPTION =
+      new ApiException()
+          .withMessage("This exception won't make :(")
+          .withHelpUrl("http://www.google.de")
+          .withData("Some extra intel here, but what does it matter?");
+  @ClassRule public static PostgresContainerRule pgRule = new PostgresContainerRule(VERTX, TENANT);
 
   private static CounterReport report;
   private static CounterReport reportChanged;
@@ -99,31 +109,31 @@ public class CounterReportIT {
 
     DeploymentOptions options =
         new DeploymentOptions().setConfig(new JsonObject().put("http.port", port));
-    vertx
+    VERTX
         .deployVerticle(RestVerticle.class.getName(), options)
         .onComplete(context.asyncAssertSuccess());
 
-    defaultHeaderSpec = new RequestSpecBuilder().addHeaders(defaultHeaders).build();
+    defaultHeaderSpec = new RequestSpecBuilder().addHeaders(DEFAULT_HEADERS).build();
 
     reportsDeleteReqSpec =
         new RequestSpecBuilder()
-            .addHeaders(defaultHeaders)
+            .addHeaders(DEFAULT_HEADERS)
             .setBasePath(PATH_BASE + "/reports/delete")
             .build();
 
     counterReportsReqSpec =
-        new RequestSpecBuilder().addHeaders(defaultHeaders).setBasePath(PATH_BASE).build();
+        new RequestSpecBuilder().addHeaders(DEFAULT_HEADERS).setBasePath(PATH_BASE).build();
   }
 
   @AfterClass
   public static void afterClass() {
     RestAssured.reset();
-    vertx.close();
+    VERTX.close();
   }
 
   @Before
   public void setUp(TestContext context) {
-    PostgresClient.getInstance(vertx, TENANT)
+    PostgresClient.getInstance(VERTX, TENANT)
         .delete(
             Constants.TABLE_NAME_COUNTER_REPORTS, new Criterion(), context.asyncAssertSuccess());
   }
@@ -480,6 +490,192 @@ public class CounterReportIT {
     reportTypes =
         given(counterReportsReqSpec).get(PATH_REPORT_TYPES).thenReturn().as(ReportTypes.class);
     assertThat(reportTypes.getReportTypes()).isEmpty();
+  }
+
+  @Test
+  public void testGetReportsYieldsSameReportsAfterPostReportsWithApiExceptions() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST report
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var reportToSend =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_complete.json", "api_exception_bare.json");
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(201);
+
+    // GET report
+    var apiExceptionsReceived =
+        given(counterReportsReqSpec)
+            .pathParam("id", reportId)
+            .get("/{id}")
+            .then()
+            .statusCode(200)
+            .extract()
+            .as(CounterReport.class)
+            .getApiExceptions();
+
+    assertThat(apiExceptionsReceived).hasSize(2);
+    assertThat(apiExceptionsReceived)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(reportToSend.getApiExceptions());
+  }
+
+  @Test
+  public void testGetReportsYieldsSameReportsAfterPostReportsWithoutApiExceptions() {
+    var reportToSend = new JsonObject(Json.encode(reportChanged));
+    reportToSend.remove("apiExceptions");
+    // POST report
+    given(counterReportsReqSpec).body(reportToSend.encode()).post().then().statusCode(201);
+
+    // GET report
+    given(counterReportsReqSpec)
+        .pathParam("id", reportChanged.getId())
+        .get("/{id}")
+        .then()
+        .statusCode(200)
+        .contentType("application/json")
+        .body("apiExceptions", empty());
+  }
+
+  @Test
+  public void testPostReportWithApiExceptionsWithoutErrorCodeFails() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST report
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var reportToSend =
+        createSampleReportWithApiExceptionForProviderId(providerId, reportId, INVALID_EXCEPTION);
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(422);
+  }
+
+  @Test
+  public void testPostReportWithNullApiExceptionFails() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST report
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var reportToSend =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_complete.json", null);
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(422);
+  }
+
+  @Test
+  public void testPutReportWithApiExceptionsWithoutErrorCodeFails() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST report
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var reportToSend =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_complete.json");
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(201);
+
+    // PUT report
+    var updatedReport =
+        createSampleReportWithApiExceptionForProviderId(providerId, reportId, INVALID_EXCEPTION);
+    given(counterReportsReqSpec)
+        .body(Json.encode(updatedReport))
+        .pathParam("id", reportId)
+        .put("/{id}")
+        .then()
+        .statusCode(422);
+  }
+
+  @Test
+  public void testPutReportWithApiExceptionsWithErrorCodesSucceeds() {
+    var reportId = UUID.randomUUID().toString();
+
+    // POST report
+    var providerId = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
+    var reportToSend =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_bare.json");
+    given(counterReportsReqSpec).body(Json.encode(reportToSend)).post().then().statusCode(201);
+
+    // GET report
+    var apiExceptionsReceived =
+        given(counterReportsReqSpec)
+            .pathParam("id", reportId)
+            .get("/{id}")
+            .then()
+            .statusCode(200)
+            .extract()
+            .as(CounterReport.class)
+            .getApiExceptions();
+
+    assertThat(apiExceptionsReceived).hasSize(1);
+    assertThat(apiExceptionsReceived)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(reportToSend.getApiExceptions());
+
+    // PUT report
+    var updatedReport =
+        createSampleReportWithApiExceptionForProviderId(
+            providerId, reportId, "api_exception_complete.json");
+    given(counterReportsReqSpec)
+        .body(Json.encode(updatedReport))
+        .pathParam("id", reportId)
+        .put("/{id}")
+        .then()
+        .statusCode(204);
+
+    // GET report
+    var updatedApiExceptionsReceived =
+        given(counterReportsReqSpec)
+            .pathParam("id", reportId)
+            .get("/{id}")
+            .then()
+            .statusCode(200)
+            .extract()
+            .as(CounterReport.class)
+            .getApiExceptions();
+
+    assertThat(updatedApiExceptionsReceived).hasSize(1);
+    assertThat(updatedApiExceptionsReceived)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(updatedReport.getApiExceptions());
+  }
+
+  private CounterReport createSampleReportWithApiExceptionForProviderId(
+      String providerId, String reportId, String... apiExceptionPaths) {
+    var apiExceptions = new ArrayList<ApiException>();
+    for (String apiExceptionPath : apiExceptionPaths) {
+      if (apiExceptionPath == null) {
+        apiExceptions.add(null);
+      } else {
+        var exceptionString =
+            readFromFileWithUncheckedException("../ramls/examples/" + apiExceptionPath);
+        var apiException = Json.decodeValue(exceptionString, ApiException.class);
+        apiExceptions.add(apiException);
+      }
+    }
+
+    return createSampleReportWithApiExceptionForProviderId(
+        providerId, reportId, apiExceptions.toArray(new ApiException[0]));
+  }
+
+  private CounterReport createSampleReportWithApiExceptionForProviderId(
+      String providerId, String reportId, ApiException... apiExceptions) {
+    return new CounterReport()
+        .withId(reportId)
+        .withProviderId(providerId)
+        .withDownloadTime(Date.from(Instant.now()))
+        .withReportName("TR")
+        .withRelease("5.1")
+        .withApiExceptions(Arrays.asList(apiExceptions))
+        .withYearMonth(YearMonth.of(2026, 1).toString());
+  }
+
+  private static String readFromFileWithUncheckedException(String path) {
+    try {
+      return Files.readString(Paths.get(path));
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private List<CounterReport> createSampleReportsWithFailedReasonForProviderId(String providerId) {
