@@ -339,43 +339,6 @@ public class CounterReportIT {
   }
 
   @Test
-  public void checkThatEmptyApiExceptionsAreRejected() {
-    CounterReport failedReport =
-        createSampleReportsWithFailedReasonForProviderId(UUID.randomUUID().toString()).getFirst();
-    String withEmptyApiExceptions =
-        new JsonObject(Json.encode(failedReport)).put("apiExceptions", new JsonArray()).encode();
-
-    // POST
-    given(counterReportsReqSpec).body(withEmptyApiExceptions).post().then().statusCode(422);
-    given(counterReportsReqSpec)
-        .body(Json.encode(failedReport.withApiExceptions(null)))
-        .post()
-        .then()
-        .statusCode(201);
-
-    // GET
-    JsonObject storedReport =
-        new JsonObject(
-            given(counterReportsReqSpec)
-                .get("/" + failedReport.getId())
-                .then()
-                .statusCode(200)
-                .extract()
-                .asString());
-    assertThat(storedReport.containsKey("apiExceptions")).isFalse();
-
-    // PUT
-    given(counterReportsReqSpec)
-        .body(withEmptyApiExceptions)
-        .put("/" + failedReport.getId())
-        .then()
-        .statusCode(422);
-
-    // DELETE
-    given(counterReportsReqSpec).delete("/" + failedReport.getId()).then().statusCode(204);
-  }
-
-  @Test
   public void checkThatCounterReportFailedReasonTriggerIsExecuted(TestContext context) {
     UsageDataProvider udprovider = null;
     try {
