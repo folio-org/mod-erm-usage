@@ -3,6 +3,12 @@
   "downloadTime": "2020-07-09T01:08:05.231+00:00",
   "failedAttempts": 5,
   "failedReason": "Report not valid: Exception{Number=3030, Severity=ERROR, Message=No Usage Available for Requested Dates}",
+  "apiExceptions": [
+    {
+      "code": 3030,
+      "message": "No Usage Available for Requested Dates"
+    }
+  ],
   "release": "4",
   "reportName": "JR1",
   "yearMonth": "2019-07",

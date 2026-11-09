@@ -19,7 +19,7 @@ public class CustomIndexesIT {
   private static final String[] TENANTS = {"aTenant", "bTenant"};
   private static final String[] INDEXES = {
     "counter_reports_custom_getcsv_idx",
-    "counter_reports_custom_errorcodes_idx",
+    "counter_reports_custom_failed_idx",
     "counter_reports_custom_reporttypes_idx",
     "counter_reports_custom_reportreleases_idx"
   };

@@ -11,6 +11,13 @@
               "downloadTime": "2019-02-14T08:42:04Z",
               "failedAttempts": 2,
               "failedReason": "[{\"Code\":1020,\"Severity\":\"Fatal\",\"Message\":\"Client has made too many requests\",\"Data\":\"Please request reports sequentially once per second. Simultaneous requests are not supported.\"}]",
+              "apiExceptions": [
+                {
+                  "code": 1020,
+                  "message": "Client has made too many requests",
+                  "data": "Please request reports sequentially once per second. Simultaneous requests are not supported."
+                }
+              ],
               "release": "5",
               "reportName": "PR",
               "yearMonth": "2019-11",
@@ -21,6 +28,13 @@
               "downloadTime": "2019-02-14T08:42:04Z",
               "failedAttempts": 2,
               "failedReason": "[{\"Code\":1020,\"Severity\":\"Fatal\",\"Message\":\"Client has made too many requests\",\"Data\":\"Please request reports sequentially once per second. Simultaneous requests are not supported.\"}]",
+              "apiExceptions": [
+                {
+                  "code": 1020,
+                  "message": "Client has made too many requests",
+                  "data": "Please request reports sequentially once per second. Simultaneous requests are not supported."
+                }
+              ],
               "release": "5",
               "reportName": "PR",
               "yearMonth": "2019-05",
@@ -70,6 +84,13 @@
               "downloadTime": "2019-02-14T08:42:04Z",
               "failedAttempts": 2,
               "failedReason": "[{\"Code\":1020,\"Severity\":\"Fatal\",\"Message\":\"Client has made too many requests\",\"Data\":\"Please request reports sequentially once per second. Simultaneous requests are not supported.\"}]",
+              "apiExceptions": [
+                {
+                  "code": 1020,
+                  "message": "Client has made too many requests",
+                  "data": "Please request reports sequentially once per second. Simultaneous requests are not supported."
+                }
+              ],
               "release": "5",
               "reportName": "PR",
               "yearMonth": "2018-10",
@@ -93,6 +114,13 @@
               "downloadTime": "2019-02-14T08:42:04Z",
               "failedAttempts": 2,
               "failedReason": "[{\"Code\":1020,\"Severity\":\"Fatal\",\"Message\":\"Client has made too many requests\",\"Data\":\"Please request reports sequentially once per second. Simultaneous requests are not supported.\"}]",
+              "apiExceptions": [
+                {
+                  "code": 1020,
+                  "message": "Client has made too many requests",
+                  "data": "Please request reports sequentially once per second. Simultaneous requests are not supported."
+                }
+              ],
               "release": "5",
               "reportName": "IR",
               "yearMonth": "2018-05",
@@ -113,6 +141,13 @@
               "downloadTime": "2019-02-14T08:42:04Z",
               "failedAttempts": 2,
               "failedReason": "[{\"Code\":1020,\"Severity\":\"Fatal\",\"Message\":\"Client has made too many requests\",\"Data\":\"Please request reports sequentially once per second. Simultaneous requests are not supported.\"}]",
+              "apiExceptions": [
+                {
+                  "code": 1020,
+                  "message": "Client has made too many requests",
+                  "data": "Please request reports sequentially once per second. Simultaneous requests are not supported."
+                }
+              ],
               "release": "5",
               "reportName": "PR",
               "yearMonth": "2020-01",
@@ -130,6 +165,13 @@
               "downloadTime": "2019-02-14T08:42:04Z",
               "failedAttempts": 2,
               "failedReason": "[{\"Code\":1020,\"Severity\":\"Fatal\",\"Message\":\"Client has made too many requests\",\"Data\":\"Please request reports sequentially once per second. Simultaneous requests are not supported.\"}]",
+              "apiExceptions": [
+                {
+                  "code": 1020,
+                  "message": "Client has made too many requests",
+                  "data": "Please request reports sequentially once per second. Simultaneous requests are not supported."
+                }
+              ],
               "release": "5",
               "reportName": "IR",
               "yearMonth": "2020-01",

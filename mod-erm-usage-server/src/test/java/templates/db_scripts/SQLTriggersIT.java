@@ -15,6 +15,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
+import org.folio.rest.jaxrs.model.ApiException;
 import org.folio.rest.jaxrs.model.CounterReport;
 import org.folio.rest.jaxrs.model.HarvestingConfig;
 import org.folio.rest.jaxrs.model.UsageDataProvider;
@@ -59,7 +60,9 @@ public class SQLTriggersIT {
                   "2020-03",
                   "5.1",
                   "IR",
-                  "\"Code\": " + "3003")
+                  "[{\"Code\": 3003}, {\"Code\": 3030}]")
+              .withApiExceptions(
+                  List.of(new ApiException().withCode(3003), new ApiException().withCode(3030)))
               .withFailedAttempts(1));
 
   private final List<CounterReport> updatedReports =
@@ -158,7 +161,7 @@ public class SQLTriggersIT {
                   assertThat(udp.getEarliestReport()).isEqualTo("2020-01");
                   assertThat(udp.getLatestReport()).isEqualTo("2020-02");
                   assertThat(udp.getHasFailedReport()).isEqualTo(YES);
-                  assertThat(udp.getReportErrorCodes()).containsExactly("3003", "other");
+                  assertThat(udp.getReportErrorCodes()).containsExactly("3003", "3030", "other");
                   assertThat(udp.getReportTypes()).containsExactly("IR", "JR1", "TR");
                   assertThat(udp.getReportReleases()).containsExactly("4", "5", "5.1");
                 }));
