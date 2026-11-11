@@ -37,9 +37,13 @@ class MigrateApiExceptionsIT {
   private static final String TRIGGER = "update_usage_data_providers_on_insert_or_update_or_delete";
   private static final String ERROR_CODE_PATTERN = "(?:Number=|\"Code\": ?)([0-9]{1,4})";
 
-  /** Stand-in for the index of 5.2.x, which this upgrade drops. */
+  /**
+   * Stand-in for the index of 5.2.x, which this upgrade replaces. The fresh install already creates
+   * the new index under the same name, so it is dropped first.
+   */
   private static final String LEGACY_INDEX =
       """
+      DROP INDEX IF EXISTS %1$s.counter_reports_custom_errorcodes_idx;
       CREATE INDEX counter_reports_custom_errorcodes_idx ON %1$s.counter_reports
         USING btree(SUBSTRING(jsonb->>'failedReason','%2$s'))
         WHERE jsonb ->> 'failedReason' IS NOT NULL;
@@ -56,6 +60,8 @@ class MigrateApiExceptionsIT {
   private static final String EXISTING_ID = "1a1c1d1e-0000-4000-8000-000000000009";
   private static final String SUCCESSFUL_ID = "1a1c1d1e-0000-4000-8000-000000000010";
   private static final String OTHER_PROVIDER_REPORT_ID = "1a1c1d1e-0000-4000-8000-000000000011";
+  private static final String C4_TRAILING_TEXT_ID = "1a1c1d1e-0000-4000-8000-000000000012";
+  private static final String C5_MESSAGE_LOOKS_LIKE_C4_ID = "1a1c1d1e-0000-4000-8000-000000000013";
 
   private static final Map<String, String> FAILED_REASONS = new LinkedHashMap<>();
 
@@ -81,7 +87,7 @@ class MigrateApiExceptionsIT {
         """
         Report not valid: [{"Code":1011,"Severity":"Warning","Message":"Report Queued for \
         Processing","Data":{"Retry_After":"60"}},{"Severity":"Error","Message":"No code"},\
-        {"Code":"3060","Message":"  "},{"Code":3062,"Help_URL":"not a url"}]\
+        {"Code":"3060","Message":"  ","Help_URL":" "},{"Code":3062,"Help_URL":"not a url"}]\
         """);
     FAILED_REASONS.put(
         HTTP_ERROR_ID,
@@ -102,6 +108,11 @@ class MigrateApiExceptionsIT {
     FAILED_REASONS.put(TIMEOUT_ID, "Error getting report: Connection timed out");
     FAILED_REASONS.put(EXISTING_ID, "{\"Code\":3030}");
     FAILED_REASONS.put(OTHER_PROVIDER_REPORT_ID, "{\"Code\":3000}");
+    FAILED_REASONS.put(
+        C4_TRAILING_TEXT_ID,
+        "Report not valid: Exception{Number=3030, Severity=ERROR, Message=m} more");
+    FAILED_REASONS.put(
+        C5_MESSAGE_LOOKS_LIKE_C4_ID, "{\"Code\":3030,\"Message\":\"Exception{Number=77, x\"}");
   }
 
   private static final JsonArray EXISTING_API_EXCEPTIONS =
@@ -235,6 +246,22 @@ class MigrateApiExceptionsIT {
   }
 
   @Test
+  void testCounter4TextAfterLastExceptionIsIgnored() {
+    assertThat(getReport(C4_TRAILING_TEXT_ID).getJsonArray("apiExceptions"))
+        .isEqualTo(new JsonArray().add(apiException(3030).put("message", "m")));
+  }
+
+  @Test
+  void testCounter5MessageThatLooksLikeCounter4IsReadAsCounter5() {
+    // 77 is still added by the safety net, since the former error code pattern finds it
+    assertThat(getReport(C5_MESSAGE_LOOKS_LIKE_C4_ID).getJsonArray("apiExceptions"))
+        .isEqualTo(
+            new JsonArray()
+                .add(apiException(3030).put("message", "Exception{Number=77, x"))
+                .add(apiException(77)));
+  }
+
+  @Test
   void testCounter5Object() {
     assertThat(getReport(C5_OBJECT_ID).getJsonArray("apiExceptions"))
         .isEqualTo(
@@ -247,7 +274,7 @@ class MigrateApiExceptionsIT {
   }
 
   @Test
-  void testCounter5ArrayKeepsOnlyExceptionsWithCodeAndValidValues() {
+  void testCounter5ArrayKeepsOnlyExceptionsWithCodeAndNonBlankValues() {
     assertThat(getReport(C5_ARRAY_ID).getJsonArray("apiExceptions"))
         .isEqualTo(
             new JsonArray()
@@ -256,7 +283,7 @@ class MigrateApiExceptionsIT {
                         .put("message", "Report Queued for Processing")
                         .put("data", "{\"Retry_After\": \"60\"}"))
                 .add(apiException(3060))
-                .add(apiException(3062)));
+                .add(apiException(3062).put("helpUrl", "not a url")));
   }
 
   @Test
@@ -337,7 +364,7 @@ class MigrateApiExceptionsIT {
   void testReportErrorCodesAreRecomputed() {
     assertThat(getUdp(PROVIDER_ID).getJsonArray("reportErrorCodes"))
         .containsExactly(
-            "1011", "2010", "3030", "3031", "3032", "3040", "3050", "3060", "3062", "other");
+            "1011", "2010", "3030", "3031", "3032", "3040", "3050", "3060", "3062", "77", "other");
     assertThat(getUdp(OTHER_PROVIDER_ID).getJsonArray("reportErrorCodes")).containsExactly("3000");
   }
 
@@ -368,12 +395,16 @@ class MigrateApiExceptionsIT {
   void testErrorCodesIndexIsReplaced() {
     String indexCount =
         "SELECT count(*) FROM pg_indexes WHERE schemaname = '%s' AND indexname = '%s'";
-    assertThat(
-            pgClient
-                .selectSingle(indexCount.formatted(SCHEMA, "counter_reports_custom_errorcodes_idx"))
-                .await()
-                .getLong(0))
-        .isZero();
+    String errorCodesIndexDef =
+        pgClient
+            .selectSingle(
+                "SELECT indexdef FROM pg_indexes WHERE schemaname = '%s' AND indexname = '%s'"
+                    .formatted(SCHEMA, "counter_reports_custom_errorcodes_idx"))
+            .await()
+            .getString(0);
+    assertThat(errorCodesIndexDef)
+        .contains("jsonb_path_query_array")
+        .doesNotContainIgnoringCase("substring");
     assertThat(
             pgClient
                 .selectSingle(indexCount.formatted(SCHEMA, "counter_reports_custom_failed_idx"))

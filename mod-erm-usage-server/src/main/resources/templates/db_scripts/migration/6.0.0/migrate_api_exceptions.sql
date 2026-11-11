@@ -27,60 +27,27 @@ EXCEPTION WHEN others THEN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- Returns the value of a COUNTER exception property (Message, Data) as text: a string as is, any other JSON value
--- (e.g. a Data object) as JSON text, and NULL if the property is missing or JSON null.
-CREATE OR REPLACE FUNCTION api_exceptions_text(value jsonb) RETURNS TEXT AS $$
-  SELECT CASE
-    WHEN value IS NULL OR jsonb_typeof(value) = 'null' THEN NULL
-    WHEN jsonb_typeof(value) = 'string' THEN value #>> '{}'
-    ELSE value::text
-  END
-$$ LANGUAGE sql IMMUTABLE;
-
--- Builds one API exception as stored in "apiExceptions" (see ramls/schemas/exception.json):
+-- Builds one API exception as stored in "apiExceptions" (see ramls/schemas/apiexception.json):
 --   {"code": 3030, "message": "…", "helpUrl": "…", "data": "…"}
--- Returns NULL if there is no code, since code is required. Blank message and data are left out, and so is a helpUrl
--- that isn't a valid http(s) URI, because helpUrl is a java.net.URI in the generated model class and an invalid value
--- would make reading the report fail.
+-- Returns NULL if there is no code, since code is required. Blank message, helpUrl and data are left out.
 CREATE OR REPLACE FUNCTION api_exceptions_build(code BIGINT, message TEXT, help_url TEXT, data TEXT)
 RETURNS jsonb AS $$
   SELECT CASE WHEN code IS NOT NULL THEN jsonb_strip_nulls(jsonb_build_object(
     'code', code,
     'message', CASE WHEN message !~ '^\s*$' THEN message END,
-    'helpUrl', CASE WHEN help_url ~ '^https?://([A-Za-z0-9._~:/?#@!$&''()*+,;=-]|%[0-9A-Fa-f]{2})+$' THEN help_url END,
+    'helpUrl', CASE WHEN help_url !~ '^\s*$' THEN help_url END,
     'data', CASE WHEN data !~ '^\s*$' THEN data END))
   END
 $$ LANGUAGE sql IMMUTABLE;
 
 -- Maps one COUNTER 5 exception object, e.g. {"Code":3030,"Severity":"Error","Message":"…","Help_URL":"…","Data":"…"},
--- to an API exception. Like the harvester, it accepts a Code that is a whole number in int range or a string of up
--- to 9 digits, and returns NULL for anything else (no object, no or an invalid Code). Severity is not copied.
+-- to an API exception. The Code may be a number or a string, but must consist of 1 to 9 digits; otherwise (also if e
+-- is no object) the result is NULL. Severity is not copied.
 CREATE OR REPLACE FUNCTION api_exceptions_from_counter_exception(e jsonb) RETURNS jsonb AS $$
-DECLARE
-  code_value jsonb := e->'Code';
-  code NUMERIC;
-BEGIN
-  IF jsonb_typeof(e) IS DISTINCT FROM 'object' THEN
-    RETURN NULL;
-  END IF;
-
-  IF jsonb_typeof(code_value) = 'number' THEN
-    code := code_value::text::numeric;
-  ELSIF jsonb_typeof(code_value) = 'string' AND code_value #>> '{}' ~ '^[0-9]{1,9}$' THEN
-    code := (code_value #>> '{}')::numeric;
-  END IF;
-
-  IF code IS NULL OR code <> trunc(code) OR code NOT BETWEEN -2147483648 AND 2147483647 THEN
-    RETURN NULL;
-  END IF;
-
-  RETURN api_exceptions_build(
-    code::bigint,
-    api_exceptions_text(e->'Message'),
-    CASE WHEN jsonb_typeof(e->'Help_URL') = 'string' THEN e->>'Help_URL' END,
-    api_exceptions_text(e->'Data'));
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+  SELECT CASE WHEN e->>'Code' ~ '^[0-9]{1,9}$' THEN api_exceptions_build(
+    (e->>'Code')::bigint, e->>'Message', e->>'Help_URL', e->>'Data')
+  END
+$$ LANGUAGE sql IMMUTABLE;
 
 -- Entry point: returns all API exceptions found in a "failedReason" as a non-empty JSON array, in the order they appear,
 -- or NULL if there is none. Never returns an empty array.
@@ -105,15 +72,17 @@ BEGIN
     RETURN NULL;
   END IF;
 
-  IF strpos(fr, 'Exception{Number=') > 0 THEN
+  IF fr ~ '^[^{\[]*Exception\{Number=' THEN
     -- Step A, COUNTER 4: "Report not valid: Exception{Number=…, Severity=…, Message=…, HelpUrl=…, Data=…}, Exception{…}"
     -- (format of Counter4Utils.getErrorMessages in mod-erm-usage-counter, fields without a value are left out).
-    -- Cut off everything up to the first "Exception{" and the final "}", then split at "}, Exception{", so each chunk
+    -- Only if "Exception{Number=" comes before any { or [, so a COUNTER 5 Message containing it stays with step B.
+    -- Cut off everything up to the first "Exception{" and everything from the last "}" on (in case text follows it),
+    -- then split at "}, Exception{", so each chunk
     -- is "Number=…, Severity=…, Message=…, HelpUrl=…, Data=…". A field's value runs up to the label of the next
     -- field, which is why Message and HelpUrl are cut at the labels that may follow them.
     FOR chunk IN
       SELECT regexp_split_to_table(
-        regexp_replace(substr(fr, strpos(fr, 'Exception{') + length('Exception{')), '\}\s*$', ''),
+        regexp_replace(substr(fr, strpos(fr, 'Exception{') + length('Exception{')), '\}[^}]*$', ''),
         '\}, Exception\{')
     LOOP
       ex := api_exceptions_build(
@@ -211,5 +180,4 @@ END $$;
 DROP FUNCTION IF EXISTS api_exceptions_from_failed_reason(TEXT);
 DROP FUNCTION IF EXISTS api_exceptions_from_counter_exception(jsonb);
 DROP FUNCTION IF EXISTS api_exceptions_build(BIGINT, TEXT, TEXT, TEXT);
-DROP FUNCTION IF EXISTS api_exceptions_text(jsonb);
 DROP FUNCTION IF EXISTS api_exceptions_try_jsonb(TEXT);
