@@ -1,3 +1,6 @@
+# 5.2.2
+* [MODEUS-235](https://folio-org.atlassian.net/browse/MODEUS-235) Add `DeployConfig.json` (ADR-0013 Configuration Management)
+
 # 5.2.1
 * [MODEUS-227](https://folio-org.atlassian.net/browse/MODEUS-227) Allow both registry domains for `Registry_Record` in COUNTER 5.1 report uploads
 
