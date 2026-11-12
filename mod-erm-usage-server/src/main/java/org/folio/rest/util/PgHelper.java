@@ -252,12 +252,24 @@ public class PgHelper {
     return result.future();
   }
 
-  // index: counter_reports_custom_errorcodes_idx
+  /**
+   * @return All distinct error codes from the apiExceptions arrays of failed CounterReports, every
+   *     code of a report and not only the first one. A failed report without apiExceptions yields
+   *     "other".
+   *     <p>Index: {@code counter_reports_custom_errorcodes_idx}.
+   */
   public static Future<ErrorCodes> getErrorCodes(
       Context vertxContext, Map<String, String> okapiHeaders) {
     String query =
-        "SELECT DISTINCT(SUBSTRING(jsonb->>'failedReason','(?:Number=|\"Code\": ?)([0-9]{1,4})'))"
-            + " FROM counter_reports WHERE jsonb->>'failedReason' IS NOT NULL";
+        """
+        SELECT DISTINCT c
+        FROM (
+          SELECT DISTINCT jsonb_path_query_array(jsonb, '$.apiExceptions[*].code') AS codes
+          FROM counter_reports
+          WHERE jsonb->>'failedReason' IS NOT NULL
+        ) s
+        LEFT JOIN LATERAL jsonb_array_elements_text(codes) AS c ON true
+        """;
     Promise<ErrorCodes> result = Promise.promise();
     PgUtil.postgresClient(vertxContext, okapiHeaders)
         .select(
