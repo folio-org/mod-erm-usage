@@ -215,7 +215,14 @@ public class PgHelperIT {
               if (ar.succeeded()) {
                 context.fail("Should fail");
               } else {
-                assertThat(ar.cause().getMessage()).contains("2019-01", "2019-02");
+                context.verify(
+                    v ->
+                        assertThat(ar.cause())
+                            .isInstanceOfSatisfying(
+                                ReportUploadException.class,
+                                e ->
+                                    assertThat(e.getReportUploadError().getDetails())
+                                        .contains("2019-01", "2019-02")));
 
                 PostgresClient.getInstance(vertx, tenant)
                     .get(
