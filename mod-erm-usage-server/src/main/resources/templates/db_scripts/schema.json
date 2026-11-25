@@ -165,6 +165,10 @@
         {
           "fieldName": "reportTypes",
           "tOps": "ADD"
+        },
+        {
+          "fieldName": "reportReleases",
+          "tOps": "ADD"
         }
       ]
     },

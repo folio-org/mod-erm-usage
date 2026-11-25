@@ -14,6 +14,7 @@
 * [MODEUS-248](https://folio-org.atlassian.net/browse/MODEUS-248) Back-fill `apiExceptions` from `failedReason` on upgrade
 * [MODEUS-235](https://folio-org.atlassian.net/browse/MODEUS-235) Add `DeployConfig.json` (ADR-0013 Configuration Management)
 * [MODEUS-236](https://folio-org.atlassian.net/browse/MODEUS-236) Return `REPORTS_ALREADY_PRESENT` (400) on report upload only for existing reports; other persistence failures return `OTHER` (500)
+* [MODEUS-206](https://folio-org.atlassian.net/browse/MODEUS-206) Add `fullTextIndex` for `reportReleases` of UDPs, used by the report releases filter
 
 # 5.2.0
 * [MODEUS-204](https://folio-org.atlassian.net/browse/MODEUS-204) Add `status` field to UDP schema
