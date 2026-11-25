@@ -7,6 +7,7 @@ import static org.folio.rest.util.Constants.FIELD_NAME_YEAR_MONTH;
 import static org.folio.rest.util.Constants.OPERATOR_EQUALS;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
 import static org.folio.rest.util.Constants.TABLE_NAME_UDP;
+import static org.folio.rest.util.ReportUploadErrorCode.REPORTS_ALREADY_PRESENT;
 
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -168,12 +169,7 @@ public class PgHelper {
     return existingReports.compose(
         existingList -> {
           if (!overwrite && !existingList.isEmpty()) {
-            return Future.failedFuture(
-                "Report already existing for months: "
-                    + existingList.stream()
-                        .map(CounterReport::getYearMonth)
-                        .sorted()
-                        .collect(Collectors.joining(", ")));
+            return Future.failedFuture(reportsAlreadyPresent(existingList));
           } else {
             List<Future<String>> saveFutures = new ArrayList<>();
             counterReports.forEach(
@@ -183,6 +179,16 @@ public class PgHelper {
                 .map(cf -> cf.list().stream().map(o -> (String) o).toList());
           }
         });
+  }
+
+  private static ReportUploadException reportsAlreadyPresent(List<CounterReport> existingReports) {
+    String months =
+        existingReports.stream()
+            .map(CounterReport::getYearMonth)
+            .sorted()
+            .collect(Collectors.joining(", "));
+    return new ReportUploadException(
+        REPORTS_ALREADY_PRESENT, "Report already existing for months: " + months);
   }
 
   /**

@@ -15,6 +15,7 @@ import static org.folio.rest.util.ReportUploadErrorCode.REPORTS_ALREADY_PRESENT;
 import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_FILE_FORMAT;
 import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_REPORT_TYPE;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
@@ -74,6 +75,9 @@ import org.openapitools.counter50.model.COUNTERTitleUsage;
 public class CounterReportMultipartuploadIT {
 
   private static final String TENANT = "diku";
+  private static final String SCHEMA = PostgresClient.convertToPsqlStandard(TENANT);
+  private static final String TABLE_NAME_COUNTER_REPORTS_UNAVAILABLE =
+      Constants.TABLE_NAME_COUNTER_REPORTS + "_unavailable";
   private static final String PROVIDER_ID = "4b659cb9-e4bb-493d-ae30-5f5690c54802";
   private static final String PROVIDER_ID2 = "4b659cb9-e4bb-493d-ae30-5f5690c54803";
   private static final File FILE_REPORT_OK =
@@ -694,6 +698,36 @@ public class CounterReportMultipartuploadIT {
         .then()
         .statusCode(500)
         .body(containsString(PROVIDER_ID2), containsString("not found"));
+  }
+
+  @Test
+  public void testDatabaseFailure() {
+    makeCounterReportsTableUnavailable();
+    try {
+      given()
+          .multiPart(FILE_REPORT_OK)
+          .post(PATH + PROVIDER_ID)
+          .then()
+          .statusCode(500)
+          .body("code", equalTo(ReportUploadErrorCode.OTHER.name()))
+          .body("details", containsString("does not exist"));
+    } finally {
+      restoreCounterReportsTable();
+    }
+  }
+
+  private static void makeCounterReportsTableUnavailable() {
+    renameTable(Constants.TABLE_NAME_COUNTER_REPORTS, TABLE_NAME_COUNTER_REPORTS_UNAVAILABLE);
+  }
+
+  private static void restoreCounterReportsTable() {
+    renameTable(TABLE_NAME_COUNTER_REPORTS_UNAVAILABLE, Constants.TABLE_NAME_COUNTER_REPORTS);
+  }
+
+  private static void renameTable(String from, String to) {
+    PostgresClient.getInstance(vertx)
+        .execute("ALTER TABLE %s.%s RENAME TO %s".formatted(SCHEMA, from, to))
+        .await();
   }
 
   private void testThatDBSizeIsSize(int i) {

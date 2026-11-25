@@ -1,6 +1,5 @@
 package org.folio.rest.impl;
 
-import static io.vertx.core.Future.failedFuture;
 import static io.vertx.core.Future.succeededFuture;
 import static org.folio.rest.persist.PostgresClient.DEFAULT_JSONB_FIELD_NAME;
 import static org.folio.rest.util.Constants.TABLE_NAME_COUNTER_REPORTS;
@@ -10,7 +9,6 @@ import static org.folio.rest.util.ReportExportHelper.createExportResponseByForma
 import static org.folio.rest.util.ReportExportHelper.createGetMultipleReportsCQL;
 import static org.folio.rest.util.ReportUploadErrorCode.MAXIMUM_FILESIZE_EXCEEDED;
 import static org.folio.rest.util.ReportUploadErrorCode.MULTIPLE_FILES_NOT_SUPPORTED;
-import static org.folio.rest.util.ReportUploadErrorCode.REPORTS_ALREADY_PRESENT;
 import static org.folio.rest.util.ReportUploadErrorCode.UNSUPPORTED_FILE_FORMAT;
 
 import io.vertx.core.AsyncResult;
@@ -337,13 +335,7 @@ public class CounterReportAPI implements org.folio.rest.jaxrs.resource.CounterRe
                               });
                           return counterReports;
                         }))
-        .compose(
-            crs ->
-                PgHelper.saveCounterReportsToDb(vertxContext, okapiHeaders, crs, overwrite)
-                    .recover(
-                        throwable ->
-                            failedFuture(
-                                new ReportUploadException(REPORTS_ALREADY_PRESENT, throwable))))
+        .compose(crs -> PgHelper.saveCounterReportsToDb(vertxContext, okapiHeaders, crs, overwrite))
         .onSuccess(reportIds -> handleReportUploadSuccess(reportIds, asyncResultHandler))
         .onFailure(throwable -> handleReportUploadFailure(throwable, asyncResultHandler));
   }
