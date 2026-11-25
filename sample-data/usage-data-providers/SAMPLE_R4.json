@@ -3,20 +3,6 @@
   "label": "Sample Provider R4",
   "status": "active",
   "harvestingConfig": {
-    "harvestingStatus": "inactive",
-    "sushiConfig": {
-      "serviceType": "cs41",
-      "serviceUrl": "http://localhost/SushiService"
-    },
-    "reportRelease": 4,
-    "requestedReports": [
-      "JR1"
-    ],
-    "harvestingStart": "2019-01",
-    "harvestingEnd": "2019-12"
-  },
-  "sushiCredentials": {
-    "customerId": "123-45-678",
-    "requestorId": "456789"
+    "harvestingStatus": "inactive"
   }
 }

@@ -7,11 +7,13 @@
 * Disable the dependency-reduced POM of `maven-shade-plugin`
 * [MODEUS-243](https://folio-org.atlassian.net/browse/MODEUS-243) *BREAKING* Remove aggregator settings and aggregator UDP fields
 * [MODEUS-244](https://folio-org.atlassian.net/browse/MODEUS-244) Set harvesting status to `inactive` for UDPs with service type `cs41`
+* [MODEUS-245](https://folio-org.atlassian.net/browse/MODEUS-245) Remove the SUSHI configuration (service type `cs41`) from the sample UDP `Sample Provider R4`
 * [MODEUS-241](https://folio-org.atlassian.net/browse/MODEUS-241) Validate status and harvesting fields of UDPs on POST and PUT, returning 422 instead of 500; `serviceUrl` must start with lowercase `http://` or `https://`; existing UDPs with active harvesting must satisfy the new rules before they can be updated
 * [MODEUS-246](https://folio-org.atlassian.net/browse/MODEUS-246) *BREAKING* Remove the unused UDP `notes` field; existing values are deleted on upgrade
 * [MODEUS-247](https://folio-org.atlassian.net/browse/MODEUS-247) Add optional `apiExceptions` field to `CounterReport` type
 * [MODEUS-248](https://folio-org.atlassian.net/browse/MODEUS-248) Back-fill `apiExceptions` from `failedReason` on upgrade
 * [MODEUS-235](https://folio-org.atlassian.net/browse/MODEUS-235) Add `DeployConfig.json` (ADR-0013 Configuration Management)
+* [MODEUS-236](https://folio-org.atlassian.net/browse/MODEUS-236) Return `REPORTS_ALREADY_PRESENT` (400) on report upload only for existing reports; other persistence failures return `OTHER` (500)
 * [MODEUS-206](https://folio-org.atlassian.net/browse/MODEUS-206) Add `fullTextIndex` for `reportReleases` of UDPs, used by the report releases filter
 
 # 5.2.0
