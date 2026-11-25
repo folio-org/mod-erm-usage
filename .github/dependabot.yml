@@ -21,6 +21,15 @@ updates:
         patterns:
           - "org.folio:*"
           - "org.olf:*"
+      maven-plugins:
+        patterns:
+          - "*:maven-*-plugin"
+          - "*:*-maven-plugin"
+        exclude-patterns:
+          - "org.folio:*"
+        update-types:
+          - "minor"
+          - "patch"
       prod-deps:
         dependency-type: "production"
         update-types:
@@ -29,6 +38,8 @@ updates:
         exclude-patterns:
           - "org.folio:*"
           - "org.olf:*"
+          - "*:maven-*-plugin"
+          - "*:*-maven-plugin"
       test-deps:
         dependency-type: "development"
         update-types:
@@ -37,3 +48,5 @@ updates:
         exclude-patterns:
           - "org.folio:*"
           - "org.olf:*"
+          - "*:maven-*-plugin"
+          - "*:*-maven-plugin"
